@@ -91,6 +91,8 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 .brief p:last-child{margin-bottom:0}
 .brief .day.past p{color:var(--text-dim)}
 .brief .cue{color:var(--ember)}
+.brief .meet{color:var(--ember);text-decoration:underline;text-underline-offset:2px;
+  background:none;border:none;padding:0;font:inherit;cursor:pointer}
 .hero.small h1{font-size:clamp(42px,13vw,64px)}
 
 .week{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:0 0 8px}
@@ -741,6 +743,7 @@ S.logs=S.logs||{};S.body=S.body||[{d:'2026-08-14',w:167.2,f:15.0}];
 S.theme=S.theme||'dark';S.shop=S.shop||{};S.three=S.three||'';
 S.journal=S.journal||{};S.evening=S.evening||{};S.commit=S.commit||[];
 S.vid=S.vid||{};S.sound=S.sound===undefined?true:S.sound;
+S.meet=S.meet||'';                             /* meeting-point link, entered on the device */
 if(!Array.isArray(S.loops))S.loops=[];
 const save=()=>DB.set('vito.v3',S);
 document.documentElement.dataset.theme=S.theme;
@@ -867,6 +870,21 @@ function panelHead(i,bd){
   if(f&&i>t){h+=' · '+f.tmax+'°';if(f.precip>=20)h+=' · '+f.precip+'% RAIN'}
   return h;
 }
+/* the club and its times are public; the meeting point is not in the source.
+   Tap the name once to store a maps link on this device, as with exercise videos. */
+function meetLine(){
+  const n=S.meet
+    ? '<a class="meet" href="'+esc(S.meet)+'" target="_blank" rel="noopener noreferrer">214 Run Club</a>'
+    : '<button class="meet" type="button" id="setMeet">214 Run Club</button>';
+  return n+' — 06:00 long run, 8 miles; 08:30 club run, 3 or 5 miles.';
+}
+function askMeet(){
+  const v=prompt('Paste the Google Maps link for the meeting point.\nIt is saved on this device only, never in the source.',S.meet||'');
+  if(v===null)return;
+  const t=v.trim();
+  if(t&&!/^https:\/\//i.test(t)){alert('That does not look like a link. Copy the address from Google Maps.');return}
+  S.meet=t;save();renderBrief();
+}
 function panelLines(i,bd){
   const t=dayIdx(),w=WEEK[i],lines=[];
   if(i<t){                                       /* already happened, read it back */
@@ -878,11 +896,13 @@ function panelLines(i,bd){
   }
   if(i===t){                                     /* today, and the week ahead of it */
     lines.push(MOMENTUM[t][partOfDay(new Date().getHours())]);
+    if(i===5)lines.push(meetLine());
     const p=plantLine();if(p)lines.push(p);
     const a=advice(bd);if(a)lines.push('<span class="cue">'+esc(a)+'</span>');
     return lines;
   }
   lines.push(w.k+'. '+subFor(w));                /* still ahead */
+  if(i===5)lines.push(meetLine());
   const s=dayAdvice(i,bd);
   if(s)lines.push('<span class="cue">'+esc(s)+'</span>');
   return lines;
@@ -897,6 +917,8 @@ function renderBrief(){
     return '<div class="day'+(i<t?' past':'')+'"><div class="hd">'+panelHead(i,bd)+'</div>'+
       panelLines(i,bd).map(function(x){return '<p>'+x+'</p>'}).join('')+'</div>';
   }).join('');
+  const sm=document.getElementById('setMeet');
+  if(sm)sm.onclick=askMeet;                      /* the track is rebuilt, so rebind each time */
   builtFor=todayKey();
   gotoDay(viewDay);
 }
