@@ -78,6 +78,7 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 .hero h1{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:clamp(52px,17vw,88px);
   line-height:.92;letter-spacing:-.01em;margin-bottom:8px;text-shadow:0 0 38px var(--glow)}
 .hero .sub{font-style:italic;color:var(--text-soft);font-size:18px}
+.hero .insight{font-family:'Courier Prime',monospace;font-size:13px;color:var(--text-dim);margin-top:8px}
 .brief{margin-top:17px;border-left:2px solid var(--rust-lo);padding-left:13px}
 .brief p{font-size:15px;line-height:1.5;color:var(--text-soft);margin-bottom:6px}
 .brief p:last-child{margin-bottom:0}
@@ -287,6 +288,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
       <div class="date" id="todayDate"></div>
       <h1 id="todayName"></h1>
       <div class="sub" id="todaySub"></div>
+      <div class="insight" id="todayNote" hidden></div>
       <div class="brief" id="brief"></div>
     </div>
     <div class="week" id="weekStrip"></div>
@@ -835,12 +837,85 @@ document.addEventListener('visibilitychange',function(){
   if(document.visibilityState==='visible'){renderBrief();if(!WX||Date.now()-WX.at>18e5)loadWeather()}
 });
 
+/* ── the insight line: the single most useful sentence the saved state can offer ──
+   Conditions are checked in priority order and the first to fire wins. When none
+   fires the line is not rendered at all. */
+const NUM=['zero','one','two','three','four','five','six','seven','eight','nine'];
+function count(n){return n<NUM.length?NUM[n]:String(n)}
+function dkey(dt){return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')}
+function exName(id){
+  let n='';
+  Object.keys(PROG).forEach(function(k){PROG[k].ex.forEach(function(e){if(e.id===id&&!n)n=e.n})});
+  return n;
+}
+/* the heaviest set of each session that logged this exercise, oldest first */
+function topWeights(id){
+  return Object.keys(S.logs).sort().map(function(d){
+    const sets=(S.logs[d]&&S.logs[d][id])||[];
+    const ws=sets.filter(function(s){return s&&typeof s.w==='number'&&isFinite(s.w)})
+                 .map(function(s){return s.w});
+    return ws.length?Math.max.apply(null,ws):null;
+  }).filter(function(v){return v!==null});
+}
+function iStalled(){
+  const ids={};
+  Object.keys(S.logs).forEach(function(d){Object.keys(S.logs[d]||{}).forEach(function(id){ids[id]=1})});
+  let hit=null;
+  Object.keys(ids).forEach(function(id){
+    if(hit)return;
+    const h=topWeights(id);
+    if(h.length<3)return;
+    const last=h[h.length-1];
+    let run=1;
+    for(let i=h.length-2;i>=0&&h[i]===last;i--)run++;
+    if(run<3)return;
+    const n=exName(id);
+    if(n)hit=n+' has not moved in '+count(run)+' sessions. Add 5 lb.';
+  });
+  return hit;
+}
+function iWeekDone(){
+  const need=WEEK.filter(function(w){return w.s});
+  return need.every(function(w){return S.week.done[w.s]})?'Six from six. That is the week.':null;
+}
+function iTrend(){
+  const b=(S.body||[]).filter(function(e){return e&&e.d&&typeof e.w==='number'})
+                      .slice().sort(function(x,y){return x.d<y.d?-1:1});
+  if(b.length<4)return null;
+  const ms=864e5,now=Date.now(),c1=dkey(new Date(now-14*ms)),c2=dkey(new Date(now-28*ms));
+  const recent=b.filter(function(e){return e.d>=c1}),prior=b.filter(function(e){return e.d>=c2&&e.d<c1});
+  if(!recent.length||!prior.length)return null;
+  const avg=function(a){return a.reduce(function(s,e){return s+e.w},0)/a.length};
+  const diff=avg(prior)-avg(recent);          /* positive means weight came off */
+  if(diff>=0.5)return 'Down '+diff.toFixed(1)+' lb over four weeks. On schedule.';
+  if(diff<=-0.5)return 'Up '+Math.abs(diff).toFixed(1)+' lb over four weeks. Take 150 off the daily number.';
+  return 'Flat for four weeks. Take 150 off the daily number.';
+}
+function iPhase(){
+  const p=currentPhase();
+  if(!p||!p.to)return null;
+  const days=Math.round((new Date(p.to+'T12:00:00')-new Date(todayKey()+'T12:00:00'))/864e5);
+  if(days<0||days>7)return null;
+  if(days===0)return 'Last day of '+p.n.toLowerCase()+'.';
+  const w=count(days);
+  return w.charAt(0).toUpperCase()+w.slice(1)+' day'+(days===1?'':'s')+' left in '+p.n.toLowerCase()+'.';
+}
+function insight(){
+  try{return iStalled()||iWeekDone()||iTrend()||iPhase()||''}
+  catch(e){return ''}                          /* a bad read must never take the page down */
+}
+function renderInsight(){
+  const el=document.getElementById('todayNote'),t=insight();
+  el.textContent=t;el.hidden=!t;
+}
+renderInsight();
+
 const goBtn=document.getElementById('goSession');
 if(!sess){goBtn.textContent=slot.s?'Mark it done':'Nothing today';goBtn.classList.add('ghost')}
 goBtn.onclick=function(){
   if(sess){switchView('train');setTimeout(function(){const d=document.getElementById('s-'+sess.key);
     if(d){closeOthers(d);d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'})}},90)}
-  else if(slot.s){S.week.done[slot.s]=!S.week.done[slot.s];save();renderWeek()}
+  else if(slot.s){S.week.done[slot.s]=!S.week.done[slot.s];save();renderWeek();renderInsight()}
 };
 function renderWeek(){
   const el=document.getElementById('weekStrip');el.innerHTML='';
@@ -851,7 +926,7 @@ function renderWeek(){
       (w.s?'<span class="tick" aria-hidden="true">✓</span>':'');
     if(w.s){
       b.setAttribute('aria-pressed',S.week.done[w.s]?'true':'false');
-      b.onclick=function(){S.week.done[w.s]=!S.week.done[w.s];save();renderWeek()};
+      b.onclick=function(){S.week.done[w.s]=!S.week.done[w.s];save();renderWeek();renderInsight()};
     }
     el.appendChild(b);
   });
@@ -922,14 +997,14 @@ function logSet(ex,i){
   const t=todayKey();
   S.logs[t]=S.logs[t]||{};S.logs[t][ex.id]=S.logs[t][ex.id]||[];
   const arr=S.logs[t][ex.id];
-  if(arr[i]){arr[i]=null;while(arr.length&&arr[arr.length-1]==null)arr.pop();save();paintSets(ex);return}
+  if(arr[i]){arr[i]=null;while(arr.length&&arr[arr.length-1]==null)arr.pop();save();paintSets(ex);renderInsight();return}
   const prev=arr.filter(Boolean).slice(-1)[0];
   const seed=prev?((prev.w||'')+(prev.r?'x'+prev.r:'')):'';
   const raw=prompt(ex.n+' — set '+(i+1)+'\nWeight × reps, e.g. 135x8',seed);
   if(raw===null)return;
   const m=raw.match(/([\d.]+)\s*[x×*]\s*(\d+)/i);
   arr[i]=m?{w:parseFloat(m[1]),r:parseInt(m[2])}:(raw.trim()?{w:parseFloat(raw)||null,r:null}:{w:null,r:null});
-  save();paintSets(ex);startRest(ex.rest,ex.n);
+  save();paintSets(ex);renderInsight();startRest(ex.rest,ex.n);
 }
 renderSessions();
 
@@ -1128,7 +1203,7 @@ function renderBody(){
 document.getElementById('saveBody').onclick=function(){
   const w=parseFloat(document.getElementById('inWeight').value);if(!w)return;
   const f=parseFloat(document.getElementById('inBf').value)||null;
-  S.body.push({d:todayKey(),w:w,f:f});save();renderBody();
+  S.body.push({d:todayKey(),w:w,f:f});save();renderBody();renderInsight();
   document.getElementById('inWeight').value='';document.getElementById('inBf').value='';
 };
 renderBody();
