@@ -846,6 +846,7 @@ function advice(bd){
   return null;
 }
 const DAYNAME=['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'];
+const SLOTS=[6,0,1,2,3,4,5,6,0];               /* Sunday clone, the week, Monday clone */
 const EMPTY7=[null,null,null,null,null,null,null];
 function dayDate(i){                             /* the date of day i in the week on screen */
   const d=new Date(S.week.start+'T12:00:00');d.setDate(d.getDate()+i);return dkey(d);
@@ -915,7 +916,9 @@ function renderBrief(){
   if(WX&&WX.now&&Date.now()-WX.at<3*60*60*1000)head+=' · '+temp(WX.now.t)+' '+(SKY[WX.now.code]||'');
   document.getElementById('todayDate').textContent=head;
   const bd=WX?byWeekday(WX):EMPTY7,t=dayIdx();
-  document.getElementById('brief').innerHTML=WEEK.map(function(w,i){
+  /* Sunday is cloned before Monday and Monday after Sunday, so swiping off either
+     end lands on a real-looking panel and the jump back to it is invisible */
+  document.getElementById('brief').innerHTML=SLOTS.map(function(i){
     return '<div class="day'+(i<t?' past':'')+'"><div class="hd">'+panelHead(i,bd)+'</div>'+
       panelLines(i,bd).map(function(x){return '<p>'+x+'</p>'}).join('')+'</div>';
   }).join('');
@@ -924,19 +927,23 @@ function renderBrief(){
   builtFor=todayKey();
   gotoDay(viewDay);
 }
+function slotLeft(s){
+  const ps=document.getElementById('brief').children;
+  return ps.length?ps[s].offsetLeft-ps[0].offsetLeft:0;
+}
 /* rebuilding the track resets its scroll, so put the viewed day back afterwards */
 function gotoDay(i){
-  const track=document.getElementById('brief'),ps=track.children;
-  if(!ps.length)return;
-  if(i<0||i>=ps.length)i=dayIdx();
+  const track=document.getElementById('brief');
+  if(!track.children.length)return;
+  if(i<0||i>6)i=dayIdx();
   viewDay=i;
-  track.scrollLeft=ps[i].offsetLeft-ps[0].offsetLeft;
+  track.scrollLeft=slotLeft(i+1);                /* real days live in slots 1..7 */
   renderWeek();
 }
-function viewedPanel(){
-  const ps=document.getElementById('brief').children;
-  if(!ps.length)return dayIdx();
-  const base=ps[0].offsetLeft,sl=document.getElementById('brief').scrollLeft;
+function viewedSlot(){
+  const track=document.getElementById('brief'),ps=track.children;
+  if(!ps.length)return 1;
+  const base=ps[0].offsetLeft,sl=track.scrollLeft;
   let best=0,near=Infinity;
   for(let i=0;i<ps.length;i++){
     const d=Math.abs((ps[i].offsetLeft-base)-sl);
@@ -965,8 +972,12 @@ renderBrief();loadWeather();
   track.addEventListener('scroll',function(){
     clearTimeout(t);
     t=setTimeout(function(){
-      const i=viewedPanel();
-      if(i!==viewDay){viewDay=i;renderWeek()}    /* the strip follows the swipe */
+      let s=viewedSlot();
+      /* stepped onto a clone: snap silently to the real panel it copies */
+      if(s===0){track.scrollLeft=slotLeft(7);s=7}
+      else if(s===8){track.scrollLeft=slotLeft(1);s=1}
+      const d=s-1;
+      if(d!==viewDay){viewDay=d;renderWeek()}    /* the strip follows the swipe */
     },90);
   },{passive:true});
 })();
