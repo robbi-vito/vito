@@ -82,14 +82,21 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 
 .week{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:0 0 8px}
 .wd{border:1px solid var(--edge);border-radius:2px;padding:9px 2px 7px;text-align:center;
-  background:var(--bg-raise);cursor:pointer;transition:all .25s ease}
+  background:var(--bg-raise);cursor:pointer;position:relative;
+  transition:background .25s ease,border-color .25s ease,transform .12s ease}
 .wd .l{font-family:'Courier Prime',monospace;font-size:9.5px;letter-spacing:.1em;color:var(--text-dim);display:block}
 .wd .k{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:13px;display:block;margin-top:2px;color:var(--text-soft)}
+.wd .tick{position:absolute;top:1px;right:3px;font-size:9px;line-height:1;color:var(--on-rust);
+  opacity:0;transform:scale(.4);transition:opacity .2s ease,transform .2s cubic-bezier(.2,1.6,.4,1)}
 .wd.today{border-color:var(--rust)}
 .wd.today .k{color:var(--rust)}
 .wd.done{background:var(--rust-fill);border-color:var(--rust-fill)}
 .wd.done .k,.wd.done .l{color:var(--on-rust)}
-.wd.rest{opacity:.4}
+.wd.done .tick{opacity:1;transform:scale(1)}
+/* a finished day still has to read as today, so keep a ring the fill cannot swallow */
+.wd.done.today{border-color:var(--ember);box-shadow:inset 0 0 0 1px var(--ember)}
+.wd:not(.rest):active{transform:scale(.93)}
+.wd.rest{opacity:.4;cursor:default}
 .strip-note{font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:26px}
 
 .cta{display:block;width:100%;padding:17px;margin:4px 0 26px;background:var(--rust-fill);color:var(--on-rust);
@@ -740,8 +747,12 @@ function renderWeek(){
   WEEK.forEach(function(w,i){
     const b=document.createElement('div');
     b.className='wd'+(i===di?' today':'')+(!w.s?' rest':'')+(w.s&&S.week.done[w.s]?' done':'');
-    b.innerHTML='<span class="l">'+w.l+'</span><span class="k">'+w.k+'</span>';
-    if(w.s)b.onclick=function(){S.week.done[w.s]=!S.week.done[w.s];save();renderWeek()};
+    b.innerHTML='<span class="l">'+w.l+'</span><span class="k">'+w.k+'</span>'+
+      (w.s?'<span class="tick" aria-hidden="true">✓</span>':'');
+    if(w.s){
+      b.setAttribute('aria-pressed',S.week.done[w.s]?'true':'false');
+      b.onclick=function(){S.week.done[w.s]=!S.week.done[w.s];save();renderWeek()};
+    }
     el.appendChild(b);
   });
   const n=Object.values(S.week.done).filter(Boolean).length;
