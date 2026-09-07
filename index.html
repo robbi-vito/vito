@@ -31,7 +31,7 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{background:var(--bg)}
 body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',Georgia,serif;
-  font-size:17px;line-height:1.55;padding-bottom:calc(74px + env(safe-area-inset-bottom));
+  font-size:17px;line-height:1.55;padding-bottom:calc(82px + env(safe-area-inset-bottom));
   transition:background .4s ease,color .4s ease;overflow-x:hidden}
 
 /* ══ emulsion — every layer non-repeating except the fine grain ══ */
@@ -131,8 +131,9 @@ details[open]>summary h2{color:var(--rust)}
 .flag{display:inline-block;font-family:'Courier Prime',monospace;font-size:9.5px;letter-spacing:.1em;
   color:var(--ember);border:1px solid var(--rust-lo);border-radius:2px;padding:1px 5px;margin-left:6px;vertical-align:1px}
 .sets{display:flex;align-items:center;gap:8px;margin:11px 0 0 26px;flex-wrap:wrap}
-.dot{width:34px;height:34px;border-radius:50%;border:1px solid var(--edge);background:var(--bg-raise);
-  cursor:pointer;display:grid;place-items:center;font-family:'Courier Prime',monospace;font-size:10px;
+/* 44px: these are tapped mid-set, so they meet the iOS/Android minimum target */
+.dot{width:44px;height:44px;border-radius:50%;border:1px solid var(--edge);background:var(--bg-raise);
+  cursor:pointer;display:grid;place-items:center;font-family:'Courier Prime',monospace;font-size:11px;
   color:var(--text-dim);transition:all .2s ease;padding:0;line-height:1}
 .dot:hover{border-color:var(--rust)}
 .dot.filled{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust);font-weight:700}
@@ -234,7 +235,7 @@ textarea.three:focus{outline:none;border-color:var(--rust)}
 
 nav{position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--bg-sink);border-top:1px solid var(--edge);
   display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom)}
-nav button{background:none;border:none;padding:13px 2px 12px;cursor:pointer;font-family:'Courier Prime',monospace;
+nav button{background:none;border:none;padding:17px 2px 16px;cursor:pointer;font-family:'Courier Prime',monospace;
   font-size:9.5px;letter-spacing:.11em;color:var(--text-dim);transition:color .2s;position:relative}
 nav button.on{color:var(--rust)}
 nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--rust)}
