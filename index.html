@@ -79,9 +79,17 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
   line-height:.92;letter-spacing:-.01em;margin-bottom:8px;text-shadow:0 0 38px var(--glow)}
 .hero .sub{font-style:italic;color:var(--text-soft);font-size:18px}
 .hero .insight{font-family:'Courier Prime',monospace;font-size:13px;color:var(--text-dim);margin-top:8px}
-.brief{margin-top:17px;border-left:2px solid var(--rust-lo);padding-left:13px}
+/* one panel per weekday, swiped sideways; the week strip shows which is in view */
+.brief{display:flex;overflow-x:auto;gap:14px;margin-top:17px;scroll-snap-type:x mandatory;
+  scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior-x:contain}
+.brief::-webkit-scrollbar{display:none}
+.brief .day{flex:0 0 100%;scroll-snap-align:start;border-left:2px solid var(--rust-lo);padding-left:13px}
+.brief .day.past{border-left-color:var(--edge)}
+.brief .hd{font-family:'Courier Prime',monospace;font-size:10.5px;letter-spacing:.16em;
+  color:var(--text-dim);margin-bottom:7px}
 .brief p{font-size:15px;line-height:1.5;color:var(--text-soft);margin-bottom:6px}
 .brief p:last-child{margin-bottom:0}
+.brief .day.past p{color:var(--text-dim)}
 .brief .cue{color:var(--ember)}
 .hero.small h1{font-size:clamp(42px,13vw,64px)}
 
@@ -100,6 +108,8 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 .wd.done .tick{opacity:1;transform:scale(1)}
 /* a finished day still has to read as today, so keep a ring the fill cannot swallow */
 .wd.done.today{border-color:var(--ember);box-shadow:inset 0 0 0 1px var(--ember)}
+/* the third state: which day's panel is currently swiped into view */
+.wd.viewing::after{content:'';position:absolute;left:18%;right:18%;bottom:-5px;height:2px;background:var(--ember)}
 .wd:not(.rest):active{transform:scale(.93)}
 .wd.rest{opacity:.4;cursor:default}
 .strip-note{font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:26px}
@@ -737,6 +747,7 @@ document.documentElement.dataset.theme=S.theme;
 
 /* ── today ── */
 const di=dayIdx(),slot=WEEK[di],sess=(slot.s&&PROG[slot.s])?PROG[slot.s]:null;
+let viewDay=di;                                /* which day's brief panel is swiped into view */
 document.getElementById('todayName').textContent=slot.k==='Run'?'Run club':slot.k;
 document.getElementById('todaySub').textContent=sess?sess.sub:
   slot.s==='cardio1'?'Conversational pace. If you could not talk, you are racing.':
@@ -777,6 +788,8 @@ const MOMENTUM=[
   'Three priorities for the week. No more than three.']];
 
 let WX=null;
+let builtFor='';                               /* the day the panels were built for */
+let hiddenAt=0;                                /* when the app was last put away */
 function wxRead(){try{return JSON.parse(localStorage.getItem('vito.wx')||'null')}catch(e){return null}}
 function wxWrite(v){try{localStorage.setItem('vito.wx',JSON.stringify(v))}catch(e){}}
 /* forecast rows carry real dates, so map them onto this Mon–Sun week and drop the rest */
@@ -796,46 +809,116 @@ function plantLine(){
   if(!summer&&(d===5||d===6))return 'Plants need doing this weekend.';
   return null;
 }
-/* one line at most: the next outdoor session the week's weather argues with */
-function advice(bd){
-  const t=dayIdx();
-  for(let i=t;i<7;i++){
-    const w=WEEK[i],f=bd[i];
-    if(!w.s||!OUTDOOR[w.s]||!f)continue;
-    const wet=f.precip>=40,hot=f.tmax>=95;   /* running is outdoors only, so rain counts earlier */
-    if(!wet&&!hot)continue;
-    let best=-1,bestBy=0,bestGap=0;
-    for(let j=t;j<7;j++){
-      const c=WEEK[j],g=bd[j];
-      if(j===i||!c.s||OUTDOOR[c.s]||!g)continue;  /* only trade with an indoor lift day */
-      if(g.precip>=25)continue;                   /* a swap is only worth it into a genuinely dry day */
-      if(hot&&!wet&&g.tmax>=95)continue;          /* no sense trading one hot day for another */
-      /* rain days are judged on rain, hot days on heat; nearest day breaks a tie */
-      const by=wet?g.precip:g.tmax,gap=Math.abs(j-i);
-      if(best<0||by<bestBy||(by===bestBy&&gap<bestGap)){best=j;bestBy=by;bestGap=gap}
-    }
-    const when=i===t?'Today':WEEK[i].l;
-    /* first light is only advice worth giving while it is still ahead of you */
-    const dawnGone=i===t&&new Date().getHours()>=9;
-    if(wet)return best<0
-      ? when+' is '+f.precip+'% wet for '+w.k+'. Nothing drier this week. Dress for it.'
-      : when+' is '+f.precip+'% wet. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+'.';
-    return best<0
-      ? when+' peaks at '+f.tmax+'°. '+(dawnGone?'Nothing cooler this week. Avoid the middle of the day.':'Go at first light.')
-      : when+' peaks at '+f.tmax+'°. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+', '+bd[best].tmax+'°.';
+/* what the week's weather has to say about one outdoor session, or nothing */
+function dayAdvice(i,bd){
+  const t=dayIdx(),w=WEEK[i],f=bd[i];
+  if(i<t||!w.s||!OUTDOOR[w.s]||!f)return null;
+  const wet=f.precip>=40,hot=f.tmax>=95;     /* running is outdoors only, so rain counts earlier */
+  if(!wet&&!hot)return null;
+  let best=-1,bestBy=0,bestGap=0;
+  for(let j=t;j<7;j++){
+    const c=WEEK[j],g=bd[j];
+    if(j===i||!c.s||OUTDOOR[c.s]||!g)continue;  /* only trade with an indoor lift day */
+    if(g.precip>=25)continue;                   /* a swap is only worth it into a genuinely dry day */
+    if(hot&&!wet&&g.tmax>=95)continue;          /* no sense trading one hot day for another */
+    /* rain days are judged on rain, hot days on heat; nearest day breaks a tie */
+    const by=wet?g.precip:g.tmax,gap=Math.abs(j-i);
+    if(best<0||by<bestBy||(by===bestBy&&gap<bestGap)){best=j;bestBy=by;bestGap=gap}
   }
+  const when=i===t?'Today':WEEK[i].l;
+  /* first light is only advice worth giving while it is still ahead of you */
+  const dawnGone=i===t&&new Date().getHours()>=9;
+  if(wet)return best<0
+    ? when+' is '+f.precip+'% wet for '+w.k+'. Nothing drier this week. Dress for it.'
+    : when+' is '+f.precip+'% wet. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+'.';
+  return best<0
+    ? when+' peaks at '+f.tmax+'°. '+(dawnGone?'Nothing cooler this week. Avoid the middle of the day.':'Go at first light.')
+    : when+' peaks at '+f.tmax+'°. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+', '+bd[best].tmax+'°.';
+}
+/* today's panel looks down the whole week, not just at today */
+function advice(bd){
+  for(let i=dayIdx();i<7;i++){const a=dayAdvice(i,bd);if(a)return a}
   return null;
 }
+const DAYNAME=['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'];
+const EMPTY7=[null,null,null,null,null,null,null];
+function dayDate(i){                             /* the date of day i in the week on screen */
+  const d=new Date(S.week.start+'T12:00:00');d.setDate(d.getDate()+i);return dkey(d);
+}
+function subFor(w){
+  if(!w.s)return 'Walk, coffee, the review.';
+  if(PROG[w.s])return PROG[w.s].sub;
+  return w.s==='cardio1'?'Conversational pace.':'Turn up regardless of pace.';
+}
+/* the heaviest thing logged on a given date, for reading a past day back */
+function heaviestOn(key){
+  const log=S.logs[key]||{};let top=null;
+  Object.keys(log).forEach(function(id){
+    (log[id]||[]).forEach(function(s){
+      if(s&&typeof s.w==='number'&&isFinite(s.w)&&(!top||s.w>top.w))top={w:s.w,r:s.r,n:exName(id)};
+    });
+  });
+  return top&&top.n?top:null;
+}
+function panelHead(i,bd){
+  const t=dayIdx();
+  if(i===t)return 'TODAY';
+  let h=DAYNAME[i],f=bd[i];
+  if(f&&i>t){h+=' · '+f.tmax+'°';if(f.precip>=20)h+=' · '+f.precip+'% RAIN'}
+  return h;
+}
+function panelLines(i,bd){
+  const t=dayIdx(),w=WEEK[i],lines=[];
+  if(i<t){                                       /* already happened, read it back */
+    if(!w.s)lines.push('Rest.');
+    else lines.push(w.k+'. '+(S.week.done[w.s]?'Done.':'Not ticked.'));
+    const top=heaviestOn(dayDate(i));
+    if(top)lines.push('Heaviest, '+top.n.toLowerCase()+' '+top.w+(top.r?' × '+top.r:'')+'.');
+    return lines;
+  }
+  if(i===t){                                     /* today, and the week ahead of it */
+    lines.push(MOMENTUM[t][partOfDay(new Date().getHours())]);
+    const p=plantLine();if(p)lines.push(p);
+    const a=advice(bd);if(a)lines.push('<span class="cue">'+esc(a)+'</span>');
+    return lines;
+  }
+  lines.push(w.k+'. '+subFor(w));                /* still ahead */
+  const s=dayAdvice(i,bd);
+  if(s)lines.push('<span class="cue">'+esc(s)+'</span>');
+  return lines;
+}
 function renderBrief(){
-  const now=new Date(),h=now.getHours();
+  const now=new Date();
   let head=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
   if(WX&&WX.now&&Date.now()-WX.at<3*60*60*1000)head+=' · '+WX.now.t+'° '+(SKY[WX.now.code]||'');
   document.getElementById('todayDate').textContent=head;
-  const lines=[MOMENTUM[dayIdx()][partOfDay(h)]],p=plantLine();
-  if(p)lines.push(p);
-  const a=WX?advice(byWeekday(WX)):null;
-  if(a)lines.push('<span class="cue">'+esc(a)+'</span>');
-  document.getElementById('brief').innerHTML=lines.map(function(x){return '<p>'+x+'</p>'}).join('');
+  const bd=WX?byWeekday(WX):EMPTY7,t=dayIdx();
+  document.getElementById('brief').innerHTML=WEEK.map(function(w,i){
+    return '<div class="day'+(i<t?' past':'')+'"><div class="hd">'+panelHead(i,bd)+'</div>'+
+      panelLines(i,bd).map(function(x){return '<p>'+x+'</p>'}).join('')+'</div>';
+  }).join('');
+  builtFor=todayKey();
+  gotoDay(viewDay);
+}
+/* rebuilding the track resets its scroll, so put the viewed day back afterwards */
+function gotoDay(i){
+  const track=document.getElementById('brief'),ps=track.children;
+  if(!ps.length)return;
+  if(i<0||i>=ps.length)i=dayIdx();
+  viewDay=i;
+  track.scrollLeft=ps[i].offsetLeft-ps[0].offsetLeft;
+  renderWeek();
+}
+function viewedPanel(){
+  const ps=document.getElementById('brief').children;
+  if(!ps.length)return dayIdx();
+  const base=ps[0].offsetLeft,sl=document.getElementById('brief').scrollLeft;
+  let best=0,near=Infinity;
+  for(let i=0;i<ps.length;i++){
+    const d=Math.abs((ps[i].offsetLeft-base)-sl);
+    if(d<near){near=d;best=i}
+  }
+  return best;
 }
 function loadWeather(){
   const c=wxRead();
@@ -851,11 +934,27 @@ function loadWeather(){
    }).catch(function(){});                        /* no signal is not an error here */
 }
 renderBrief();loadWeather();
+(function(){
+  const track=document.getElementById('brief');
+  let t=null;
+  track.addEventListener('scroll',function(){
+    clearTimeout(t);
+    t=setTimeout(function(){
+      const i=viewedPanel();
+      if(i!==viewDay){viewDay=i;renderWeek()}    /* the strip follows the swipe */
+    },90);
+  },{passive:true});
+})();
 if('serviceWorker' in navigator)addEventListener('load',function(){
   navigator.serviceWorker.register('./sw.js').catch(function(){});   /* offline shell; harmless if it fails */
 });
 document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible'){renderBrief();if(!WX||Date.now()-WX.at>18e5)loadWeather()}
+  if(document.visibilityState!=='visible'){hiddenAt=Date.now();return}
+  /* a quick switch mid-session keeps your place; a long gap or a new day goes back to today */
+  const away=hiddenAt?Date.now()-hiddenAt:0;
+  if(away>72e5||builtFor!==todayKey())viewDay=dayIdx();
+  renderBrief();
+  if(!WX||Date.now()-WX.at>18e5)loadWeather();
 });
 
 /* ── the insight line: the single most useful sentence the saved state can offer ──
@@ -939,7 +1038,8 @@ function renderWeek(){
   const el=document.getElementById('weekStrip');el.innerHTML='';
   WEEK.forEach(function(w,i){
     const b=document.createElement('div');
-    b.className='wd'+(i===di?' today':'')+(!w.s?' rest':'')+(w.s&&S.week.done[w.s]?' done':'');
+    b.className='wd'+(i===di?' today':'')+(!w.s?' rest':'')+(w.s&&S.week.done[w.s]?' done':'')+
+      (i===viewDay?' viewing':'');
     b.innerHTML='<span class="l">'+w.l+'</span><span class="k">'+w.k+'</span>'+
       (w.s?'<span class="tick" aria-hidden="true">✓</span>':'');
     if(w.s){
