@@ -435,7 +435,8 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
 
   <!-- ═══ FUEL ═══ -->
   <section class="view" id="v-fuel">
-    <div class="hero small"><div class="date">The half that decides how you look</div><h1>Fuel</h1></div>
+    <div class="hero small"><div class="date">The half that decides how you look</div><h1>Fuel</h1>
+      <div class="insight" id="fuelNote" hidden></div></div>
     <div class="grid4">
       <div class="cell key"><span class="l">Daily</span><span class="v">2100</span></div>
       <div class="cell key"><span class="l">Protein</span><span class="v">160</span></div>
@@ -523,6 +524,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     <div class="hero small">
       <div class="date">Forty hours of desk beats three of gym</div><h1>Frame</h1>
       <div class="sub">Forward head and anterior tilt — the desk correction</div>
+      <div class="insight" id="frameNote" hidden></div>
     </div>
     <div class="strip-note" style="text-align:left;margin-bottom:14px" id="postureCount"></div>
     <div id="drills"></div>
@@ -567,6 +569,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
       <div class="date" id="phaseWindow"></div>
       <h1 id="phaseName"></h1>
       <div class="sub" id="phaseSub"></div>
+      <div class="insight" id="buildNote" hidden></div>
     </div>
     <div class="track"><i id="phaseBar"></i></div>
     <div class="strip-note" id="phaseNote" style="text-align:left"></div>
@@ -1016,8 +1019,16 @@ document.addEventListener('visibilitychange',function(){
 /* ── the insight line: the single most useful sentence the saved state can offer ──
    Conditions are checked in priority order and the first to fire wins. When none
    fires the line is not rendered at all. */
-const NUM=['zero','one','two','three','four','five','six','seven','eight','nine'];
-function count(n){return n<NUM.length?NUM[n]:String(n)}
+/* these open sentences, so they are spelled out rather than set as numerals */
+const NUM=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven',
+ 'twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+const TENS=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+function count(n){
+  if(n!==Math.floor(n)||n<0||n>99)return String(n);
+  if(n<20)return NUM[n];
+  const u=n%10;
+  return TENS[Math.floor(n/10)]+(u?'-'+NUM[u]:'');
+}
 function dkey(dt){return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')}
 function exName(id){
   let n='';
@@ -1077,9 +1088,48 @@ function insight(){
   try{return iStalled()||iTrend()||iPhase()||''}
   catch(e){return ''}                          /* a bad read must never take the page down */
 }
+function capCount(n){const w=count(n);return w.charAt(0).toUpperCase()+w.slice(1)}
+/* Fuel: how long since the scale was used. Protein days would come first here,
+   but nothing in state records them. */
+function iFuel(){
+  const b=(S.body||[]).filter(function(e){return e&&e.d&&typeof e.w==='number'})
+                      .slice().sort(function(x,y){return x.d<y.d?-1:1});
+  if(!b.length)return '';
+  const days=Math.round((new Date(todayKey()+'T12:00:00')-new Date(b[b.length-1].d+'T12:00:00'))/864e5);
+  if(days<=4)return '';
+  return capCount(days)+' days since the last weigh-in. Step on the scale.';
+}
+/* Frame: consecutive days with at least one drill ticked, counted back from today */
+function iFrame(){
+  const p=S.week.posture||{};
+  const did=function(k){const d=p[k];return !!d&&Object.keys(d).some(function(x){return d[x]})};
+  const cur=new Date(todayKey()+'T12:00:00');
+  const todayDone=did(dkey(cur));
+  if(!todayDone)cur.setDate(cur.getDate()-1);  /* today is not owed until it ends */
+  let n=0;
+  while(did(dkey(cur))){n++;cur.setDate(cur.getDate()-1)}
+  if(n<3)return '';
+  return todayDone
+    ? capCount(n)+' days of drills unbroken.'
+    : capCount(n)+' days of drills unbroken. Today makes '+count(n+1)+'.';
+}
+/* Build: what is still open. Days left in the phase already print under the bar. */
+function iBuild(){
+  const open=(S.loops||[]).filter(function(l){return l&&l.id&&!S.week.cadence[l.id]}).length;
+  if(!open)return '';
+  return open===1
+    ? 'One loop still open. They close in the order they were opened.'
+    : capCount(open)+' loops still open. They close in the order they were opened.';
+}
+const NOTES=[['todayNote',insight],['fuelNote',iFuel],['frameNote',iFrame],['buildNote',iBuild]];
 function renderInsight(){
-  const el=document.getElementById('todayNote'),t=insight();
-  el.textContent=t;el.hidden=!t;
+  NOTES.forEach(function(pair){
+    const el=document.getElementById(pair[0]);
+    if(!el)return;
+    let t='';
+    try{t=pair[1]()||''}catch(e){t=''}         /* one bad view must not silence the rest */
+    el.textContent=t;el.hidden=!t;
+  });
 }
 renderInsight();
 
@@ -1285,6 +1335,7 @@ function renderDrills(){
     return k>=S.week.start&&Object.values(S.week.posture[k]).some(Boolean)}).length;
   document.getElementById('postureCount').textContent=
     days===0?'About five minutes. Resets at midnight.':days+' of 7 days this week';
+  renderInsight();
 }
 renderDrills();
 
@@ -1328,6 +1379,7 @@ function renderBuild(){
   checklist(document.getElementById('cadence'),CADENCE,S.week.cadence,renderBuild);
   checklist(document.getElementById('loops'),S.loops,S.week.cadence,renderBuild,
     function(i){S.loops.splice(i,1);save();renderBuild()});
+  renderInsight();
 
   document.getElementById('phaseTable').innerHTML='<tr><th>Phase</th><th>Window</th><th>Done means</th></tr>'+
     PHASES.map(function(x){return '<tr'+(x===p?' style="color:var(--rust)"':'')+'><td>'+x.t+'</td><td>'+
