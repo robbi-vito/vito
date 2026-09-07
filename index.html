@@ -828,6 +828,9 @@ function loadWeather(){
    }).catch(function(){});                        /* no signal is not an error here */
 }
 renderBrief();loadWeather();
+if('serviceWorker' in navigator)addEventListener('load',function(){
+  navigator.serviceWorker.register('./sw.js').catch(function(){});   /* offline shell; harmless if it fails */
+});
 document.addEventListener('visibilitychange',function(){
   if(document.visibilityState==='visible'){renderBrief();if(!WX||Date.now()-WX.at>18e5)loadWeather()}
 });
