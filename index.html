@@ -750,14 +750,31 @@ const SKY={0:'clear',1:'mostly clear',2:'partly cloudy',3:'overcast',45:'fog',48
  61:'light rain',63:'rain',65:'heavy rain',66:'freezing rain',67:'freezing rain',
  71:'light snow',73:'snow',75:'heavy snow',77:'snow',80:'showers',81:'showers',82:'heavy showers',
  85:'snow showers',86:'snow showers',95:'thunderstorms',96:'thunderstorms',99:'thunderstorms'};
+/* morning, afternoon, evening — the same day reads differently depending on
+   whether the session is ahead of you, still owed, or done */
+function partOfDay(h){return h<12?0:h<17?1:2}
 const MOMENTUM=[
- ['The week starts heavy. Nothing else counts yet.','One down. The heaviest day is behind you.'],
- ['Air today, not iron.','Easy day banked. Wednesday pulls.'],
- ['Midweek. This is the session people quietly skip.','Past the hinge of the week.'],
- ['Legs. Short, and the one that pays the most.','Two days of iron left.'],
- ['Width. Close the lifting week properly.','Iron done. What is left is air and rest.'],
- ['Run club. Turn up regardless of pace.','Six days nearly closed.'],
- ['Nothing today. Walk, coffee, the review.','Three priorities for the week. No more than three.']];
+ ['The week starts heavy. Nothing else counts yet.',
+  'Push still stands. It does not get lighter later.',
+  'One down. The heaviest day is behind you.'],
+ ['Air today, not iron.',
+  'Conversational pace. If you could not talk, you were racing.',
+  'Easy day banked. Wednesday pulls.'],
+ ['Midweek. This is the session people quietly skip.',
+  'Pull is still owed.',
+  'Past the hinge of the week.'],
+ ['Legs. Short, and the one that pays the most.',
+  'Legs before the evening goes.',
+  'Two days of iron left.'],
+ ['Width. Close the lifting week properly.',
+  'The short session. No reason to lose it to Friday.',
+  'Iron done. What is left is air and rest.'],
+ ['Run club. Turn up regardless of pace.',
+  'If the run went, the week is nearly closed.',
+  'Six days nearly closed.'],
+ ['Nothing today. Walk, coffee, the review.',
+  'The review is the work. Three priorities, no more.',
+  'Three priorities for the week. No more than three.']];
 
 let WX=null;
 function wxRead(){try{return JSON.parse(localStorage.getItem('vito.wx')||'null')}catch(e){return null}}
@@ -796,11 +813,13 @@ function advice(bd){
       if(best<0||g.tmax<bd[best].tmax)best=j;
     }
     const when=i===t?'Today':WEEK[i].l;
+    /* first light is only advice worth giving while it is still ahead of you */
+    const dawnGone=i===t&&new Date().getHours()>=9;
     if(wet)return best<0
       ? when+' is '+f.precip+'% wet for '+w.k+'. Treadmill, or shift it.'
       : when+' is '+f.precip+'% wet. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+'.';
     return best<0
-      ? when+' peaks at '+f.tmax+'°. Go at first light, or take '+w.k+' indoors.'
+      ? when+' peaks at '+f.tmax+'°. '+(dawnGone?'Take '+w.k+' indoors.':'Go at first light, or take '+w.k+' indoors.')
       : when+' peaks at '+f.tmax+'°. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+', '+bd[best].tmax+'°.';
   }
   return null;
@@ -810,7 +829,7 @@ function renderBrief(){
   let head=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
   if(WX&&WX.now&&Date.now()-WX.at<3*60*60*1000)head+=' · '+WX.now.t+'° '+(SKY[WX.now.code]||'');
   document.getElementById('todayDate').textContent=head;
-  const lines=[MOMENTUM[dayIdx()][h<15?0:1]],p=plantLine();
+  const lines=[MOMENTUM[dayIdx()][partOfDay(h)]],p=plantLine();
   if(p)lines.push(p);
   const a=WX?advice(byWeekday(WX)):null;
   if(a)lines.push('<span class="cue">'+esc(a)+'</span>');
