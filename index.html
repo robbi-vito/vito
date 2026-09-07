@@ -80,7 +80,8 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 .hero .sub{font-style:italic;color:var(--text-soft);font-size:18px}
 .hero .insight{font-family:'Courier Prime',monospace;font-size:13px;color:var(--text-dim);margin-top:8px}
 /* one panel per weekday, swiped sideways; the week strip shows which is in view */
-.brief{display:flex;overflow-x:auto;gap:14px;margin-top:17px;scroll-snap-type:x mandatory;
+.brief{display:flex;align-items:flex-start;overflow-x:auto;gap:14px;margin-top:17px;
+  scroll-snap-type:x mandatory;transition:height .2s ease;
   scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior-x:contain}
 .brief::-webkit-scrollbar{display:none}
 .brief .day{flex:0 0 100%;scroll-snap-align:start;border-left:2px solid var(--rust-lo);padding-left:13px}
@@ -927,6 +928,20 @@ function renderBrief(){
   builtFor=todayKey();
   gotoDay(viewDay);
 }
+/* the track carries an explicit height so a short day does not inherit a tall one's
+   whitespace. Mid-swipe two panels overlap the viewport, so take the taller of them
+   and nothing is clipped on the way past. */
+function fitTrack(){
+  const track=document.getElementById('brief'),ps=track.children;
+  if(!ps.length)return;
+  const base=ps[0].offsetLeft,sl=track.scrollLeft,w=track.clientWidth;
+  let h=0;
+  for(let i=0;i<ps.length;i++){
+    const x=ps[i].offsetLeft-base;
+    if(x+ps[i].offsetWidth>sl+1&&x<sl+w-1)h=Math.max(h,ps[i].offsetHeight);
+  }
+  if(h)track.style.height=h+'px';
+}
 function slotLeft(s){
   const ps=document.getElementById('brief').children;
   return ps.length?ps[s].offsetLeft-ps[0].offsetLeft:0;
@@ -938,6 +953,7 @@ function gotoDay(i){
   if(i<0||i>6)i=dayIdx();
   viewDay=i;
   track.scrollLeft=slotLeft(i+1);                /* real days live in slots 1..7 */
+  fitTrack();
   renderWeek();
 }
 function viewedSlot(){
@@ -969,7 +985,9 @@ renderBrief();loadWeather();
 (function(){
   const track=document.getElementById('brief');
   let t=null;
+  let queued=false;
   track.addEventListener('scroll',function(){
+    if(!queued){queued=true;requestAnimationFrame(function(){queued=false;fitTrack()})}
     clearTimeout(t);
     t=setTimeout(function(){
       let s=viewedSlot();
@@ -978,8 +996,10 @@ renderBrief();loadWeather();
       else if(s===8){track.scrollLeft=slotLeft(1);s=1}
       const d=s-1;
       if(d!==viewDay){viewDay=d;renderWeek()}    /* the strip follows the swipe */
+      fitTrack();
     },90);
   },{passive:true});
+  addEventListener('resize',fitTrack);            /* text rewraps, so heights change */
 })();
 if('serviceWorker' in navigator)addEventListener('load',function(){
   navigator.serviceWorker.register('./sw.js').catch(function(){});   /* offline shell; harmless if it fails */
