@@ -1450,8 +1450,19 @@ document.getElementById('backupBtn').onclick=function(){
     const inp=document.createElement('input');inp.type='file';inp.accept='application/json,.json';
     inp.onchange=function(e){const f=e.target.files[0];if(!f)return;
       const r=new FileReader();
-      r.onload=function(){try{S=JSON.parse(r.result);save();location.reload()}
-        catch(err){alert('That file could not be read.')}};
+      r.onload=function(){
+        let d;
+        try{d=JSON.parse(r.result)}
+        catch(err){alert('That file could not be read.');return}
+        /* a wrong file must not be able to overwrite everything in silence */
+        if(!d||typeof d!=='object'||Array.isArray(d)||!('week' in d||'logs' in d||'body' in d)){
+          alert('That is not a Vito backup. Nothing has been changed.');return;
+        }
+        const days=Object.keys(d.logs||{}).length,weighs=(d.body||[]).length;
+        if(!confirm('Restore this backup?\n'+days+' logged day'+(days===1?'':'s')+', '+
+          weighs+' weigh-in'+(weighs===1?'':'s')+'.\n\nEverything currently on this device is replaced.'))return;
+        S=d;save();location.reload();
+      };
       r.readAsText(f)};
     inp.click();
   }
