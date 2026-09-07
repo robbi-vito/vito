@@ -62,10 +62,16 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 .masthead{padding:calc(20px + env(safe-area-inset-top)) 0 14px;display:flex;align-items:center;justify-content:space-between}
 .mark{font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:.3em;color:var(--text-dim)}
 .head-btns{display:flex;gap:8px}
-.icon-btn{background:none;border:1px solid var(--edge);border-radius:50%;width:34px;height:34px;
-  color:var(--rust);cursor:pointer;font-size:14px;line-height:1;display:grid;place-items:center;transition:border-color .2s}
-.icon-btn:hover,.icon-btn:focus-visible{border-color:var(--rust);outline:none}
-.icon-btn.off{color:var(--text-dim)}
+.icon-btn{background:none;border:1px solid var(--text-dim);border-radius:50%;width:34px;height:34px;
+  color:var(--text-soft);cursor:pointer;font-size:14px;line-height:1;display:grid;place-items:center;
+  position:relative;transition:border-color .2s,color .2s,background .2s}
+.icon-btn:hover,.icon-btn:focus-visible{border-color:var(--rust);color:var(--rust);outline:none}
+/* a state toggle reads filled when on, struck through when off; plain buttons are actions */
+.icon-btn.on{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
+.icon-btn.on:hover,.icon-btn.on:focus-visible{background:var(--rust);border-color:var(--rust);color:var(--on-rust)}
+.icon-btn.off{color:var(--text-dim);border-color:var(--text-dim)}
+.icon-btn.off::after{content:'';position:absolute;left:50%;top:50%;width:19px;height:1px;
+  background:currentColor;transform:translate(-50%,-50%) rotate(-45deg)}
 
 .hero{padding:12px 0 26px}
 .hero .date{font-family:'Courier Prime',monospace;font-size:12px;letter-spacing:.22em;color:var(--text-dim);margin-bottom:6px}
@@ -1038,8 +1044,10 @@ document.getElementById('backupBtn').onclick=function(){
 };
 function paintSound(){
   const b=document.getElementById('soundBtn');
-  b.textContent=S.sound?'♪':'♪̸';b.classList.toggle('off',!S.sound);
-  b.title=S.sound?'Timer sound on':'Timer sound off — it still flashes and vibrates';
+  b.textContent='♪';
+  b.classList.toggle('on',!!S.sound);b.classList.toggle('off',!S.sound);
+  b.setAttribute('aria-pressed',S.sound?'true':'false');
+  b.title=S.sound?'Timer sound on — tap to mute':'Timer sound off — tap to unmute. The timer still flashes and vibrates.';
 }
 document.getElementById('soundBtn').onclick=function(){S.sound=!S.sound;save();paintSound()};
 paintSound();
