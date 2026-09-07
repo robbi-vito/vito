@@ -78,6 +78,10 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 .hero h1{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:clamp(52px,17vw,88px);
   line-height:.92;letter-spacing:-.01em;margin-bottom:8px;text-shadow:0 0 38px var(--glow)}
 .hero .sub{font-style:italic;color:var(--text-soft);font-size:18px}
+.brief{margin-top:17px;border-left:2px solid var(--rust-lo);padding-left:13px}
+.brief p{font-size:15px;line-height:1.5;color:var(--text-soft);margin-bottom:6px}
+.brief p:last-child{margin-bottom:0}
+.brief .cue{color:var(--ember)}
 .hero.small h1{font-size:clamp(42px,13vw,64px)}
 
 .week{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:0 0 8px}
@@ -283,6 +287,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
       <div class="date" id="todayDate"></div>
       <h1 id="todayName"></h1>
       <div class="sub" id="todaySub"></div>
+      <div class="brief" id="brief"></div>
     </div>
     <div class="week" id="weekStrip"></div>
     <div class="strip-note" id="weekNote"></div>
@@ -730,12 +735,103 @@ document.documentElement.dataset.theme=S.theme;
 
 /* ── today ── */
 const di=dayIdx(),slot=WEEK[di],sess=(slot.s&&PROG[slot.s])?PROG[slot.s]:null;
-document.getElementById('todayDate').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
 document.getElementById('todayName').textContent=slot.k==='Run'?'Run club':slot.k;
 document.getElementById('todaySub').textContent=sess?sess.sub:
   slot.s==='cardio1'?'Conversational pace. If you could not talk, you are racing.':
   slot.s==='cardio2'?'Turn up regardless of pace. The coffee afterwards is half the point.':
   'Walk, coffee, the Sunday review. Do not train.';
+/* ── the brief: how the day is framed, and what the week's weather argues for ── */
+const SPOT={lat:32.7987,lon:-96.8005};        /* Uptown Dallas */
+const OUTDOOR={cardio1:true,cardio2:true};    /* the two sessions the sky can ruin */
+const SKY={0:'clear',1:'mostly clear',2:'partly cloudy',3:'overcast',45:'fog',48:'fog',
+ 51:'light drizzle',53:'drizzle',55:'heavy drizzle',56:'freezing drizzle',57:'freezing drizzle',
+ 61:'light rain',63:'rain',65:'heavy rain',66:'freezing rain',67:'freezing rain',
+ 71:'light snow',73:'snow',75:'heavy snow',77:'snow',80:'showers',81:'showers',82:'heavy showers',
+ 85:'snow showers',86:'snow showers',95:'thunderstorms',96:'thunderstorms',99:'thunderstorms'};
+const MOMENTUM=[
+ ['The week starts heavy. Nothing else counts yet.','One down. The heaviest day is behind you.'],
+ ['Air today, not iron.','Easy day banked. Wednesday pulls.'],
+ ['Midweek. This is the session people quietly skip.','Past the hinge of the week.'],
+ ['Legs. Short, and the one that pays the most.','Two days of iron left.'],
+ ['Width. Close the lifting week properly.','Iron done. What is left is air and rest.'],
+ ['Run club. Turn up regardless of pace.','Six days nearly closed.'],
+ ['Nothing today. Walk, coffee, the review.','Three priorities for the week. No more than three.']];
+
+let WX=null;
+function wxRead(){try{return JSON.parse(localStorage.getItem('vito.wx')||'null')}catch(e){return null}}
+function wxWrite(v){try{localStorage.setItem('vito.wx',JSON.stringify(v))}catch(e){}}
+/* forecast rows carry real dates, so map them onto this Mon–Sun week and drop the rest */
+function byWeekday(w){
+  const out=[null,null,null,null,null,null,null],here=mondayOf(new Date());
+  if(!w||!w.times)return out;
+  for(let k=0;k<w.times.length;k++){
+    const dt=new Date(w.times[k]+'T12:00:00');
+    if(mondayOf(dt)!==here)continue;
+    out[(dt.getDay()+6)%7]={tmax:Math.round(w.tmax[k]),precip:w.precip[k]==null?0:w.precip[k]};
+  }
+  return out;
+}
+function plantLine(){
+  const m=new Date().getMonth(),d=dayIdx(),summer=m>=4&&m<=8;
+  if(summer&&d===2)return 'Plants today — the midweek water.';
+  if(!summer&&(d===5||d===6))return 'Plants need doing this weekend.';
+  return null;
+}
+/* one line at most: the next outdoor session the week's weather argues with */
+function advice(bd){
+  const t=dayIdx();
+  for(let i=t;i<7;i++){
+    const w=WEEK[i],f=bd[i];
+    if(!w.s||!OUTDOOR[w.s]||!f)continue;
+    const wet=f.precip>=55,hot=f.tmax>=95;
+    if(!wet&&!hot)continue;
+    let best=-1;
+    for(let j=t;j<7;j++){
+      const c=WEEK[j],g=bd[j];
+      if(j===i||!c.s||OUTDOOR[c.s]||!g)continue;  /* only trade with an indoor lift day */
+      if(g.precip>=35)continue;
+      if(hot&&!wet&&g.tmax>=95)continue;          /* no sense trading one hot day for another */
+      if(best<0||g.tmax<bd[best].tmax)best=j;
+    }
+    const when=i===t?'Today':WEEK[i].l;
+    if(wet)return best<0
+      ? when+' is '+f.precip+'% wet for '+w.k+'. Treadmill, or shift it.'
+      : when+' is '+f.precip+'% wet. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+'.';
+    return best<0
+      ? when+' peaks at '+f.tmax+'°. Go at first light, or take '+w.k+' indoors.'
+      : when+' peaks at '+f.tmax+'°. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+', '+bd[best].tmax+'°.';
+  }
+  return null;
+}
+function renderBrief(){
+  const now=new Date(),h=now.getHours();
+  let head=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+  if(WX&&WX.now&&Date.now()-WX.at<3*60*60*1000)head+=' · '+WX.now.t+'° '+(SKY[WX.now.code]||'');
+  document.getElementById('todayDate').textContent=head;
+  const lines=[MOMENTUM[dayIdx()][h<15?0:1]],p=plantLine();
+  if(p)lines.push(p);
+  const a=WX?advice(byWeekday(WX)):null;
+  if(a)lines.push('<span class="cue">'+esc(a)+'</span>');
+  document.getElementById('brief').innerHTML=lines.map(function(x){return '<p>'+x+'</p>'}).join('');
+}
+function loadWeather(){
+  const c=wxRead();
+  if(c){WX=c;renderBrief()}                       /* paint what we have, offline included */
+  fetch('https://api.open-meteo.com/v1/forecast?latitude='+SPOT.lat+'&longitude='+SPOT.lon+
+    '&current=temperature_2m,weather_code&daily=temperature_2m_max,precipitation_probability_max'+
+    '&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=7')
+   .then(function(r){return r.ok?r.json():Promise.reject()})
+   .then(function(j){
+     WX={at:Date.now(),now:{t:Math.round(j.current.temperature_2m),code:j.current.weather_code},
+         times:j.daily.time,tmax:j.daily.temperature_2m_max,precip:j.daily.precipitation_probability_max};
+     wxWrite(WX);renderBrief();
+   }).catch(function(){});                        /* no signal is not an error here */
+}
+renderBrief();loadWeather();
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'){renderBrief();if(!WX||Date.now()-WX.at>18e5)loadWeather()}
+});
+
 const goBtn=document.getElementById('goSession');
 if(!sess){goBtn.textContent=slot.s?'Mark it done':'Nothing today';goBtn.classList.add('ghost')}
 goBtn.onclick=function(){
