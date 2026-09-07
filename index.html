@@ -818,6 +818,14 @@ function plantLine(){
 }
 /* the forecast arrives in Fahrenheit; Celsius follows in brackets */
 function temp(f){return f+'°F ('+Math.round((f-32)*5/9)+'°C)'}
+function hhmm(h){return (h<10?'0':'')+h+':00'}
+/* the first waking hour that day the rain is more likely than not, or nothing */
+function rainFrom(key){
+  const h=WX&&WX.hourly&&WX.hourly[key];
+  if(!h)return null;
+  for(let x=5;x<=21;x++)if(typeof h[x]==='number'&&h[x]>=50)return x;
+  return null;
+}
 /* what the week's weather has to say about one outdoor session, or nothing */
 function dayAdvice(i,bd){
   const t=dayIdx(),w=WEEK[i],f=bd[i];
@@ -837,11 +845,17 @@ function dayAdvice(i,bd){
   const when=i===t?'Today':WEEK[i].l;
   /* first light is only advice worth giving while it is still ahead of you */
   const dawnGone=i===t&&new Date().getHours()>=9;
-  if(wet)return best<0
-    ? when+' is '+f.precip+'% wet for '+w.k+'. Nothing drier this week. Dress for it.'
-    : when+' is '+f.precip+'% wet. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+'.';
+  if(wet){
+    const from=rainFrom(dayDate(i));
+    const head=from===null?when+' is '+f.precip+'% wet'
+                          :when+' is '+f.precip+'% wet from '+hhmm(from);
+    if(best>=0)return head+'. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+'.';
+    /* a late start still leaves a dry morning to run in */
+    if(from!==null&&from>=9)return head+'. Go before then.';
+    return (from===null?head+' for '+w.k:head)+'. Nothing drier this week. Dress for it, or take it inside.';
+  }
   return best<0
-    ? when+' peaks at '+temp(f.tmax)+'. '+(dawnGone?'Nothing cooler this week. Avoid the middle of the day.':'Go at first light.')
+    ? when+' peaks at '+temp(f.tmax)+'. '+(dawnGone?'Nothing cooler this week. Avoid the middle of the day, or take it inside.':'Go at first light.')
     : when+' peaks at '+temp(f.tmax)+'. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+', '+temp(bd[best].tmax)+'.';
 }
 /* today's panel looks down the whole week, not just at today */
@@ -976,11 +990,19 @@ function loadWeather(){
   if(WX&&WX.at&&Date.now()-WX.at<18e5)return;     /* under 30 minutes old, so leave it alone */
   fetch('https://api.open-meteo.com/v1/forecast?latitude='+SPOT.lat+'&longitude='+SPOT.lon+
     '&current=temperature_2m,weather_code&daily=temperature_2m_max,precipitation_probability_max'+
+    '&hourly=precipitation_probability'+
     '&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=7')
    .then(function(r){return r.ok?r.json():Promise.reject()})
    .then(function(j){
+     /* hourly probabilities collapse to date -> 24 values, so onset is a lookup */
+     const hourly={};
+     (j.hourly&&j.hourly.time||[]).forEach(function(ts,k){
+       const d=ts.slice(0,10);
+       (hourly[d]=hourly[d]||[])[+ts.slice(11,13)]=j.hourly.precipitation_probability[k];
+     });
      WX={at:Date.now(),now:{t:Math.round(j.current.temperature_2m),code:j.current.weather_code},
-         times:j.daily.time,tmax:j.daily.temperature_2m_max,precip:j.daily.precipitation_probability_max};
+         times:j.daily.time,tmax:j.daily.temperature_2m_max,precip:j.daily.precipitation_probability_max,
+         hourly:hourly};
      wxWrite(WX);renderBrief();
    }).catch(function(){});                        /* no signal is not an error here */
 }
