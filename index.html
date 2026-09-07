@@ -874,10 +874,7 @@ function iStalled(){
   });
   return hit;
 }
-function iWeekDone(){
-  const need=WEEK.filter(function(w){return w.s});
-  return need.every(function(w){return S.week.done[w.s]})?'Six from six. That is the week.':null;
-}
+/* a completed week is announced by the strip note, not repeated here */
 function iTrend(){
   const b=(S.body||[]).filter(function(e){return e&&e.d&&typeof e.w==='number'})
                       .slice().sort(function(x,y){return x.d<y.d?-1:1});
@@ -901,7 +898,7 @@ function iPhase(){
   return w.charAt(0).toUpperCase()+w.slice(1)+' day'+(days===1?'':'s')+' left in '+p.n.toLowerCase()+'.';
 }
 function insight(){
-  try{return iStalled()||iWeekDone()||iTrend()||iPhase()||''}
+  try{return iStalled()||iTrend()||iPhase()||''}
   catch(e){return ''}                          /* a bad read must never take the page down */
 }
 function renderInsight(){
