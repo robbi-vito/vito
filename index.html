@@ -812,6 +812,8 @@ function plantLine(){
   if(!summer&&(d===5||d===6))return 'Plants need doing this weekend.';
   return null;
 }
+/* the forecast arrives in Fahrenheit; Celsius follows in brackets */
+function temp(f){return f+'°F ('+Math.round((f-32)*5/9)+'°C)'}
 /* what the week's weather has to say about one outdoor session, or nothing */
 function dayAdvice(i,bd){
   const t=dayIdx(),w=WEEK[i],f=bd[i];
@@ -835,8 +837,8 @@ function dayAdvice(i,bd){
     ? when+' is '+f.precip+'% wet for '+w.k+'. Nothing drier this week. Dress for it.'
     : when+' is '+f.precip+'% wet. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+'.';
   return best<0
-    ? when+' peaks at '+f.tmax+'°. '+(dawnGone?'Nothing cooler this week. Avoid the middle of the day.':'Go at first light.')
-    : when+' peaks at '+f.tmax+'°. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+', '+bd[best].tmax+'°.';
+    ? when+' peaks at '+temp(f.tmax)+'. '+(dawnGone?'Nothing cooler this week. Avoid the middle of the day.':'Go at first light.')
+    : when+' peaks at '+temp(f.tmax)+'. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+', '+temp(bd[best].tmax)+'.';
 }
 /* today's panel looks down the whole week, not just at today */
 function advice(bd){
@@ -867,7 +869,7 @@ function panelHead(i,bd){
   const t=dayIdx();
   if(i===t)return 'TODAY';
   let h=DAYNAME[i],f=bd[i];
-  if(f&&i>t){h+=' · '+f.tmax+'°';if(f.precip>=20)h+=' · '+f.precip+'% RAIN'}
+  if(f&&i>t){h+=' · '+temp(f.tmax);if(f.precip>=20)h+=' · '+f.precip+'% RAIN'}
   return h;
 }
 /* the club and its times are public; the meeting point is not in the source.
@@ -910,7 +912,7 @@ function panelLines(i,bd){
 function renderBrief(){
   const now=new Date();
   let head=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
-  if(WX&&WX.now&&Date.now()-WX.at<3*60*60*1000)head+=' · '+WX.now.t+'° '+(SKY[WX.now.code]||'');
+  if(WX&&WX.now&&Date.now()-WX.at<3*60*60*1000)head+=' · '+temp(WX.now.t)+' '+(SKY[WX.now.code]||'');
   document.getElementById('todayDate').textContent=head;
   const bd=WX?byWeekday(WX):EMPTY7,t=dayIdx();
   document.getElementById('brief').innerHTML=WEEK.map(function(w,i){
