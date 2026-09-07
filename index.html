@@ -997,7 +997,8 @@ function logSet(ex,i){
   if(arr[i]){arr[i]=null;while(arr.length&&arr[arr.length-1]==null)arr.pop();save();paintSets(ex);renderInsight();return}
   const prev=arr.filter(Boolean).slice(-1)[0];
   const seed=prev?((prev.w||'')+(prev.r?'x'+prev.r:'')):'';
-  const raw=prompt(ex.n+' — set '+(i+1)+'\nWeight × reps, e.g. 135x8',seed);
+  const rule=ex.left?'\nLeft first. Right stops where left stopped.':'';
+  const raw=prompt(ex.n+' — set '+(i+1)+rule+'\nWeight × reps, e.g. 135x8',seed);
   if(raw===null)return;
   const m=raw.match(/([\d.]+)\s*[x×*]\s*(\d+)/i);
   arr[i]=m?{w:parseFloat(m[1]),r:parseInt(m[2])}:(raw.trim()?{w:parseFloat(raw)||null,r:null}:{w:null,r:null});
