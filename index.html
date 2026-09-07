@@ -802,24 +802,26 @@ function advice(bd){
   for(let i=t;i<7;i++){
     const w=WEEK[i],f=bd[i];
     if(!w.s||!OUTDOOR[w.s]||!f)continue;
-    const wet=f.precip>=55,hot=f.tmax>=95;
+    const wet=f.precip>=40,hot=f.tmax>=95;   /* running is outdoors only, so rain counts earlier */
     if(!wet&&!hot)continue;
-    let best=-1;
+    let best=-1,bestBy=0,bestGap=0;
     for(let j=t;j<7;j++){
       const c=WEEK[j],g=bd[j];
       if(j===i||!c.s||OUTDOOR[c.s]||!g)continue;  /* only trade with an indoor lift day */
-      if(g.precip>=35)continue;
+      if(g.precip>=25)continue;                   /* a swap is only worth it into a genuinely dry day */
       if(hot&&!wet&&g.tmax>=95)continue;          /* no sense trading one hot day for another */
-      if(best<0||g.tmax<bd[best].tmax)best=j;
+      /* rain days are judged on rain, hot days on heat; nearest day breaks a tie */
+      const by=wet?g.precip:g.tmax,gap=Math.abs(j-i);
+      if(best<0||by<bestBy||(by===bestBy&&gap<bestGap)){best=j;bestBy=by;bestGap=gap}
     }
     const when=i===t?'Today':WEEK[i].l;
     /* first light is only advice worth giving while it is still ahead of you */
     const dawnGone=i===t&&new Date().getHours()>=9;
     if(wet)return best<0
-      ? when+' is '+f.precip+'% wet for '+w.k+'. Treadmill, or shift it.'
+      ? when+' is '+f.precip+'% wet for '+w.k+'. Nothing drier this week. Dress for it.'
       : when+' is '+f.precip+'% wet. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+'.';
     return best<0
-      ? when+' peaks at '+f.tmax+'°. '+(dawnGone?'Take '+w.k+' indoors.':'Go at first light, or take '+w.k+' indoors.')
+      ? when+' peaks at '+f.tmax+'°. '+(dawnGone?'Nothing cooler this week. Avoid the middle of the day.':'Go at first light.')
       : when+' peaks at '+f.tmax+'°. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+', '+bd[best].tmax+'°.';
   }
   return null;
