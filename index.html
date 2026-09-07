@@ -947,6 +947,7 @@ function viewedPanel(){
 function loadWeather(){
   const c=wxRead();
   if(c){WX=c;renderBrief()}                       /* paint what we have, offline included */
+  if(WX&&WX.at&&Date.now()-WX.at<18e5)return;     /* under 30 minutes old, so leave it alone */
   fetch('https://api.open-meteo.com/v1/forecast?latitude='+SPOT.lat+'&longitude='+SPOT.lon+
     '&current=temperature_2m,weather_code&daily=temperature_2m_max,precipitation_probability_max'+
     '&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=7')
@@ -978,7 +979,7 @@ document.addEventListener('visibilitychange',function(){
   const away=hiddenAt?Date.now()-hiddenAt:0;
   if(away>72e5||builtFor!==todayKey())viewDay=dayIdx();
   renderBrief();
-  if(!WX||Date.now()-WX.at>18e5)loadWeather();
+  loadWeather();                                 /* it decides for itself whether a refetch is due */
 });
 
 /* ── the insight line: the single most useful sentence the saved state can offer ──
