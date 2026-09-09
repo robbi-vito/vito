@@ -1036,6 +1036,12 @@ function gotoDay(i){
   fitTrack();
   renderWeek();
 }
+function slotToDay(s){return s===0?6:s===8?0:s-1}
+/* class-only update, cheap enough to run every frame of a swipe */
+function paintViewing(d){
+  const cells=document.querySelectorAll('.wd');
+  for(let i=0;i<cells.length;i++)cells[i].classList.toggle('viewing',i===d);
+}
 function viewedSlot(){
   const track=document.getElementById('brief'),ps=track.children;
   if(!ps.length)return 1;
@@ -1075,7 +1081,12 @@ renderBrief();loadWeather();
   let t=null;
   let queued=false;
   track.addEventListener('scroll',function(){
-    if(!queued){queued=true;requestAnimationFrame(function(){queued=false;fitTrack()})}
+    /* the strip tracks the finger, so the underline moves during the swipe */
+    if(!queued){queued=true;requestAnimationFrame(function(){
+      queued=false;fitTrack();
+      const d=slotToDay(viewedSlot());
+      if(d!==viewDay){viewDay=d;paintViewing(d)}
+    })}
     clearTimeout(t);
     t=setTimeout(function(){
       let s=viewedSlot();
@@ -1083,7 +1094,8 @@ renderBrief();loadWeather();
       if(s===0){track.scrollLeft=slotLeft(7);s=7}
       else if(s===8){track.scrollLeft=slotLeft(1);s=1}
       const d=s-1;
-      if(d!==viewDay){viewDay=d;renderWeek()}    /* the strip follows the swipe */
+      if(d!==viewDay){viewDay=d}
+      renderWeek();                              /* settle: full repaint of the strip */
       fitTrack();
     },90);
   },{passive:true});
