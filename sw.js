@@ -5,9 +5,10 @@
    used when there isn't one. Icons and fonts are cache-first, because they
    do not change. Bump CACHE if the file list below changes. */
 
-const CACHE = 'vito-v1';
+const CACHE = 'vito-v2';
 const SHELL = ['./', './index.html', './manifest.json',
-  './favicon.png', './icon-180.png', './icon-192.png', './icon-512.png'];
+  './favicon.png', './icon-180.png', './icon-192.png', './icon-512.png',
+  './icon-192-maskable.png', './icon-512-maskable.png'];
 const FONTS = /^https:\/\/fonts\.(googleapis|gstatic)\.com\//;
 
 self.addEventListener('install', function(e){
