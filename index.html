@@ -747,7 +747,7 @@ S.logs=S.logs||{};S.body=S.body||[{d:'2026-08-14',w:167.2,f:15.0}];
 S.theme=S.theme||'dark';S.shop=S.shop||{};S.three=S.three||'';
 S.journal=S.journal||{};S.evening=S.evening||{};S.commit=S.commit||[];
 S.vid=S.vid||{};S.sound=S.sound===undefined?true:S.sound;
-S.meet=S.meet||'';                             /* meeting-point link, entered on the device */
+S.meet=S.meet||'';                             /* maps link for the run club meeting point */
 if(!Array.isArray(S.loops))S.loops=[];
 const save=()=>DB.set('vito.v3',S);
 document.documentElement.dataset.theme=S.theme;
@@ -891,8 +891,7 @@ function panelHead(i,bd){
   if(f&&i>t){h+=' · '+temp(f.tmax);if(f.precip>=20)h+=' · '+f.precip+'% RAIN'}
   return h;
 }
-/* the club and its times are public; the meeting point is not in the source.
-   Tap the name once to store a maps link on this device, as with exercise videos. */
+/* renders an anchor when S.meet holds a link, otherwise a button that prompts for one */
 function meetLine(){
   const n=S.meet
     ? '<a class="meet" href="'+esc(S.meet)+'" target="_blank" rel="noopener noreferrer">214 Run Club</a>'
@@ -1478,7 +1477,7 @@ document.getElementById('backupBtn').onclick=function(){
         let d;
         try{d=JSON.parse(r.result)}
         catch(err){alert('That file could not be read.');return}
-        /* a wrong file must not be able to overwrite everything in silence */
+        /* shape check before the write */
         if(!d||typeof d!=='object'||Array.isArray(d)||!('week' in d||'logs' in d||'body' in d)){
           alert('That is not a Vito backup. Nothing has been changed.');return;
         }
