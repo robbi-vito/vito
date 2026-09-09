@@ -1185,11 +1185,13 @@ renderWeek();
 /* ── sessions ── */
 function lastFor(id){
   const ds=Object.keys(S.logs).filter(function(d){return d!==todayKey()&&S.logs[d][id]&&S.logs[d][id].length}).sort();
-  if(!ds.length)return null;
-  const sets=S.logs[ds[ds.length-1]][id].filter(Boolean);
-  if(!sets.length)return null;
-  const top=sets.reduce(function(a,b){return (b.w||0)>(a.w||0)?b:a},sets[0]);
-  return top.w?'last '+top.w+'×'+(top.r||'?'):null;
+  for(let i=ds.length-1;i>=0;i--){
+    const sets=S.logs[ds[i]][id].filter(function(s){return s&&typeof s.w==='number'&&isFinite(s.w)});
+    if(!sets.length)continue;
+    const top=sets.reduce(function(a,b){return b.w>a.w?b:a});
+    return 'last '+top.w+'×'+(top.r||'?');
+  }
+  return null;
 }
 function closeOthers(keep){document.querySelectorAll('#sessions details').forEach(function(d){if(d!==keep)d.open=false})}
 function renderSessions(){
