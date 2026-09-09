@@ -137,6 +137,9 @@ details[open]>summary::after{content:'–'}
 details[open]>summary h2{color:var(--rust)}
 .det-body{padding:0 0 22px}
 .group-label{font-family:'Courier Prime',monospace;font-size:10.5px;letter-spacing:.2em;color:var(--text-dim);padding:28px 0 4px}
+table.data td.w-palette{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--text);padding-top:6px;padding-bottom:6px}
+#wardrobe .rm{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:17px;padding:0 4px;line-height:1}
+#wardrobe .rm:hover{color:var(--rust)}
 
 .ex{padding:16px 0;border-top:1px dashed var(--edge)}
 .ex:first-child{border-top:none}
@@ -559,6 +562,61 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
             <p>Sharp or persistent neck or low-back pain, or any numbness or tingling running into the arms or hands, is a physiotherapist question rather than a mobility-drill question. Don't work through it and don't self-diagnose from the internet.</p></div>
         </div>
       </details>
+
+      <details id="wardrobe">
+        <summary><h2>Wardrobe</h2><span class="meta">ON THIS DEVICE</span></summary>
+        <div class="det-body">
+          <div class="group-label" style="padding-top:6px">PALETTE</div>
+          <table class="data" id="wPalette"></table>
+          <div class="log-row">
+            <input type="text" id="wPaletteV" placeholder="A colour, or a combination">
+            <button id="addWPalette">Add</button>
+          </div>
+
+          <div class="group-label">MEASUREMENTS</div>
+          <table class="data" id="wMeasure"></table>
+          <div class="log-row">
+            <input type="text" id="wMeasureL" placeholder="Label">
+            <input type="text" id="wMeasureV" placeholder="Value">
+            <button id="addWMeasure">Add</button>
+          </div>
+
+          <div class="group-label">GROOMING</div>
+          <table class="data" id="wGroom"></table>
+          <div class="log-row">
+            <input type="text" id="wGroomL" placeholder="Label">
+            <input type="text" id="wGroomV" placeholder="Value">
+            <button id="addWGroom">Add</button>
+          </div>
+
+          <div class="group-label">SIZES</div>
+          <table class="data" id="wSizes"></table>
+          <div class="log-row">
+            <input type="text" id="wSizesB" placeholder="Brand">
+            <input type="text" id="wSizesG" placeholder="Garment">
+            <input type="text" id="wSizesS" placeholder="Size">
+          </div>
+          <div class="log-row">
+            <input type="text" id="wSizesN" placeholder="Note" style="flex:3">
+            <button id="addWSizes">Add</button>
+          </div>
+
+          <div class="group-label">UNIFORMS</div>
+          <table class="data" id="wUniforms"></table>
+          <div class="log-row">
+            <input type="text" id="wUniformsO" placeholder="Occasion">
+            <input type="text" id="wUniformsW" placeholder="What to wear" style="flex:2">
+            <button id="addWUniforms">Add</button>
+          </div>
+
+          <div class="group-label">RULES</div>
+          <table class="data" id="wRules"></table>
+          <div class="log-row">
+            <input type="text" id="wRulesV" placeholder="One rule">
+            <button id="addWRules">Add</button>
+          </div>
+        </div>
+      </details>
     </div>
     <p class="foot">Days out of seven the drills happened. Six is a pass.</p>
   </section>
@@ -748,6 +806,10 @@ S.theme=S.theme||'dark';S.shop=S.shop||{};S.three=S.three||'';
 S.journal=S.journal||{};S.evening=S.evening||{};S.commit=S.commit||[];
 S.vid=S.vid||{};S.sound=S.sound===undefined?true:S.sound;
 S.meet=S.meet||'';                             /* maps link for the run club meeting point */
+S.wardrobe=S.wardrobe&&typeof S.wardrobe==='object'?S.wardrobe:{};
+['palette','measure','groom','sizes','uniforms','rules'].forEach(function(k){
+  if(!Array.isArray(S.wardrobe[k]))S.wardrobe[k]=[];
+});
 if(!Array.isArray(S.loops))S.loops=[];
 const save=()=>DB.set('vito.v3',S);
 document.documentElement.dataset.theme=S.theme;
@@ -1361,6 +1423,54 @@ function renderDrills(){
   renderInsight();
 }
 renderDrills();
+
+/* ── wardrobe ── */
+const WARDROBE=[
+ {k:'palette', host:'wPalette', cols:['Entry'], fields:['v'],
+  inputs:['wPaletteV'], add:'addWPalette', big:true},
+ {k:'measure', host:'wMeasure', cols:['Label','Value'], fields:['l','v'],
+  inputs:['wMeasureL','wMeasureV'], add:'addWMeasure'},
+ {k:'groom', host:'wGroom', cols:['Label','Value'], fields:['l','v'],
+  inputs:['wGroomL','wGroomV'], add:'addWGroom'},
+ {k:'sizes', host:'wSizes', cols:['Brand','Garment','Size','Note'], fields:['b','g','s','n'],
+  inputs:['wSizesB','wSizesG','wSizesS','wSizesN'], add:'addWSizes'},
+ {k:'uniforms', host:'wUniforms', cols:['Occasion','Wear'], fields:['o','w'],
+  inputs:['wUniformsO','wUniformsW'], add:'addWUniforms'},
+ {k:'rules', host:'wRules', cols:['Rule'], fields:['v'],
+  inputs:['wRulesV'], add:'addWRules'}
+];
+function renderWardrobe(){
+  WARDROBE.forEach(function(sec){
+    const host=document.getElementById(sec.host);
+    if(!host)return;
+    const rows=S.wardrobe[sec.k]||[];
+    host.innerHTML=rows.length
+      ?'<tr>'+sec.cols.map(function(c){return '<th>'+c+'</th>'}).join('')+'<th></th></tr>'+
+        rows.map(function(r,i){
+          return '<tr>'+sec.fields.map(function(f,fi){
+              return '<td'+(sec.big&&fi===0?' class="w-palette"':'')+'>'+esc(r[f]||'')+'</td>';
+            }).join('')+
+            '<td style="text-align:right"><button class="del rm" data-i="'+i+'" aria-label="Remove">×</button></td></tr>';
+        }).join('')
+      :'<tr><td class="soft" style="border:none;padding-left:0">Nothing yet. Anything you add stays on this device and is never published.</td></tr>';
+    host.querySelectorAll('.rm').forEach(function(b){
+      b.onclick=function(){S.wardrobe[sec.k].splice(+b.dataset.i,1);save();renderWardrobe()};
+    });
+  });
+}
+WARDROBE.forEach(function(sec){
+  const btn=document.getElementById(sec.add);
+  if(!btn)return;
+  btn.onclick=function(){
+    const vals=sec.inputs.map(function(id){const el=document.getElementById(id);return el?el.value.trim():''});
+    if(!vals[0])return;                          /* the first field carries the row */
+    const row={};
+    sec.fields.forEach(function(f,i){row[f]=vals[i]});
+    S.wardrobe[sec.k].push(row);save();renderWardrobe();
+    sec.inputs.forEach(function(id){const el=document.getElementById(id);if(el)el.value=''});
+  };
+});
+renderWardrobe();
 
 function renderEvening(){
   const t=todayKey();S.evening[t]=S.evening[t]||{};
