@@ -920,9 +920,10 @@ function dayAdvice(i,bd){
     ? when+' peaks at '+temp(f.tmax)+'. '+(dawnGone?'Nothing cooler this week. Avoid the middle of the day, or take it inside.':'Go at first light.')
     : when+' peaks at '+temp(f.tmax)+'. Take '+WEEK[best].k+' that day and move '+w.k+' to '+WEEK[best].l+', '+temp(bd[best].tmax)+'.';
 }
-/* today's panel looks down the whole week, not just at today */
+/* today's panel looks down the whole week, not just at today; the day it lands on
+   is returned so a line about a later day can be marked as one */
 function advice(bd){
-  for(let i=dayIdx();i<7;i++){const a=dayAdvice(i,bd);if(a)return a}
+  for(let i=dayIdx();i<7;i++){const a=dayAdvice(i,bd);if(a)return {i:i,text:a}}
   return null;
 }
 const DAYNAME=['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'];
@@ -980,7 +981,8 @@ function panelLines(i,bd){
     lines.push(MOMENTUM[t][partOfDay(new Date().getHours())]);
     if(i===5)lines.push(meetLine());
     const p=plantLine();if(p)lines.push(p);
-    const a=advice(bd);if(a)lines.push('<span class="cue">'+esc(a)+'</span>');
+    const a=advice(bd);
+    if(a)lines.push('<span class="cue">'+(a.i>t?'Ahead — ':'')+esc(a.text)+'</span>');
     return lines;
   }
   lines.push(w.k+'. '+subFor(w));                /* still ahead */
