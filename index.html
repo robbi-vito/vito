@@ -838,6 +838,8 @@ const BAR={a1:45,c1:45};                          /* barbell exercises and their
 const PLATES={lb:[45,25,10,5,2.5],kg:[25,20,10,5,2.5,1.25]};
 /* bodyweight movements: a lone number is reps, or seconds when the scheme is timed */
 const BODYWT={a6:1,c6:1};
+/* an extra line in the set prompt, for exercises that need one */
+const HINT={c2:'Dumbbells: enter both combined, not per hand.'};
 /* fresh start is a daily switch: on only for the date it was set */
 function freshOn(){try{return localStorage.getItem('vito.fresh')===todayKey()}catch(e){return false}}
 function setFresh(on){try{if(on)localStorage.setItem('vito.fresh',todayKey());else localStorage.removeItem('vito.fresh')}catch(e){}}
@@ -1581,7 +1583,7 @@ function logSet(ex,i){
   const prev=arr.filter(Boolean).slice(-1)[0];
   const u=unitOf(ex.id);
   const seed=prev?((prev.w?fmtW(prev.w,u):'')+(prev.r?'x'+prev.r:'')):'';
-  const rule=ex.left?'\nLeft first. Right stops where left stopped.':'';
+  const rule=(ex.left?'\nLeft first. Right stops where left stopped.':'')+(HINT[ex.id]?'\n'+HINT[ex.id]:'');
   const raw=prompt(ex.n+' — set '+(i+1)+rule+setContext(ex,u),seed);
   if(raw===null)return;
   arr[i]=parseSet(raw,u,!!BODYWT[ex.id]);
