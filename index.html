@@ -1317,6 +1317,14 @@ function paintSets(ex){
   const l=lastFor(ex.id);
   if(l){const s=document.createElement('span');s.className='last';s.textContent=l;host.appendChild(s)}
 }
+function sessionOf(ex){
+  return Object.keys(PROG).filter(function(k){return PROG[k].ex.indexOf(ex)>-1})[0]||null;
+}
+/* every set of every exercise in the session has an entry today, weightless ticks included */
+function sessionComplete(k){
+  const log=S.logs[todayKey()]||{};
+  return PROG[k].ex.every(function(e){return (log[e.id]||[]).filter(Boolean).length>=e.sets});
+}
 function logSet(ex,i){
   const t=todayKey();
   S.logs[t]=S.logs[t]||{};S.logs[t][ex.id]=S.logs[t][ex.id]||[];
@@ -1329,7 +1337,13 @@ function logSet(ex,i){
   if(raw===null)return;
   const m=raw.match(/([\d.]+)\s*[x×*]\s*(\d+)/i);
   arr[i]=m?{w:parseFloat(m[1]),r:parseInt(m[2])}:(raw.trim()?{w:parseFloat(raw)||null,r:null}:{w:null,r:null});
-  save();paintSets(ex);renderInsight();startRest(ex.rest,ex.n);
+  /* a finished session ticks its day; removing a set later does not untick it */
+  const k=sessionOf(ex);
+  const ticked=k&&!S.week.done[k]&&sessionComplete(k);
+  if(ticked)S.week.done[k]=true;
+  save();paintSets(ex);
+  if(ticked)renderWeek();
+  renderInsight();startRest(ex.rest,ex.n);
 }
 renderSessions();
 
