@@ -172,7 +172,9 @@ table.data .rm:hover{color:var(--rust)}
   font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim)}
 .plates[hidden]{display:none}
 .plates:hover{color:var(--rust)}
-.advice{margin:6px 0 0 26px;font-family:'Courier Prime',monospace;font-size:11px;color:var(--ember)}
+.advice{margin:6px 0 0 26px;font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-soft);line-height:1.7}
+.advice .flag{margin:0 3px 0 0}
+.flag.go{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
 .watch.fresh{margin:12px 0 0;display:inline-block}
 .watch.fresh.on{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
 .grade{margin:4px 0 0 26px;font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim)}
@@ -1413,20 +1415,20 @@ function recentSessions(id){
     .filter(function(a){return a.length}).slice(0,2);
 }
 /* double progression: every set at the top of the range twice running means add weight,
-   most sets under the bottom twice running means drop, anything else is building */
+   most sets under the bottom twice running means drop, anything else holds the weight and adds reps */
 function progress(ex){
   const rr=repRange(ex);if(!rr)return null;
   const ss=recentSessions(ex.id);if(!ss.length)return null;
-  const lo=rr[0],hi=rr[1],inc=incText(ex.id),u=unitOf(ex.id);
+  const lo=rr[0],hi=rr[1],u=unitOf(ex.id),step=(STEP[ex.id]||5)*(u==='kg'?.5:1);
   const top=function(a){return a.every(function(s){return s.r!=null&&s.r>=hi})};
   const under=function(a){return a.filter(function(s){return s.r!=null&&s.r<lo}).length*2>a.length};
   const wt=function(a){return Math.max.apply(null,a.map(function(s){return s.w}))};
-  const a=ss[0],b=ss[1];
-  if(b&&top(a)&&top(b)&&wt(a)>=wt(b))return {fact:'Top of the range two sessions running.',act:'Add '+inc+'.'};
-  if(b&&under(a)&&under(b))return {fact:'Under '+lo+' two sessions running.',act:'Drop '+inc+'.'};
-  if(top(a))return {fact:'Top of the range last time.',act:'Match it once more, then add weight.'};
-  if(under(a))return {fact:'Under '+lo+' last time.',act:'Hold '+fmtW(wt(a),u)+' until every set reaches '+lo+'.'};
-  return {fact:'Building.',act:'Take every set to '+hi+', then add weight.'};
+  const a=ss[0],b=ss[1],now=fmtW(wt(a),u),w=toUnit(wt(a),u);
+  if(b&&top(a)&&top(b)&&wt(a)>=wt(b))return {tag:'ADD WEIGHT',go:true,fact:'Every set hit '+hi+', two sessions running.',act:'Next time '+fmtU(w+step)+'.'};
+  if(b&&under(a)&&under(b))return {tag:'DROP WEIGHT',fact:'Under '+lo+' reps, two sessions running.',act:'Next time '+fmtU(Math.max(0,w-step))+'.'};
+  if(top(a))return {tag:'REPEAT',fact:'Every set hit '+hi+' last time.',act:'Once more at '+now+', then add weight.'};
+  if(under(a))return {tag:'HOLD WEIGHT',fact:'Under '+lo+' reps last time.',act:'Stay at '+now+' until every set reaches '+lo+'.'};
+  return {tag:'HOLD WEIGHT · ADD REPS',fact:'Some sets short of '+hi+'.',act:'Stay at '+now+' and bring every set up to '+hi+'.'};
 }
 /* position in a band from the last top set; the estimated max is internal only */
 function gradeLine(ex){
@@ -1450,10 +1452,13 @@ function gradeLine(ex){
 function paintAdvice(ex){
   const el=document.getElementById('adv-'+ex.id);
   if(el){
-    let t='';
-    if(freshOn())t=freshLine(ex);
-    else{const p=progress(ex);if(p)t=p.fact+' '+p.act}
-    el.textContent=t;el.hidden=!t;
+    let tag='',go=false,t='';
+    if(freshOn()){
+      const f=freshLine(ex).replace(/^Fresh start · /,'');
+      tag='FRESH START';go=true;t=f.charAt(0).toUpperCase()+f.slice(1)+'.';
+    }else{const p=progress(ex);if(p){tag=p.tag;go=!!p.go;t=p.act}}
+    el.innerHTML=tag?'<span class="flag'+(go?' go':'')+'">'+tag+'</span> '+esc(t):'';
+    el.hidden=!tag;
   }
   const gEl=document.getElementById('grade-'+ex.id);
   if(gEl){const t=gradeLine(ex);gEl.textContent=t;gEl.hidden=!t}
