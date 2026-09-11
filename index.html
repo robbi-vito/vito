@@ -840,6 +840,7 @@ const PLATES={lb:[45,25,10,5,2.5],kg:[25,20,10,5,2.5,1.25]};
 const BODYWT={a6:1,c6:1};
 /* an extra line in the set prompt, for exercises that need one */
 const HINT={c2:'Dumbbells: enter both combined, not per hand.'};
+const HARDER={a6:'straight-leg dead bugs',c6:'hanging leg raises, legs straight'};   /* next variation at the ceiling */
 /* fresh start is a daily switch: on only for the date it was set */
 function freshOn(){try{return localStorage.getItem('vito.fresh')===todayKey()}catch(e){return false}}
 function setFresh(on){try{if(on)localStorage.setItem('vito.fresh',todayKey());else localStorage.removeItem('vito.fresh')}catch(e){}}
@@ -1418,7 +1419,29 @@ function recentSessions(id){
 }
 /* double progression: every set at the top of the range twice running means add weight,
    most sets under the bottom twice running means drop, anything else holds the weight and adds reps */
+/* bodyweight ladder: reps (or seconds) climb from the programme target in steps of 2 reps
+   or 10 s. Every set at the target two sessions running adds a step; every set three
+   steps above the target moves to a harder variation. */
+function bwProgress(ex){
+  const timed=/s$/.test(ex.rep),T=parseInt(ex.rep,10);
+  if(!T)return null;
+  const ss=Object.keys(S.logs).filter(function(d){return d!==todayKey()}).sort().reverse()
+    .map(function(d){return ((S.logs[d]||{})[ex.id]||[]).filter(function(s){return s&&typeof s.r==='number'})})
+    .filter(function(a){return a.length}).slice(0,2);
+  if(!ss.length)return null;
+  const step=timed?10:2,C=T+3*step,u=timed?'s':'',what=timed?'TIME':'REPS',noun=timed?'time':'reps';
+  const floor=function(a){return Math.min.apply(null,a.map(function(s){return s.r}))};
+  const La=floor(ss[0]),Lb=ss[1]?floor(ss[1]):null;
+  if(La>=C)return {tag:'HARDER VERSION',go:true,fact:'Every set reached '+C+u+'.',act:'Move to '+(HARDER[ex.id]||'a harder variation')+'.'};
+  if(Lb!==null&&La>=T&&Lb>=T&&La>=Lb)return {tag:'ADD '+what,go:true,fact:'Every set at '+T+u+' or more, two sessions running.',act:'Next time '+(La+step)+u+' on every set.'};
+  if(La>=T)return {tag:'REPEAT',fact:'Every set reached '+La+u+' last time.',act:'Once more at '+La+u+', then add '+noun+'.'};
+  return {tag:'ADD '+what,fact:'Some sets short of '+T+u+'.',act:'Bring every set up to '+T+u+'.'};
+}
 function progress(ex){
+  if(BODYWT[ex.id]){
+    const w=recentSessions(ex.id);
+    if(!w.length||!w[0].some(function(s){return s.w>0}))return bwProgress(ex);
+  }
   const rr=repRange(ex);if(!rr)return null;
   const ss=recentSessions(ex.id);if(!ss.length)return null;
   const lo=rr[0],hi=rr[1],u=unitOf(ex.id),step=(STEP[ex.id]||5)*(u==='kg'?.5:1);
