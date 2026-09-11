@@ -285,6 +285,9 @@ textarea.three:focus{outline:none;border-color:var(--rust)}
   border-radius:2px;padding:9px 14px;cursor:pointer;transition:all .2s}
 .sheet-foot a:hover,.sheet-foot button:hover{border-color:var(--rust);color:var(--rust)}
 .sheet-foot .close{margin-left:auto;border-color:var(--rust-lo);color:var(--ember)}
+.sheet-foot button.on,.sheet-foot button.on:hover{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
+.set-hd{font-family:'Courier Prime',monospace;font-size:10.5px;letter-spacing:.2em;color:var(--text-dim);margin:6px 0 8px}
+.set-note{font-style:italic;font-size:14px;line-height:1.5;color:var(--text-soft);margin:10px 0 18px}
 
 nav{position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--bg-sink);border-top:1px solid var(--edge);
   display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom)}
@@ -325,7 +328,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     <span class="mark">THE VITO PROTOCOL</span>
     <div class="head-btns">
       <button class="icon-btn" id="soundBtn" title="Timer sound" aria-label="Timer sound">♪</button>
-      <button class="icon-btn" id="backupBtn" title="Backup or restore" aria-label="Backup or restore">⇅</button>
+      <button class="icon-btn" id="setBtn" title="Settings" aria-label="Settings">≡</button>
       <button class="icon-btn" id="themeBtn" title="Switch register" aria-label="Switch register">◐</button>
     </div>
   </div>
@@ -886,8 +889,9 @@ S.warmup=S.warmup&&typeof S.warmup==='object'?S.warmup:{};   /* date -> warm-up 
 S.stretch=S.stretch&&typeof S.stretch==='object'?S.stretch:{};  /* date -> stretch id -> ticked */
 S.meet=S.meet||'';                             /* maps link for the run club meeting point */
 S.units=S.units&&typeof S.units==='object'?S.units:{};   /* exercise id -> 'kg'; absent means lb */
+S.unitMode=S.unitMode==='lb'||S.unitMode==='kg'?S.unitMode:'each';   /* 'lb' or 'kg' for all, 'each' per exercise */
 const LB_PER_KG=2.20462;
-function unitOf(id){return S.units[id]==='kg'?'kg':'lb'}
+function unitOf(id){return S.unitMode!=='each'?S.unitMode:(S.units[id]==='kg'?'kg':'lb')}
 function toUnit(lb,u){return u==='kg'?lb/LB_PER_KG:lb}
 function fromUnit(v,u){return u==='kg'?Math.round(v*LB_PER_KG*100)/100:v}
 /* sets are stored in lb; this is where they become text in the exercise's unit */
@@ -1454,7 +1458,7 @@ function exNode(ex,num){
     if(unitOf(ex.id)==='kg')delete S.units[ex.id];else S.units[ex.id]='kg';
     save();ub.textContent=unitOf(ex.id).toUpperCase();paintSets(ex);renderInsight();renderBrief();
   };
-  foot.appendChild(ub);
+  if(S.unitMode==='each')foot.appendChild(ub);
   w.appendChild(foot);
   setTimeout(function(){paintSets(ex)},0);
   return w;
@@ -2072,14 +2076,13 @@ renderBody();
 document.querySelectorAll('.info').forEach(function(b){
   b.onclick=function(){const t=document.getElementById('bub-'+b.dataset.bub);if(t)t.classList.toggle('open')};
 });
-document.getElementById('backupBtn').onclick=function(){
-  const go=confirm('OK — download a backup of everything.\nCancel — restore from a backup file.');
-  if(go){
+function exportBackup(){
     const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);
     a.download='vito-backup-'+todayKey()+'.json';a.click();
     setTimeout(function(){URL.revokeObjectURL(a.href)},1000);
-  }else{
+}
+function restoreBackup(){
     const inp=document.createElement('input');inp.type='file';inp.accept='application/json,.json';
     inp.onchange=function(e){const f=e.target.files[0];if(!f)return;
       const r=new FileReader();
@@ -2098,8 +2101,30 @@ document.getElementById('backupBtn').onclick=function(){
       };
       r.readAsText(f)};
     inp.click();
-  }
-};
+}
+/* ── settings: units and backup, in the video sheet ── */
+function openSettings(){
+  const m=S.unitMode;
+  const opt=function(v,l){return '<button type="button" data-u="'+v+'"'+(m===v?' class="on"':'')+' aria-pressed="'+(m===v)+'">'+l+'</button>'};
+  document.getElementById('vTitle').textContent='Settings';
+  document.getElementById('vSub').textContent='';
+  document.getElementById('vBody').innerHTML=
+    '<div class="set-hd">UNITS</div>'+
+    '<div class="sheet-foot">'+opt('lb','ALL LB')+opt('kg','ALL KG')+opt('each','PER EXERCISE')+'</div>'+
+    '<p class="set-note">'+(m==='each'?'Each exercise keeps its own unit, switched on its card.':'Every exercise shows and takes '+m+'. The cards hide their own switch.')+
+    ' Weights are kept in pounds; this changes what you see and type, never what is saved.</p>'+
+    '<div class="set-hd">BACKUP</div>'+
+    '<div class="sheet-foot"><button type="button" id="sExport">EXPORT BACKUP</button><button type="button" id="sRestore">RESTORE FROM BACKUP</button></div>'+
+    '<div class="sheet-foot" style="margin-top:18px"><button class="close" id="vClose">DONE</button></div>';
+  document.querySelectorAll('#vBody [data-u]').forEach(function(b){
+    b.onclick=function(){S.unitMode=b.dataset.u;save();renderSessions();renderInsight();renderBrief();openSettings()};
+  });
+  document.getElementById('sExport').onclick=exportBackup;
+  document.getElementById('sRestore').onclick=restoreBackup;
+  document.getElementById('vClose').onclick=closeVideo;
+  scrim.classList.add('up');
+}
+document.getElementById('setBtn').onclick=openSettings;
 function paintSound(){
   const b=document.getElementById('soundBtn');
   b.textContent='♪';
