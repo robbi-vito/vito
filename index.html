@@ -787,6 +787,13 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
       <input type="text" id="plLink" placeholder="Maps link, optional" style="flex:1.5">
       <button id="addPlace">Add</button>
     </div>
+    <div class="group-label">BIRTHDAYS</div>
+    <table class="data" id="bdays"></table>
+    <div class="log-row">
+      <input type="text" id="bdName" placeholder="Who" style="flex:1.4">
+      <input type="date" id="bdDate" style="flex:1.2">
+      <button id="addBday">Add</button>
+    </div>
     <p class="foot">Somewhere with people in it, once a week. The coffee is the excuse.</p>
   </section>
 </div>
@@ -1003,6 +1010,7 @@ S.places=Array.isArray(S.places)                  /* places: seeded once, then t
 S.standing=Array.isArray(S.standing)              /* weekly standing plans, seeded once */
   ?S.standing.filter(function(p){return p&&typeof p==='object'&&p.id})
   :STANDING.map(function(p){return {id:p.id,day:p.day,t:p.t,n:p.n,w:p.w}});
+S.bdays=Array.isArray(S.bdays)?S.bdays.filter(function(b){return b&&b.n&&/^\d{2}-\d{2}$/.test(b.d)}):[];   /* {n, d:'MM-DD'} */
 S.meet=S.meet||'';                             /* maps link for the run club meeting point */
 S.units=S.units&&typeof S.units==='object'?S.units:{};   /* exercise id -> 'kg'; absent means lb */
 S.unitMode=S.unitMode==='lb'||S.unitMode==='kg'?S.unitMode:'each';   /* 'lb' or 'kg' for all, 'each' per exercise */
@@ -1420,7 +1428,7 @@ function iPhase(){
   return w.charAt(0).toUpperCase()+w.slice(1)+' day'+(days===1?'':'s')+' left in '+p.n.toLowerCase()+'.';
 }
 function insight(){
-  try{return iStalled()||iTrend()||iPhase()||iNew()||''}
+  try{return iBday()||iStalled()||iTrend()||iPhase()||iNew()||''}
   catch(e){return ''}                          /* a bad read must never take the page down */
 }
 function capCount(n){const w=count(n);return w.charAt(0).toUpperCase()+w.slice(1)}
@@ -2440,6 +2448,45 @@ document.getElementById('addPlace').onclick=function(){
   document.getElementById('plName').value='';document.getElementById('plLink').value='';
 };
 renderOut();
+/* ── birthdays: a week out to order something, the day itself to send a message ── */
+function daysTo(md){                              /* days from today to the next MM-DD */
+  const now=new Date(todayKey()+'T12:00:00');
+  let d=new Date(now.getFullYear()+'-'+md+'T12:00:00');
+  if(isNaN(d))return 999;
+  if(d<now)d=new Date((now.getFullYear()+1)+'-'+md+'T12:00:00');
+  return isNaN(d)?999:Math.round((d-now)/864e5);
+}
+function iBday(){
+  let hit='';
+  S.bdays.slice().sort(function(a,b){return daysTo(a.d)-daysTo(b.d)}).forEach(function(b){
+    if(hit)return;
+    const n=daysTo(b.d);
+    if(n===0)hit='Message '+b.n+' today.';
+    else if(n>=4&&n<=7){
+      const by=new Date(todayKey()+'T12:00:00');by.setDate(by.getDate()+n-3);
+      hit='Order something for '+b.n+' by '+by.toLocaleDateString('en-GB',{weekday:'long'})+'.';
+    }
+  });
+  return hit;
+}
+function renderBdays(){
+  const host=document.getElementById('bdays');
+  const rows=S.bdays.map(function(b,i){return {b:b,i:i,n:daysTo(b.d)}}).sort(function(x,y){return x.n-y.n});
+  host.innerHTML=rows.length
+    ?'<tr><th>Who</th><th>Date</th><th>In</th><th></th></tr>'+rows.map(function(x){
+      return '<tr><td>'+esc(x.b.n)+'</td><td>'+new Date('2000-'+x.b.d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})+'</td>'+
+        '<td class="'+(x.n<=7?'hl':'')+'">'+(x.n===0?'today':x.n+' d')+'</td>'+
+        '<td style="text-align:right"><button class="del rm" data-i="'+x.i+'" aria-label="Remove">×</button></td></tr>'}).join('')
+    :'<tr><td class="soft" style="border:none;padding-left:0">No birthdays yet. They stay on this device.</td></tr>';
+  host.querySelectorAll('.rm').forEach(function(b){b.onclick=function(){S.bdays.splice(+b.dataset.i,1);save();renderBdays();renderInsight()}});
+}
+document.getElementById('addBday').onclick=function(){
+  const n=document.getElementById('bdName').value.trim(),v=document.getElementById('bdDate').value;
+  if(!n||!v)return;
+  S.bdays.push({n:n,d:v.slice(5)});save();renderBdays();renderInsight();
+  document.getElementById('bdName').value='';document.getElementById('bdDate').value='';
+};
+renderBdays();
 /* the page is built for one date; coming back to it on a later date rebuilds it */
 const LOADED_ON=todayKey();
 document.addEventListener('visibilitychange',function(){
