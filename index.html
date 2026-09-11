@@ -231,6 +231,8 @@ table.data .soft{font-family:'Crimson Pro',serif;font-style:italic;font-size:14p
 .chk.on .chk-t{color:var(--text-dim);text-decoration:line-through}
 .chk-s{font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim)}
 .chk .del{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:17px;padding:0 4px;line-height:1}
+.chk.off{opacity:.4}
+.chk.off .box{cursor:default}
 
 .track{height:3px;background:var(--edge);border-radius:2px;overflow:hidden;margin:14px 0 7px}
 .track i{display:block;height:100%;background:var(--rust-fill)}
@@ -427,15 +429,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     <details class="solo">
       <summary><h2>Warm-up</h2><span class="meta">8 MIN · NOT OPTIONAL</span></summary>
       <div class="det-body prose">
-        <table class="data">
-          <tr><td class="hl">2:00</td><td class="soft">Incline walk or rower, easy</td></tr>
-          <tr><td class="hl">×15</td><td class="soft">Band pull-aparts</td></tr>
-          <tr><td class="hl">×10</td><td class="soft">Shoulder pass-throughs</td></tr>
-          <tr><td class="hl">×10</td><td class="soft">Chin tucks, 5s hold</td></tr>
-          <tr><td class="hl">×10</td><td class="soft">Slow bodyweight squats — leg day only</td></tr>
-          <tr><td class="hl">×08</td><td class="soft">Hip hinge drill — leg day only</td></tr>
-          <tr><td class="hl">then</td><td class="soft">2 ramp-up sets of the first lift</td></tr>
-        </table>
+        <div id="warmup"></div>
         <p style="margin-top:14px">This is what keeps the shoulders and knees quiet. Skip it and they speak up by week three.</p>
       </div>
     </details>
@@ -805,6 +799,15 @@ const DRILLS=[
  {id:'p4',t:'Lengthwise chest opener',s:'90 seconds',q:'foam roller lengthwise chest opener posture',
   c:'Lie along the 36" roller, spine on it end to end, head supported, knees bent, arms falling open. Breathe. The position the long roller was bought for.'}];
 
+const WARMUP=[
+ {id:'wu1',t:'Incline walk or rower, easy',s:'2:00'},
+ {id:'wu2',t:'Band pull-aparts',s:'×15'},
+ {id:'wu3',t:'Shoulder pass-throughs',s:'×10'},
+ {id:'p1',t:'Chin tucks, 5s hold',s:'×10 · the Frame drill'},
+ {id:'wu4',t:'Slow bodyweight squats',s:'×10 · leg day only',leg:true},
+ {id:'wu5',t:'Hip hinge drill',s:'×8 · leg day only',leg:true},
+ {id:'wu6',t:'Two ramp-up sets of the first lift',s:'Then'}];
+
 const EVENING=[{id:'e1',t:'Phone charging across the room',s:'Not in the bed'},
  {id:'e2',t:'Alarm set',s:'06:00'},{id:'e3',t:'Lights out',s:'22:00'}];
 
@@ -843,6 +846,7 @@ S.logs=S.logs||{};S.body=S.body||[{d:'2026-08-14',w:167.2,f:15.0}];
 S.theme=S.theme||'dark';S.shop=S.shop||{};S.three=S.three||'';
 S.journal=S.journal||{};S.evening=S.evening||{};S.commit=S.commit||[];
 S.vid=S.vid||{};S.sound=S.sound===undefined?true:S.sound;
+S.warmup=S.warmup&&typeof S.warmup==='object'?S.warmup:{};   /* date -> warm-up item id -> ticked */
 S.meet=S.meet||'';                             /* maps link for the run club meeting point */
 S.units=S.units&&typeof S.units==='object'?S.units:{};   /* exercise id -> 'kg'; absent means lb */
 const LB_PER_KG=2.20462;
@@ -1739,11 +1743,11 @@ function checklist(host,items,store,after,onDelete){
     host.innerHTML='<p class="ex-cue" style="margin-left:0">Nothing here yet. Whatever you add stays on this device.</p>';return;
   }
   items.forEach(function(it,idx){
-    const row=document.createElement('div');row.className='chk'+(store[it.id]?' on':'');
+    const row=document.createElement('div');row.className='chk'+(store[it.id]?' on':'')+(it.off?' off':'');
     row.innerHTML='<span class="box">✓</span><span class="chk-body"><span class="chk-t">'+esc(it.t)+'</span><br>'+
       '<span class="chk-s">'+esc(it.s||'')+'</span>'+
       (it.c?'<p class="ex-cue" style="margin:6px 0 0">'+it.c+'</p>':'')+'</span>';
-    row.querySelector('.box').onclick=function(e){e.stopPropagation();store[it.id]=!store[it.id];save();after()};
+    if(!it.off)row.querySelector('.box').onclick=function(e){e.stopPropagation();store[it.id]=!store[it.id];save();after()};
     if(it.q){
       const b=document.createElement('button');
       b.className='watch'+(S.vid[it.id]?' set':'');b.style.margin='8px 0 0';
@@ -1767,7 +1771,25 @@ function renderDrills(){
     return k>=S.week.start&&Object.values(S.week.posture[k]).some(Boolean)}).length;
   document.getElementById('postureCount').textContent=
     days===0?'About five minutes. Resets at midnight.':days+' of 7 days this week';
+  renderWarmup();
   renderInsight();
+}
+/* legs today: the weekday, the rotation, or sets already logged */
+function legDay(){
+  const log=S.logs[todayKey()]||{};
+  return slot.s==='C'||nextSession()==='C'||PROG.C.ex.some(function(e){return (log[e.id]||[]).some(Boolean)});
+}
+/* warm-up ticks are stored per date; the chin tuck reads and writes the Frame drill's entry */
+function renderWarmup(){
+  const t=todayKey(),legs=legDay();
+  S.warmup[t]=S.warmup[t]||{};S.week.posture[t]=S.week.posture[t]||{};
+  const view=Object.assign({},S.warmup[t],{p1:!!S.week.posture[t].p1});
+  const items=WARMUP.map(function(it){return it.leg&&!legs?Object.assign({off:true},it):it});
+  checklist(document.getElementById('warmup'),items,view,function(){
+    S.week.posture[t].p1=!!view.p1;
+    Object.keys(view).forEach(function(k){if(k!=='p1')S.warmup[t][k]=view[k]});
+    save();renderDrills();
+  });
 }
 renderDrills();
 
