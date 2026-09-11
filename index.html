@@ -1326,14 +1326,24 @@ function lastFor(id){
   return null;
 }
 function closeOthers(keep){document.querySelectorAll('#sessions details').forEach(function(d){if(d!==keep)d.open=false})}
+/* the session left open survives rebuilds: null until one has opened, '' once all are closed */
+let openKey=null;
+/* the programme is a rotation: the first session not yet done this week */
+function nextSession(){
+  return Object.keys(PROG).filter(function(k){return !S.week.done[k]})[0]||null;
+}
 function renderSessions(){
   const host=document.getElementById('sessions');host.innerHTML='';
+  const want=openKey===null?nextSession():openKey;
   Object.keys(PROG).forEach(function(k){
     const s=PROG[k];
     const d=document.createElement('details');d.id='s-'+s.key;
-    if(s.day===di+1)d.open=true;
+    if(s.key===want)d.open=true;
     d.innerHTML='<summary><h2>'+s.full+'</h2><span class="meta">'+WEEK[s.day-1].l.toUpperCase()+'</span></summary><div class="det-body" id="body-'+s.key+'"></div>';
-    d.addEventListener('toggle',function(){if(d.open)closeOthers(d)});
+    d.addEventListener('toggle',function(){
+      if(d.open){openKey=s.key;closeOthers(d)}
+      else if(openKey===s.key)openKey='';
+    });
     host.appendChild(d);
     const b=d.querySelector('#body-'+s.key);
     s.ex.forEach(function(ex,i){b.appendChild(exNode(ex,i+1))});
