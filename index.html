@@ -234,6 +234,8 @@ table.data .soft{font-family:'Crimson Pro',serif;font-style:italic;font-size:14p
 .chk .del{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:17px;padding:0 4px;line-height:1}
 .chk.off{opacity:.4}
 .chk.off .box{cursor:default}
+.stretch{border-top:1px dashed var(--edge);padding-top:2px}
+.stretch h3{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:21px;margin:14px 0 0}
 
 .track{height:3px;background:var(--edge);border-radius:2px;overflow:hidden;margin:14px 0 7px}
 .track i{display:block;height:100%;background:var(--rust-fill)}
@@ -815,6 +817,25 @@ const WARMUP=[
  {id:'wu5',t:'Hip hinge drill',s:'×8 · leg day only',leg:true},
  {id:'wu6',t:'Two ramp-up sets of the first lift',s:'Then'}];
 
+const STRETCH_ALL=[
+ {id:'p2',t:'Half-kneeling hip flexor stretch',s:'90s per side',q:'half kneeling hip flexor stretch anterior pelvic tilt'},
+ {id:'p4',t:'Lengthwise chest opener on the roller',s:'90s',q:'foam roller lengthwise chest opener posture'}];
+const STRETCH_UPPER=[
+ {id:'st1',t:'Doorway pec stretch',s:'45s per side',q:'doorway pec stretch proper form'},
+ {id:'st2',t:'Cross-body rear delt stretch',s:'30s per side',q:'cross body rear delt stretch'},
+ {id:'st3',t:'Overhead triceps stretch',s:'30s per side',q:'overhead triceps stretch'}];
+const STRETCH={
+ A:STRETCH_ALL.concat(STRETCH_UPPER),
+ B:STRETCH_ALL.concat([
+  {id:'st4',t:'Lat stretch on the rack',s:'45s per side',q:'lat stretch on squat rack'},
+  {id:'st5',t:'Wall biceps stretch',s:'30s per side',q:'wall biceps stretch'},
+  {id:'st6',t:'Upper trap side bend',s:'30s per side',q:'upper trap stretch side bend'}]),
+ C:STRETCH_ALL.concat([
+  {id:'st7',t:'Couch stretch',s:'60s per side',q:'couch stretch proper form'},
+  {id:'st8',t:'Standing hamstring stretch',s:'45s per side',q:'standing hamstring stretch proper form'},
+  {id:'st9',t:'Calf stretch on a step',s:'45s per side',q:'calf stretch on a step'}]),
+ D:STRETCH_ALL.concat(STRETCH_UPPER)};
+
 /* the Tonight list on first run; after that it is the user's own */
 const EVENING=[{id:'e1',t:'Phone charging across the room',s:'Not in the bed'},
  {id:'e2',t:'Alarm set',s:'06:00'}];
@@ -859,6 +880,7 @@ S.tonight=Array.isArray(S.tonight)                /* the Tonight items, seeded o
 S.stopped=S.stopped&&typeof S.stopped==='object'?S.stopped:{};   /* night date -> time stopped, ms */
 S.vid=S.vid||{};S.sound=S.sound===undefined?true:S.sound;
 S.warmup=S.warmup&&typeof S.warmup==='object'?S.warmup:{};   /* date -> warm-up item id -> ticked */
+S.stretch=S.stretch&&typeof S.stretch==='object'?S.stretch:{};  /* date -> stretch id -> ticked */
 S.meet=S.meet||'';                             /* maps link for the run club meeting point */
 S.units=S.units&&typeof S.units==='object'?S.units:{};   /* exercise id -> 'kg'; absent means lb */
 const LB_PER_KG=2.20462;
@@ -1385,12 +1407,21 @@ function renderSessions(){
     host.appendChild(d);
     const b=d.querySelector('#body-'+s.key);
     s.ex.forEach(function(ex,i){b.appendChild(exNode(ex,i+1))});
+    if(STRETCH[s.key]){
+      const st=document.createElement('div');st.className='stretch';
+      st.innerHTML='<h3>After, not before.</h3>'+
+        '<p class="ex-cue" style="margin:2px 0 8px">Static stretching before lifting reduces force output. The warm-up moves tissue; this lengthens it.</p>'+
+        '<div id="stretch-'+s.key+'"></div>'+
+        '<p class="ex-cue" style="margin:12px 0 0">Percussion gun first if you\'re using it — 30 to 60 seconds on the muscles you just worked, then stretch. Never on the lower back, never on bone or joints.</p>';
+      b.appendChild(st);
+    }
     const f=document.createElement('p');f.className='foot';f.style.paddingTop='18px';
     f.textContent=s.key==='C'?'Legs sit at 104–105% of average with running and walking on top. They need holding, not growing.':
       s.key==='D'?'Deliberately short. If the week has gone badly, this is the session to drop.':
       'Rest 2–3 min on the first two lifts, 60–90s on everything after.';
     b.appendChild(f);
   });
+  renderStretches();
 }
 function exNode(ex,num){
   const w=document.createElement('div');w.className='ex';
@@ -1784,6 +1815,7 @@ function renderDrills(){
   document.getElementById('postureCount').textContent=
     days===0?'About five minutes. Resets at midnight.':days+' of 7 days this week';
   renderWarmup();
+  renderStretches();
   renderInsight();
 }
 /* legs today: the weekday, the rotation, or sets already logged */
@@ -1801,6 +1833,20 @@ function renderWarmup(){
     S.week.posture[t].p1=!!view.p1;
     Object.keys(view).forEach(function(k){if(k!=='p1')S.warmup[t][k]=view[k]});
     save();renderDrills();
+  });
+}
+/* stretch ticks are stored per date; p2 and p4 read and write the Frame drills' entries */
+function renderStretches(){
+  const t=todayKey();
+  S.stretch[t]=S.stretch[t]||{};S.week.posture[t]=S.week.posture[t]||{};
+  Object.keys(STRETCH).forEach(function(k){
+    const host=document.getElementById('stretch-'+k);if(!host)return;
+    const view=Object.assign({},S.stretch[t],{p2:!!S.week.posture[t].p2,p4:!!S.week.posture[t].p4});
+    checklist(host,STRETCH[k],view,function(){
+      S.week.posture[t].p2=!!view.p2;S.week.posture[t].p4=!!view.p4;
+      Object.keys(view).forEach(function(id){if(id!=='p2'&&id!=='p4')S.stretch[t][id]=view[id]});
+      save();renderDrills();
+    });
   });
 }
 renderDrills();
