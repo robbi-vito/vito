@@ -264,7 +264,9 @@ table.data .soft{font-family:'Crimson Pro',serif;font-style:italic;font-size:14p
 .chk.off{opacity:.4}
 .chk.off .box{cursor:default}
 .place{padding:12px 0;border-top:1px dashed var(--edge)}
-.pl-group{font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.16em;color:var(--text-dim);padding:16px 0 2px}
+.pl-group{font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.16em;color:var(--rust);padding:20px 0 2px}
+.pl-type{font-family:'Courier Prime',monospace;font-size:9.5px;letter-spacing:.2em;color:var(--text-dim);padding:12px 0 0}
+.pl-k a,.pl-sub a{color:var(--ember);text-decoration:underline;text-underline-offset:3px}
 .pl-top{display:flex;align-items:baseline;gap:10px}
 .pl-n{flex:1;font-size:17px;color:var(--text);text-decoration:none}
 a.pl-n{text-decoration:underline;text-decoration-color:var(--rust-lo);text-underline-offset:3px}
@@ -891,6 +893,9 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     <div class="log-row">
       <input type="text" id="plName" placeholder="Somewhere new" style="flex:1.2">
       <input type="text" id="plLink" placeholder="Maps link, optional" style="flex:1.5">
+    </div>
+    <div class="log-row">
+      <button class="watch" id="plType" type="button" style="flex:1;margin:0">COFFEE</button>
       <button id="addPlace">Add</button>
     </div>
     <div class="group-label">BIRTHDAYS</div>
@@ -1051,23 +1056,24 @@ const VIDSLOTS=[
 
 /* places to be among people; seeded once, then the list is the user's own */
 const PLACES=[
- {id:'pl1',n:'Kilo Coffee',k:'COFFEE',u:'https://maps.app.goo.gl/NEhuW3NF42mJkwRk7'},
- {id:'pl2',n:'Full City Rooster',k:'COFFEE',u:'https://maps.app.goo.gl/xMGKyPtDZVFGu4Ud7'},
- {id:'pl3',n:'Common Good',k:'COFFEE',u:'https://maps.app.goo.gl/V2XsUW3MQ3tQ7KsJ8'},
- {id:'pl4',n:'LDU Coffee · 1',k:'COFFEE',u:'https://maps.app.goo.gl/854KvuzL8Kmp1A7n6'},
- {id:'pl5',n:'LDU Coffee · 2',k:'COFFEE',u:'https://maps.app.goo.gl/tidp2uyJ7KTnk3Pm8'},
- {id:'pl6',n:'LDU Coffee · 3',k:'COFFEE',u:'https://maps.app.goo.gl/mY4FsJfiwaVR2eoV7'},
- {id:'pl7',n:'Inclusion Cafe',k:'COFFEE',u:'https://maps.app.goo.gl/sBn1B3AdNooSpCck6'},
- {id:'pl8',n:"Juju's Coffee",k:'COFFEE',u:'https://maps.app.goo.gl/bZad6Kz7kt6etatVA'},
- {id:'pl9',n:'Hey Koneko',k:'CAFE',u:'https://www.google.com/maps/search/?api=1&query=Hey+Koneko+Dallas'},
- {id:'pl10',n:'Good Boy Cafe',k:'CAFE',u:'https://maps.app.goo.gl/XfCX7YVgEs3pLk869'},
- {id:'pl11',n:'Cafe Duro',k:'COFFEE',u:'https://maps.app.goo.gl/HkvQURjXosaTm2F7A'},
- {id:'pl12',n:'Killer Joe',k:'COFFEE',u:'https://maps.app.goo.gl/7WNRTTtBTfirjKbW9'},
- {id:'pl13',n:'Fount Board & Table',k:'GAMES',u:'https://maps.app.goo.gl/niaSPKrqc7kGuoNR8'},
- {id:'pl14',n:'Texas Theatre',k:'CINEMA',u:'https://maps.app.goo.gl/8KRkWgZ59EHVHKjJ8'},
- {id:'pl15',n:'Valley House Art Gallery',k:'GALLERY',u:'https://maps.app.goo.gl/owBD9818WZpXwr5d8'}];
+ {id:'pl1',n:'Kilo Coffee',k:'coffee',u:'https://maps.app.goo.gl/NEhuW3NF42mJkwRk7'},
+ {id:'pl2',n:'Full City Rooster',k:'coffee',u:'https://maps.app.goo.gl/xMGKyPtDZVFGu4Ud7'},
+ {id:'pl3',n:'Common Good',k:'coffee',u:'https://maps.app.goo.gl/V2XsUW3MQ3tQ7KsJ8'},
+ {id:'pl4',n:'LDU Coffee · 1',k:'coffee',u:'https://maps.app.goo.gl/854KvuzL8Kmp1A7n6'},
+ {id:'pl5',n:'LDU Coffee · 2',k:'coffee',u:'https://maps.app.goo.gl/tidp2uyJ7KTnk3Pm8'},
+ {id:'pl6',n:'LDU Coffee · 3',k:'coffee',u:'https://maps.app.goo.gl/mY4FsJfiwaVR2eoV7'},
+ {id:'pl7',n:'Inclusion Cafe',k:'coffee',u:'https://maps.app.goo.gl/sBn1B3AdNooSpCck6'},
+ {id:'pl8',n:"Juju's Coffee",k:'coffee',u:'https://maps.app.goo.gl/bZad6Kz7kt6etatVA'},
+ {id:'pl9',n:'Hey Koneko, Good Boy Cafe',k:'coffee',u:'https://maps.app.goo.gl/gXVCkuWzx2dBXTWN8'},
+ {id:'pl11',n:'Cafe Duro',k:'coffee',u:'https://maps.app.goo.gl/HkvQURjXosaTm2F7A'},
+ {id:'pl12',n:'Killer Joe',k:'coffee',u:'https://maps.app.goo.gl/7WNRTTtBTfirjKbW9'},
+ {id:'pl13',n:'Fount Board & Table',k:'coffee',u:'https://maps.app.goo.gl/niaSPKrqc7kGuoNR8'},
+ {id:'pl14',n:'Texas Theatre',k:'creative',u:'https://maps.app.goo.gl/8KRkWgZ59EHVHKjJ8'},
+ {id:'pl15',n:'Valley House Art Gallery',k:'creative',u:'https://maps.app.goo.gl/owBD9818WZpXwr5d8'}];
+const PLACE_TYPES=[['coffee','COFFEE'],['restaurant','RESTAURANT'],['creative','CREATIVE'],
+ ['outdoor','OUTDOOR'],['indoor','INDOOR']];
 /* standing plans by weekday index; the time can be changed in the app */
-const STANDING=[{id:'sp1',day:4,t:'19:30',n:'Walk & Talk',w:'Katy Trail to Thomsen Overlook. Park at Reverchon Park.'}];
+const STANDING=[{id:'sp1',day:4,t:'19:30',n:'Walk & Talk',w:'Katy Trail to Thomsen Overlook. Park at Reverchon Park.',u:'https://maps.app.goo.gl/p6AmcCaaP57UV56u9'}];
 
 /* the Tonight list on first run; after that it is the user's own */
 const EVENING=[{id:'e1',t:'Phone charging across the room',s:'Not in the bed'},
@@ -1186,6 +1192,17 @@ S.loops.forEach(function(l){
 });
 S.shots=Array.isArray(S.shots)?S.shots.filter(function(r){return r&&typeof r==='object'&&r.d}):[];   /* {d, w, c, i, u} per shoot */
 const save=()=>DB.set('vito.v3',S);
+/* kinds became types, and two seeded entries were one venue; only untouched rows change */
+(function(){
+  const map={COFFEE:'coffee',CAFE:'coffee',GAMES:'coffee',CINEMA:'creative',GALLERY:'creative'};
+  S.places.forEach(function(p){
+    if(map[p.k])p.k=map[p.k];
+    if(p.id==='pl9'&&p.n==='Hey Koneko'){p.n='Hey Koneko, Good Boy Cafe';p.u='https://maps.app.goo.gl/gXVCkuWzx2dBXTWN8'}
+  });
+  const gb=S.places.findIndex(function(p){return p.id==='pl10'&&p.n==='Good Boy Cafe'&&!(p.went||[]).length});
+  if(gb>-1)S.places.splice(gb,1);
+  S.standing.forEach(function(p){if(p.id==='sp1'&&!p.u)p.u='https://maps.app.goo.gl/p6AmcCaaP57UV56u9'});
+})();
 document.documentElement.dataset.theme=S.theme;
 
 /* ── today ── */
@@ -2680,7 +2697,8 @@ function renderOut(){
     return '<div class="place"><div class="pl-top"><span class="pl-n">'+esc(p.n)+'</span>'+
       '<button class="del" type="button" data-sd="'+i+'" aria-label="Remove">×</button></div>'+
       '<div class="pl-sub"><span class="pl-k">'+(WEEK[p.day]?WEEK[p.day].l.toUpperCase():'')+' · '+
-      '<button class="pl-time" type="button" data-st="'+i+'" aria-label="Change the time">'+esc(p.t)+'</button> · '+esc(p.w||'')+'</span></div></div>'}).join('')
+      '<button class="pl-time" type="button" data-st="'+i+'" aria-label="Change the time">'+esc(p.t)+'</button> · '+esc(p.w||'')+
+      (p.u?' <a href="'+esc(p.u)+'" target="_blank" rel="noopener noreferrer">MAP</a>':'')+'</span></div></div>'}).join('')
     :'<p class="ex-cue" style="margin-left:0">Nothing standing. The week has room for one.</p>';
   const t=todayKey();
   const row=function(p){
@@ -2688,13 +2706,21 @@ function renderOut(){
     return '<div class="place"><div class="pl-top">'+
       (p.u?'<a class="pl-n" href="'+esc(p.u)+'" target="_blank" rel="noopener noreferrer">'+esc(p.n)+'</a>':'<span class="pl-n">'+esc(p.n)+'</span>')+
       '<button class="del" type="button" data-rm="'+i+'" aria-label="Remove">×</button></div>'+
-      '<div class="pl-sub"><span class="pl-k">'+esc(p.k||'')+(w.length?(p.k?' · ':'')+(w.length===1?'once':w.length+' times')+', last '+fmt(w[w.length-1]):'')+'</span>'+
+      '<div class="pl-sub"><span class="pl-k">'+(w.length?(w.length===1?'Been once':'Been '+w.length+' times')+', last '+fmt(w[w.length-1]):'Not yet')+'</span>'+
       '<button class="watch'+(today?' set':'')+'" type="button" data-went="'+i+'">'+(today?'WENT TODAY':'WENT')+'</button>'+
       '<button class="watch'+(p.st==='fav'?' set':'')+'" type="button" data-fav="'+i+'">'+(p.st==='fav'?'FAVOURITE':'WANT TO GO')+'</button></div></div>'};
   const fav=S.places.filter(function(p){return p.st==='fav'}),want=S.places.filter(function(p){return p.st!=='fav'});
+  const byType=function(list){
+    const known=PLACE_TYPES.map(function(ty){
+      const inTy=list.filter(function(p){return (p.k||'')===ty[0]});
+      return inTy.length?'<div class="pl-type">'+ty[1]+'</div>'+inTy.map(row).join(''):'';
+    }).join('');
+    const rest=list.filter(function(p){return !PLACE_TYPES.some(function(ty){return (p.k||'')===ty[0]})});
+    return known+(rest.length?'<div class="pl-type">ELSEWHERE</div>'+rest.map(row).join(''):'');
+  };
   const host=document.getElementById('places');
-  host.innerHTML=(fav.length?'<div class="pl-group">FAVOURITES</div>'+fav.map(row).join(''):'')+
-    (want.length?'<div class="pl-group">WANT TO GO</div>'+want.map(row).join(''):'')+
+  host.innerHTML=(want.length?'<div class="pl-group">WANT TO GO</div>'+byType(want):'')+
+    (fav.length?'<div class="pl-group">FAVOURITES</div>'+byType(fav):'')+
     (S.places.length?'':'<p class="ex-cue" style="margin-left:0">Nothing listed. Add somewhere you would go alone and still talk to someone.</p>');
   const on=function(root,sel,fn){root.querySelectorAll(sel).forEach(function(b){b.onclick=function(){fn(b)}})};
   on(sh,'[data-sd]',function(b){S.standing.splice(+b.dataset.sd,1);save();renderOut();renderBrief()});
@@ -2712,11 +2738,17 @@ function renderOut(){
   });
   on(host,'[data-fav]',function(b){const p=S.places[+b.dataset.fav];p.st=p.st==='fav'?'want':'fav';save();renderOut();renderInsight()});
 }
+let newType='coffee';
+document.getElementById('plType').onclick=function(){
+  const i=PLACE_TYPES.findIndex(function(t){return t[0]===newType});
+  const next=PLACE_TYPES[(i+1)%PLACE_TYPES.length];
+  newType=next[0];document.getElementById('plType').textContent=next[1];
+};
 document.getElementById('addPlace').onclick=function(){
   const n=document.getElementById('plName').value.trim(),u=document.getElementById('plLink').value.trim();
   if(!n)return;
   if(u&&!/^https:\/\//i.test(u)){alert('That does not look like a link. Copy it from Google Maps.');return}
-  S.places.push({id:'pl'+Date.now(),n:n,k:'',u:u,st:'want',went:[]});save();renderOut();renderInsight();
+  S.places.push({id:'pl'+Date.now(),n:n,k:newType,u:u,st:'want',went:[]});save();renderOut();renderInsight();
   document.getElementById('plName').value='';document.getElementById('plLink').value='';
 };
 renderOut();
