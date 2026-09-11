@@ -585,14 +585,16 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     <div class="strip-note">BMR 1762 · six training days ≈ 2600 burn · a deficit of 500</div>
     <div class="chk" id="proteinRow" style="margin-bottom:10px"><span class="box" id="proteinBox">✓</span><span class="chk-body"><span class="chk-t">160 g of protein today</span><br><span class="chk-s" id="proteinCount"></span></span></div>
 
-    <div class="note">
-      <div class="hd">WHY THIS MATTERS MORE THAN THE TRAINING</div>
-      <p>13 of your 25 lb of body fat sits in your trunk. Your arms are at 67% and 82% of average, your legs at 97%. Every limb you own is already lean.</p>
-      <p>No exercise reaches trunk fat. Not abs, not core work, not more cardio. The gap between how you look now and how you want to look closes here and nowhere else. Training keeps the muscle while it happens.</p>
-    </div>
+    <details class="nest" style="margin-bottom:18px">
+      <summary><h3>Why this matters more than the training</h3></summary>
+      <div class="det-body prose">
+        <p>13 of your 25 lb of body fat sits in your trunk. Your arms are at 67% and 82% of average, your legs at 97%. Every limb you own is already lean.</p>
+        <p>No exercise reaches trunk fat. Not abs, not core work, not more cardio. The gap between how you look now and how you want to look closes here and nowhere else. Training keeps the muscle while it happens.</p>
+      </div>
+    </details>
 
     <div class="det-group">
-      <details open>
+      <details>
         <summary><h2>The whole plan</h2><span class="meta">FOUR LINES</span></summary>
         <div class="det-body prose">
           <table class="data">
@@ -603,6 +605,15 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
           </table>
           <p style="margin-top:16px">About a pound a week. Twelve to fourteen weeks from 15% to 12%. If the four-week average hasn't moved, take 150 off the daily number — not 500.</p>
           <p><strong>Weeks that get away from you don't count.</strong> A fortnight where the deficit never really ran is not a fortnight lost — the clock simply wasn't going. Restart it and keep the retest twelve weeks out.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><h2>The shop</h2><span class="meta">BY STORE</span></summary>
+        <div class="det-body">
+          <div class="prose"><p style="font-size:15px">Tick as you go. Kroger is next door and covers most weeks; Costco is the bulk protein run.</p></div>
+          <div id="shopping"></div>
+          <button class="cta ghost" id="clearShop" style="margin-top:20px">Clear the list</button>
         </div>
       </details>
 
@@ -637,15 +648,6 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
           <p>Potatoes halved, oven at 220° for thirty-five minutes with the oil. Steak out of the fridge twenty minutes before, hot pan, two to three minutes a side, rest five. Slice across the grain.</p>
 
           <p><strong>A day from these:</strong> the oats, the chicken bowl and the chilli come to about 1,780 and 156 g of protein. A tub of cottage cheese and an apple close the gap to 2,100.</p>
-        </div>
-      </details>
-
-      <details>
-        <summary><h2>The shop</h2><span class="meta">BY STORE</span></summary>
-        <div class="det-body">
-          <div class="prose"><p style="font-size:15px">Tick as you go. Kroger is next door and covers most weeks; Costco is the bulk protein run.</p></div>
-          <div id="shopping"></div>
-          <button class="cta ghost" id="clearShop" style="margin-top:20px">Clear the list</button>
         </div>
       </details>
 
@@ -690,7 +692,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
         </div>
       </details>
     </div>
-    <p class="foot">Protein hit, days out of seven. Six is a pass.</p>
+    <p class="foot">Protein first. Everything else can move.</p>
   </section>
 
   <!-- ═══ FRAME ═══ -->
