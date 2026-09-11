@@ -166,6 +166,9 @@ table.data .rm:hover{color:var(--rust)}
   padding:6px 12px;cursor:pointer;transition:all .2s}
 .watch:hover{border-color:var(--rust);color:var(--rust)}
 .watch.set{border-color:var(--rust-lo);color:var(--ember)}
+.ex-foot{display:flex;justify-content:space-between;align-items:center;margin:10px 0 0 26px}
+.ex-foot .watch{margin:0}
+.watch.unit{min-width:44px;text-align:center}
 
 .info{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;
   border:1px solid var(--rust-lo);color:var(--rust);background:none;cursor:pointer;
@@ -808,6 +811,14 @@ S.theme=S.theme||'dark';S.shop=S.shop||{};S.three=S.three||'';
 S.journal=S.journal||{};S.evening=S.evening||{};S.commit=S.commit||[];
 S.vid=S.vid||{};S.sound=S.sound===undefined?true:S.sound;
 S.meet=S.meet||'';                             /* maps link for the run club meeting point */
+S.units=S.units&&typeof S.units==='object'?S.units:{};   /* exercise id -> 'kg'; absent means lb */
+const LB_PER_KG=2.20462;
+function unitOf(id){return S.units[id]==='kg'?'kg':'lb'}
+function toUnit(lb,u){return u==='kg'?lb/LB_PER_KG:lb}
+function fromUnit(v,u){return u==='kg'?Math.round(v*LB_PER_KG*100)/100:v}
+/* sets are stored in lb; this is where they become text in the exercise's unit */
+function fmtW(lb,u){const v=Math.round(toUnit(lb,u)*10)/10;return v%1===0?String(v):v.toFixed(1)}
+function incText(id){return unitOf(id)==='kg'?'2.5 kg':'5 lb'}
 S.wardrobe=S.wardrobe&&typeof S.wardrobe==='object'?S.wardrobe:{};
 ['palette','measure','groom','sizes','uniforms','rules'].forEach(function(k){
   if(!Array.isArray(S.wardrobe[k]))S.wardrobe[k]=[];
@@ -944,7 +955,7 @@ function heaviestOn(key){
   const log=S.logs[key]||{};let top=null;
   Object.keys(log).forEach(function(id){
     (log[id]||[]).forEach(function(s){
-      if(s&&typeof s.w==='number'&&isFinite(s.w)&&(!top||s.w>top.w))top={w:s.w,r:s.r,n:exName(id)};
+      if(s&&typeof s.w==='number'&&isFinite(s.w)&&(!top||s.w>top.w))top={w:s.w,r:s.r,n:exName(id),id:id};
     });
   });
   return top&&top.n?top:null;
@@ -975,7 +986,7 @@ function panelLines(i,bd){
     if(!w.s)lines.push('Rest.');
     else lines.push(w.k+'. '+(S.week.done[w.s]?'Done.':'Not ticked.'));
     const top=heaviestOn(dayDate(i));
-    if(top)lines.push('Heaviest, '+top.n.toLowerCase()+' '+top.w+(top.r?' × '+top.r:'')+'.');
+    if(top)lines.push('Heaviest, '+top.n.toLowerCase()+' '+fmtW(top.w,unitOf(top.id))+(unitOf(top.id)==='kg'?' kg':'')+(top.r?' × '+top.r:'')+'.');
     return lines;
   }
   if(i===t){                                     /* today, and the week ahead of it */
@@ -1155,7 +1166,7 @@ function iStalled(){
     for(let i=h.length-2;i>=0&&h[i]===last;i--)run++;
     if(run<3)return;
     const n=exName(id);
-    if(n)hit=n+' has not moved in '+count(run)+' sessions. Add 5 lb.';
+    if(n)hit=n+' has not moved in '+count(run)+' sessions. Add '+incText(id)+'.';
   });
   return hit;
 }
@@ -1265,7 +1276,7 @@ function lastFor(id){
     const sets=S.logs[ds[i]][id].filter(function(s){return s&&typeof s.w==='number'&&isFinite(s.w)});
     if(!sets.length)continue;
     const top=sets.reduce(function(a,b){return b.w>a.w?b:a});
-    return 'last '+top.w+'×'+(top.r||'?');
+    return 'last '+fmtW(top.w,unitOf(id))+'×'+(top.r||'?');
   }
   return null;
 }
@@ -1299,7 +1310,18 @@ function exNode(ex,num){
   btn.className='watch'+(S.vid[ex.id]?' set':'');
   btn.textContent=S.vid[ex.id]?'▶ WATCH':'＋ SET VIDEO';
   btn.onclick=function(){openVideo(ex)};
-  w.appendChild(btn);
+  /* the unit toggle sits opposite the video button and sets both display and entry */
+  const foot=document.createElement('div');foot.className='ex-foot';
+  foot.appendChild(btn);
+  const ub=document.createElement('button');
+  ub.className='watch unit';ub.textContent=unitOf(ex.id).toUpperCase();
+  ub.setAttribute('aria-label','Weight unit for '+ex.n);
+  ub.onclick=function(){
+    if(unitOf(ex.id)==='kg')delete S.units[ex.id];else S.units[ex.id]='kg';
+    save();ub.textContent=unitOf(ex.id).toUpperCase();paintSets(ex);renderInsight();renderBrief();
+  };
+  foot.appendChild(ub);
+  w.appendChild(foot);
   setTimeout(function(){paintSets(ex)},0);
   return w;
 }
@@ -1309,7 +1331,7 @@ function paintSets(ex){
   for(let i=0;i<ex.sets;i++){
     const b=document.createElement('button');const r=done[i];
     b.className='dot'+(r?' filled':'');
-    b.textContent=r?(r.w?r.w:'✓'):(i+1);
+    b.textContent=r?(r.w?fmtW(r.w,unitOf(ex.id)):'✓'):(i+1);
     b.setAttribute('aria-label','Set '+(i+1)+' of '+ex.sets);
     b.onclick=function(){logSet(ex,i)};
     host.appendChild(b);
@@ -1331,12 +1353,13 @@ function logSet(ex,i){
   const arr=S.logs[t][ex.id];
   if(arr[i]){arr[i]=null;while(arr.length&&arr[arr.length-1]==null)arr.pop();save();paintSets(ex);renderInsight();return}
   const prev=arr.filter(Boolean).slice(-1)[0];
-  const seed=prev?((prev.w||'')+(prev.r?'x'+prev.r:'')):'';
+  const u=unitOf(ex.id);
+  const seed=prev?((prev.w?fmtW(prev.w,u):'')+(prev.r?'x'+prev.r:'')):'';
   const rule=ex.left?'\nLeft first. Right stops where left stopped.':'';
-  const raw=prompt(ex.n+' — set '+(i+1)+rule+'\nWeight × reps, e.g. 135x8',seed);
+  const raw=prompt(ex.n+' — set '+(i+1)+rule+'\nWeight × reps in '+u+', e.g. 135x8',seed);
   if(raw===null)return;
   const m=raw.match(/([\d.]+)\s*[x×*]\s*(\d+)/i);
-  arr[i]=m?{w:parseFloat(m[1]),r:parseInt(m[2])}:(raw.trim()?{w:parseFloat(raw)||null,r:null}:{w:null,r:null});
+  arr[i]=m?{w:fromUnit(parseFloat(m[1]),u),r:parseInt(m[2])}:(raw.trim()?{w:parseFloat(raw)?fromUnit(parseFloat(raw),u):null,r:null}:{w:null,r:null});
   /* a finished session ticks its day; removing a set later does not untick it */
   const k=sessionOf(ex);
   const ticked=k&&!S.week.done[k]&&sessionComplete(k);
