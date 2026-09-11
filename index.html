@@ -2210,6 +2210,11 @@ document.getElementById('themeBtn').onclick=function(){
   document.querySelector('meta[name=theme-color]').content=S.theme==='dark'?'#14100E':'#EDE5D3';
   save();
 };
+/* the page is built for one date; coming back to it on a later date rebuilds it */
+const LOADED_ON=todayKey();
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'&&todayKey()!==LOADED_ON)location.reload();
+});
 </script>
 </body>
 </html>
