@@ -537,6 +537,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
       <div class="cell"><span class="l">Fat</span><span class="v">65</span></div>
     </div>
     <div class="strip-note">BMR 1762 · six training days ≈ 2600 burn · a deficit of 500</div>
+    <div class="chk" id="proteinRow" style="margin-bottom:10px"><span class="box" id="proteinBox">✓</span><span class="chk-body"><span class="chk-t">160 g of protein today</span><br><span class="chk-s" id="proteinCount"></span></span></div>
 
     <div class="note">
       <div class="hd">WHY THIS MATTERS MORE THAN THE TRAINING</div>
@@ -1061,6 +1062,7 @@ S.standing=Array.isArray(S.standing)              /* weekly standing plans, seed
   :STANDING.map(function(p){return {id:p.id,day:p.day,t:p.t,n:p.n,w:p.w}});
 S.bdays=Array.isArray(S.bdays)?S.bdays.filter(function(b){return b&&b.n&&/^\d{2}-\d{2}$/.test(b.d)}):[];   /* {n, d:'MM-DD'} */
 S.play=S.play&&typeof S.play==='object'?S.play:{};   /* session key, or R for runs -> playlist link */
+S.protein=S.protein&&typeof S.protein==='object'?S.protein:{};   /* date -> protein target hit */
 S.meet=S.meet||'';                             /* maps link for the run club meeting point */
 S.units=S.units&&typeof S.units==='object'?S.units:{};   /* exercise id -> 'kg'; absent means lb */
 S.unitMode=S.unitMode==='lb'||S.unitMode==='kg'?S.unitMode:'each';   /* 'lb' or 'kg' for all, 'each' per exercise */
@@ -1482,9 +1484,10 @@ function insight(){
   catch(e){return ''}                          /* a bad read must never take the page down */
 }
 function capCount(n){const w=count(n);return w.charAt(0).toUpperCase()+w.slice(1)}
-/* Fuel: how long since the scale was used. Protein days would come first here,
-   but nothing in state records them. */
+/* Fuel: protein days this week, else how long since the scale was used */
 function iFuel(){
+  const n=Object.keys(S.protein||{}).filter(function(d){return d>=S.week.start&&S.protein[d]}).length;
+  if(n)return capCount(n)+(n===1?' day':' days')+' on protein out of '+count(dayIdx()+1)+'.';
   const b=(S.body||[]).filter(function(e){return e&&e.d&&typeof e.w==='number'})
                       .slice().sort(function(x,y){return x.d<y.d?-1:1});
   if(!b.length)return '';
@@ -2328,6 +2331,18 @@ function renderShots(){
   const unused=S.shots.filter(function(r){return !r.u}).length;
   document.getElementById('shotMeta').textContent=S.shots.length?S.shots.length+(S.shots.length===1?' SHOOT':' SHOOTS')+' · '+unused+' UNUSED':'AN INDEX';
 }
+/* ── protein: one tick a day, the number the plan runs on ── */
+function paintProtein(){
+  const on=!!S.protein[todayKey()];
+  document.getElementById('proteinRow').classList.toggle('on',on);
+  const n=Object.keys(S.protein).filter(function(d){return d>=S.week.start&&S.protein[d]}).length;
+  document.getElementById('proteinCount').textContent=n+' of 7 this week · six is a pass';
+}
+document.getElementById('proteinBox').onclick=function(){
+  const t=todayKey();if(S.protein[t])delete S.protein[t];else S.protein[t]=true;
+  save();paintProtein();renderInsight();
+};
+paintProtein();
 document.getElementById('shD').value=todayKey();
 document.getElementById('addShot').onclick=function(){
   const d=document.getElementById('shD').value,w=document.getElementById('shW').value.trim();
