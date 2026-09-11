@@ -187,6 +187,13 @@ table.data .rm:hover{color:var(--rust)}
 .watch.stop{margin:16px 0 0;display:inline-block}
 .grade{margin:4px 0 0 26px;font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim)}
 .watch.unit{min-width:44px;text-align:center}
+.sess-timer{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 8px}
+.sess-timer .watch,.sess-end .watch{margin:0}
+.sess-end{margin:18px 0 0}
+.sess-end .watch,.sess-end .watch:hover{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
+.sess-end:empty{display:none}
+.tm-state{font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:.08em;color:var(--ember)}
+.tm-drop{margin-left:auto;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:17px;padding:0 4px;line-height:1}
 
 .info{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;
   border:1px solid var(--rust-lo);color:var(--rust);background:none;cursor:pointer;
@@ -887,6 +894,9 @@ S.stopped=S.stopped&&typeof S.stopped==='object'?S.stopped:{};   /* night date -
 S.vid=S.vid||{};S.sound=S.sound===undefined?true:S.sound;
 S.warmup=S.warmup&&typeof S.warmup==='object'?S.warmup:{};   /* date -> warm-up item id -> ticked */
 S.stretch=S.stretch&&typeof S.stretch==='object'?S.stretch:{};  /* date -> stretch id -> ticked */
+S.timer=S.timer&&typeof S.timer==='object'?S.timer:{};   /* session timer */
+S.timer.log=Array.isArray(S.timer.log)?S.timer.log:[];   /* finished: {k, d, home, start, end}, times in ms */
+S.timer.run=S.timer.run&&typeof S.timer.run==='object'&&PROG[S.timer.run.k]?S.timer.run:null;   /* running: {k, home, start} */
 S.meet=S.meet||'';                             /* maps link for the run club meeting point */
 S.units=S.units&&typeof S.units==='object'?S.units:{};   /* exercise id -> 'kg'; absent means lb */
 S.unitMode=S.unitMode==='lb'||S.unitMode==='kg'?S.unitMode:'each';   /* 'lb' or 'kg' for all, 'each' per exercise */
@@ -1409,13 +1419,14 @@ function renderSessions(){
     const s=PROG[k];
     const d=document.createElement('details');d.id='s-'+s.key;
     if(s.key===want)d.open=true;
-    d.innerHTML='<summary><h2>'+s.full+'</h2><span class="meta">'+WEEK[s.day-1].l.toUpperCase()+'</span></summary><div class="det-body" id="body-'+s.key+'"></div>';
+    d.innerHTML='<summary><h2>'+s.full+'</h2><span class="meta">'+WEEK[s.day-1].l.toUpperCase()+avgText(s.key)+'</span></summary><div class="det-body" id="body-'+s.key+'"></div>';
     d.addEventListener('toggle',function(){
       if(d.open){openKey=s.key;closeOthers(d)}
       else if(openKey===s.key)openKey='';
     });
     host.appendChild(d);
     const b=d.querySelector('#body-'+s.key);
+    const tt=document.createElement('div');tt.className='sess-timer';tt.id='tm-'+s.key;b.appendChild(tt);
     s.ex.forEach(function(ex,i){b.appendChild(exNode(ex,i+1))});
     if(STRETCH[s.key]){
       const st=document.createElement('div');st.className='stretch';
@@ -1425,6 +1436,7 @@ function renderSessions(){
         '<p class="ex-cue" style="margin:12px 0 0">Percussion gun first if you\'re using it — 30 to 60 seconds on the muscles you just worked, then stretch. Never on the lower back, never on bone or joints.</p>';
       b.appendChild(st);
     }
+    const te=document.createElement('div');te.className='sess-end';te.id='te-'+s.key;b.appendChild(te);
     const f=document.createElement('p');f.className='foot';f.style.paddingTop='18px';
     f.textContent=s.key==='C'?'Legs sit at 104–105% of average with running and walking on top. They need holding, not growing.':
       s.key==='D'?'Deliberately short. If the week has gone badly, this is the session to drop.':
@@ -1432,7 +1444,59 @@ function renderSessions(){
     b.appendChild(f);
   });
   renderStretches();
+  paintTimers();
 }
+/* ── session timer: two start points and one end, kept as timestamps so a reload loses nothing ── */
+function mins(ms){return Math.max(0,Math.round(ms/60000))}
+function avgText(k){
+  const f=S.timer.log.filter(function(r){return r&&r.k===k&&r.start&&r.end>r.start});
+  if(f.length<3)return '';
+  return ' · AVG '+mins(f.reduce(function(a,r){return a+(r.end-r.start)},0)/f.length)+' MIN';
+}
+function paintTimers(){
+  const run=S.timer.run,now=Date.now();
+  Object.keys(PROG).forEach(function(k){
+    const top=document.getElementById('tm-'+k),end=document.getElementById('te-'+k);
+    if(!top||!end)return;
+    const mine=!!run&&run.k===k;
+    let h;
+    if(mine){
+      const bits=[];
+      if(run.home)bits.push('LEFT HOME '+clockOf(run.home));
+      if(run.start)bits.push('STARTED '+clockOf(run.start)+' · '+mins(now-run.start)+' MIN');
+      else bits.push(mins(now-run.home)+' MIN');
+      h='<span class="tm-state">'+bits.join(' · ')+'</span>'+
+        (run.start?'':'<button class="watch" type="button" data-t="start">START</button>')+
+        '<button class="tm-drop" type="button" data-t="drop" aria-label="Discard the timer">×</button>';
+    }else{
+      h='<button class="watch" type="button" data-t="home">LEFT HOME</button>'+
+        '<button class="watch" type="button" data-t="start">START</button>';
+    }
+    top.innerHTML=h;
+    end.innerHTML=mine?'<button class="watch" type="button" data-t="end">END SESSION</button>':'';
+    [top,end].forEach(function(el){
+      el.querySelectorAll('[data-t]').forEach(function(b){b.onclick=function(){timerAct(k,b.dataset.t)}});
+    });
+  });
+}
+function timerAct(k,act){
+  const now=Date.now();let run=S.timer.run;
+  if(act==='home'||act==='start'){
+    if(run&&run.k!==k&&!confirm('A timer is running for '+PROG[run.k].full+'. Start again for '+PROG[k].full+'?'))return;
+    if(!run||run.k!==k)run=S.timer.run={k:k};
+    run[act==='home'?'home':'start']=now;
+  }else if(act==='drop'){
+    if(!confirm('Discard this timer? Nothing is recorded.'))return;
+    S.timer.run=null;
+  }else if(act==='end'&&run&&run.k===k){
+    S.timer.log.push({k:k,d:dkey(new Date(run.start||run.home||now)),home:run.home||null,start:run.start||null,end:now});
+    S.timer.run=null;
+    /* a finished session ticks its day */
+    S.week.done[k]=true;renderWeek();renderInsight();
+  }
+  save();renderSessions();
+}
+setInterval(function(){if(S.timer.run)paintTimers()},30000);
 function exNode(ex,num){
   const w=document.createElement('div');w.className='ex'+(gated(ex)?' off':'');
   const flags=(ex.left?'<span class="flag">LEFT FIRST</span>':'')+(ex.last?'<span class="flag">LAST</span>':'')+(ex.warn?'<span class="flag">READ THE RULE</span>':'');
