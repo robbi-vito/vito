@@ -409,7 +409,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
         </div>
       </details>
 
-      <details>
+      <details id="tonightBox">
         <summary><h2>Tonight</h2><span class="meta">21:00 WIND-DOWN</span></summary>
         <div class="det-body">
           <div id="evening"></div>
@@ -509,7 +509,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
   <section class="view" id="v-train">
     <div class="hero small"><div class="date">Four days of iron, two of air</div><h1>Train</h1></div>
 
-    <details class="solo">
+    <details class="solo" id="warmupBox">
       <summary><h2>Warm-up</h2><span class="meta">8 MIN · NOT OPTIONAL</span></summary>
       <div class="det-body prose">
         <div id="warmup"></div>
@@ -520,7 +520,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     <div class="group-label">THE FOUR SESSIONS</div>
     <div class="det-group" id="sessions"></div>
 
-    <details class="solo" style="margin-top:22px">
+    <details class="solo" id="runStretchBox" style="margin-top:22px">
       <summary><h2>After a run</h2><span class="meta">TUE · SAT</span></summary>
       <div class="det-body">
         <p class="ex-cue" style="margin:0 0 8px">Walk five minutes first, then hold each one. The legs are warmest now.</p>
@@ -1593,7 +1593,9 @@ function owedSession(){
   return n&&n!==sess.key?n:null;
 }
 function openSession(k){
+  viaShortcut=true;
   switchView('train');
+  paintTrainDefaults();   /* the shortcut closes what a manual visit opened */
   setTimeout(function(){
     const d=document.getElementById('s-'+k);
     if(d){closeOthers(d);d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'})}
@@ -1661,7 +1663,7 @@ function nextSession(){
 }
 function renderSessions(){
   const host=document.getElementById('sessions');host.innerHTML='';
-  const want=openKey===null?nextSession():openKey;
+  const want=openKey===null?'':openKey;
   Object.keys(PROG).forEach(function(k){
     const s=PROG[k];
     const d=document.createElement('details');d.id='s-'+s.key;
@@ -2593,7 +2595,12 @@ function switchView(v){
   document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('on',b.dataset.v===v)});
   window.scrollTo(0,0);
 }
-document.querySelectorAll('nav button').forEach(function(b){b.onclick=function(){switchView(b.dataset.v)}});
+document.querySelectorAll('nav button').forEach(function(b){
+  b.onclick=function(){
+    viaShortcut=false;switchView(b.dataset.v);
+    if(b.dataset.v==='train')paintTrainDefaults();
+  };
+});
 document.getElementById('themeBtn').onclick=function(){
   S.theme=S.theme==='dark'?'light':'dark';
   document.documentElement.dataset.theme=S.theme;
@@ -2740,6 +2747,28 @@ function renderVidSlots(){
     host.appendChild(b);
   });
 }
+/* ── what is open when a view is reached, by the clock ── */
+let viaShortcut=false;
+function hourNow(){const d=new Date();return d.getHours()+d.getMinutes()/60}
+function trainingWindow(){const h=hourNow();return (h>=5.5&&h<9)||(h>=11.5&&h<14.5)||(h>=16&&h<19)}
+/* once the warm-up's live items are ticked it stays shut for the rest of the day */
+function warmupDone(){
+  const t=todayKey(),st=S.warmup[t]||{},po=S.week.posture[t]||{},legs=legDay(),push=pushDay();
+  return WARMUP.filter(function(it){
+    return !(it.leg&&!legs)&&!(it.push&&!push)&&!(it.from&&t<it.from);
+  }).every(function(it){return it.id==='p1'?!!po.p1:!!st[it.id]});
+}
+function paintTrainDefaults(){
+  const w=document.getElementById('warmupBox'),r=document.getElementById('runStretchBox');
+  if(w)w.open=!viaShortcut&&trainingWindow()&&!warmupDone();
+  if(r)r.open=!viaShortcut&&(slot.s==='cardio1'||slot.s==='cardio2');
+}
+(function(){
+  const h=hourNow();
+  const m=document.getElementById('morningBox'),n=document.getElementById('tonightBox');
+  if(m)m.open=h>=5.5&&h<10.5;
+  if(n)n.open=h>=18.5||h<5;
+})();
 /* the page is built for one date; coming back to it on a later date rebuilds it */
 const LOADED_ON=todayKey();
 document.addEventListener('visibilitychange',function(){
