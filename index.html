@@ -832,7 +832,7 @@ function incText(id){const s=STEP[id]||5;return unitOf(id)==='kg'?fmtU(s/2)+' kg
 /* a value already in the display unit, as text */
 function fmtU(v){const r=Math.round(v*10)/10;return r%1===0?String(r):r.toFixed(1)}
 S.bar=S.bar&&typeof S.bar==='object'?S.bar:{};    /* exercise id -> bar weight in lb, when not the default */
-const BAR={a1:45,c1:45,c2:45};                    /* barbell exercises and their default bar, lb */
+const BAR={a1:45,c1:45};                          /* barbell exercises and their default bar, lb */
 const PLATES={lb:[45,25,10,5,2.5],kg:[25,20,10,5,2.5,1.25]};
 /* fresh start is a daily switch: on only for the date it was set */
 function freshOn(){try{return localStorage.getItem('vito.fresh')===todayKey()}catch(e){return false}}
