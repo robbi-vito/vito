@@ -1421,6 +1421,7 @@ function renderSessions(){
     if(s.key===want)d.open=true;
     d.innerHTML='<summary><h2>'+s.full+'</h2><span class="meta">'+WEEK[s.day-1].l.toUpperCase()+avgText(s.key)+'</span></summary><div class="det-body" id="body-'+s.key+'"></div>';
     d.addEventListener('toggle',function(){
+      if(!d.isConnected)return;                  /* a late event from a list already replaced */
       if(d.open){openKey=s.key;closeOthers(d)}
       else if(openKey===s.key)openKey='';
     });
