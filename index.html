@@ -150,6 +150,7 @@ table.data .rm{background:none;border:none;color:var(--text-dim);cursor:pointer;
 table.data .rm:hover{color:var(--rust)}
 
 .ex{padding:16px 0;border-top:1px dashed var(--edge)}
+.ex.off{opacity:.4}
 .ex:first-child{border-top:none}
 .ex-top{display:flex;align-items:baseline;gap:10px}
 .ex-n{font-family:'Courier Prime',monospace;font-size:12px;color:var(--rust);font-weight:700;width:16px;flex-shrink:0}
@@ -778,6 +779,8 @@ const PROG={
    cue:'Left first. Depth is earned, not forced.'},
   {id:'c5',n:'Standing calf raise',sets:3,rep:'15',rest:60,q:'standing calf raise proper form',
    cue:'Pause at the bottom. The one leg muscle worth adding to.'},
+  {id:'c7',n:'Farmer carry',sets:3,rep:'40m',rest:90,from:'2026-09-22',q:'farmer carry proper form',
+   cue:'Heavy. Walk tall. Shoulders back, ribs down.'},
   {id:'c6',n:'Hanging knee raise',sets:3,rep:'12',rest:60,last:true,q:'hanging knee raise proper form',
    cue:'Last. Slow down phase, no swinging.'}]},
  D:{key:'D',day:5,full:'Lift D — Width',sub:'45 minutes. Shoulders and upper back',ex:[
@@ -902,6 +905,8 @@ const BODYWT={a6:1,c6:1};
 const HINT={a1:'Total, bar included.',c1:'Total, bar included.',
   c2:'Enter the total: bar included, or both dumbbells combined.'};
 const HARDER={a6:'straight-leg dead bugs',c6:'hanging leg raises, legs straight'};   /* next variation at the ceiling */
+/* a movement with a return date is shown greyed and cannot be logged before it */
+function gated(ex){return !!ex.from&&todayKey()<ex.from}
 /* fresh start is a daily switch: on only for the date it was set */
 function freshOn(){try{return localStorage.getItem('vito.fresh')===todayKey()}catch(e){return false}}
 function setFresh(on){try{if(on)localStorage.setItem('vito.fresh',todayKey());else localStorage.removeItem('vito.fresh')}catch(e){}}
@@ -1381,7 +1386,8 @@ function lastFor(id){
       return 'last '+(ex&&/s$/.test(ex.rep)?best+'s':'×'+best);
     }
     const top=sets.reduce(function(a,b){return b.w>a.w?b:a});
-    return 'last '+fmtW(top.w,unitOf(id))+'×'+(top.r||'?');
+    const ce=exById(id);
+    return 'last '+fmtW(top.w,unitOf(id))+(ce&&/m$/.test(ce.rep)?' a hand':'×'+(top.r||'?'));
   }
   return null;
 }
@@ -1424,14 +1430,15 @@ function renderSessions(){
   renderStretches();
 }
 function exNode(ex,num){
-  const w=document.createElement('div');w.className='ex';
+  const w=document.createElement('div');w.className='ex'+(gated(ex)?' off':'');
   const flags=(ex.left?'<span class="flag">LEFT FIRST</span>':'')+(ex.last?'<span class="flag">LAST</span>':'')+(ex.warn?'<span class="flag">READ THE RULE</span>':'');
   w.innerHTML='<div class="ex-top"><span class="ex-n">'+num+'</span><span class="ex-name">'+ex.n+
     (ex.alt?' <em>('+ex.alt+')</em>':'')+flags+'</span><span class="ex-scheme">'+ex.sets+' × '+ex.rep+'</span></div>'+
     (ex.cue?'<p class="ex-cue">'+ex.cue+'</p>':'')+
-    '<div class="sets" id="sets-'+ex.id+'"></div>'+
+    (gated(ex)?'<p class="ex-cue">Returns '+new Date(ex.from+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long'})+'.</p>'
+      :'<div class="sets" id="sets-'+ex.id+'"></div>')+
     (BAR[ex.id]?'<button class="plates" id="plates-'+ex.id+'" type="button" hidden></button>':'')+
-    '<div class="advice" id="adv-'+ex.id+'" hidden></div>'+
+    (gated(ex)?'':'<div class="advice" id="adv-'+ex.id+'" hidden></div>')+
     (GRADED[ex.id]?'<div class="grade" id="grade-'+ex.id+'" hidden></div>':'');
   const btn=document.createElement('button');
   btn.className='watch'+(S.vid[ex.id]?' set':'');
@@ -1482,6 +1489,7 @@ function freshLine(ex){
   if(/s$/.test(ex.rep))return 'Fresh start · stop well short of failure';
   const top=prevTop(ex.id),u=unitOf(ex.id),step=u==='kg'?2.5:5;
   const w=top?Math.floor(toUnit(top.w,u)*0.7/step)*step:0;
+  if(/m$/.test(ex.rep))return 'Fresh start · '+(w>0?fmtU(w)+' a hand':'a light pair')+', the full distance';
   if(w<=0)return BODYWT[ex.id]?'Fresh start · 8–10 reps, stop two short':'Fresh start · 8–10 reps from a light weight, stop two short';
   return 'Fresh start · '+fmtU(w)+' × 8–10, stop two reps short';
 }
@@ -1517,7 +1525,20 @@ function bwProgress(ex){
   if(La>=T)return {tag:'REPEAT',fact:'Every set reached '+La+u+' last time.',act:'Once more at '+La+u+', then add '+noun+'.'};
   return {tag:'ADD '+what,fact:'Some sets short of '+T+u+'.',act:'Bring every set up to '+T+u+'.'};
 }
+/* carries: weight per hand over a fixed distance. Every carry logged at a weight,
+   two sessions running, adds weight. */
+function carryProgress(ex){
+  const ss=recentSessions(ex.id);if(!ss.length)return null;
+  const u=unitOf(ex.id),step=(STEP[ex.id]||5)*(u==='kg'?.5:1);
+  const lo=function(a){return Math.min.apply(null,a.map(function(s){return s.w}))};
+  const all=function(a){return a.length>=ex.sets};
+  const a=ss[0],b=ss[1],now=fmtW(lo(a),u),w=toUnit(lo(a),u);
+  if(b&&all(a)&&all(b)&&lo(a)>=lo(b))return {tag:'ADD WEIGHT',go:true,fact:'All '+ex.sets+' carries at '+now+', two sessions running.',act:'Next time '+fmtU(w+step)+' a hand.'};
+  if(all(a))return {tag:'REPEAT',fact:'All '+ex.sets+' carries at '+now+' last time.',act:'Once more at '+now+', then add weight.'};
+  return {tag:'HOLD WEIGHT',fact:'Fewer than '+ex.sets+' carries last time.',act:'Carry all '+ex.sets+' at '+now+'.'};
+}
 function progress(ex){
+  if(/m$/.test(ex.rep))return carryProgress(ex);
   if(BODYWT[ex.id]){
     const w=recentSessions(ex.id);
     if(!w.length||!w[0].some(function(s){return s.w>0}))return bwProgress(ex);
@@ -1651,14 +1672,15 @@ function bestSet(id){
 function setContext(ex,u){
   const last=prevTop(ex.id),best=bestSet(ex.id),rr=repRange(ex),fresh=freshOn();
   const ctx=['Target '+ex.rep];
-  if(last)ctx.push('last '+fmtW(last.w,u)+'×'+(last.r||'?'));
+  if(last)ctx.push('last '+fmtW(last.w,u)+(/m$/.test(ex.rep)?' a hand':'×'+(last.r||'?')));
   else if(BODYWT[ex.id]){const lf=lastFor(ex.id);if(lf)ctx.push(lf)}
-  if(best&&(!last||best.w!==last.w||best.r!==last.r))ctx.push('best '+fmtW(best.w,u)+'×'+(best.r||'?'));
+  if(best&&(!last||best.w!==last.w||best.r!==last.r))ctx.push('best '+fmtW(best.w,u)+(/m$/.test(ex.rep)?' a hand':'×'+(best.r||'?')));
   let adv='';
   if(fresh)adv=freshLine(ex);
   else{const p=progress(ex);if(p)adv=p.fact+' '+p.act}
   let tail;
-  if(!rr)tail=BODYWT[ex.id]?'Seconds, e.g. '+(parseInt(ex.rep,10)||45)+', or leave it empty to tick the set off.':'Leave it empty to tick the set off.';
+  if(/m$/.test(ex.rep))tail='Weight in one hand, in '+u+', e.g. '+(last?fmtW(last.w,u):(u==='kg'?24:50))+'.';
+  else if(!rr)tail=BODYWT[ex.id]?'Seconds, e.g. '+(parseInt(ex.rep,10)||45)+', or leave it empty to tick the set off.':'Leave it empty to tick the set off.';
   else if(BODYWT[ex.id]&&!last)tail='Reps, e.g. '+rr[1]+'. With added weight, 10x'+rr[1]+'.';
   else{
     const step=u==='kg'?2.5:5,reps=rr[1];
@@ -1673,10 +1695,11 @@ function setContext(ex,u){
 function sessionOf(ex){
   return Object.keys(PROG).filter(function(k){return PROG[k].ex.indexOf(ex)>-1})[0]||null;
 }
-/* every set of every exercise in the session has an entry today, weightless ticks included */
+/* every set of every exercise in the session has an entry today, weightless ticks included;
+   a movement before its return date is skipped */
 function sessionComplete(k){
   const log=S.logs[todayKey()]||{};
-  return PROG[k].ex.every(function(e){return (log[e.id]||[]).filter(Boolean).length>=e.sets});
+  return PROG[k].ex.every(function(e){return gated(e)||(log[e.id]||[]).filter(Boolean).length>=e.sets});
 }
 function logSet(ex,i){
   const t=todayKey();
