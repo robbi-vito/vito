@@ -1361,8 +1361,16 @@ renderInsight();
 
 const goBtn=document.getElementById('goSession');
 if(!sess){goBtn.textContent=slot.s?'Mark it done':'Nothing today';goBtn.classList.add('ghost')}
+/* the button opens the session the Train view opens; when that is not the weekday's own, it names it */
+function goTarget(){return sess?(nextSession()||sess.key):null}
+function paintGo(){
+  const b=document.getElementById('goSession'),k=goTarget();
+  if(!b||!k)return;
+  b.textContent=k===sess.key?'Open today\'s session':
+    'Open '+WEEK[PROG[k].day-1].k+' — '+(PROG[k].day<sess.day?'still owed':'next due');
+}
 goBtn.onclick=function(){
-  if(sess){switchView('train');setTimeout(function(){const d=document.getElementById('s-'+sess.key);
+  if(sess){const k=goTarget();switchView('train');setTimeout(function(){const d=document.getElementById('s-'+k);
     if(d){closeOthers(d);d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'})}},90)}
   else if(slot.s){S.week.done[slot.s]=!S.week.done[slot.s];save();renderWeek();renderInsight()}
 };
@@ -1383,6 +1391,7 @@ function renderWeek(){
   const n=Object.values(S.week.done).filter(Boolean).length;
   document.getElementById('weekNote').textContent=
     n===0?'Six days on, one off. Tap a day when it is done.':n===6?'Six from six. That is the week.':n+' of 6 this week';
+  paintGo();
 }
 renderWeek();
 
