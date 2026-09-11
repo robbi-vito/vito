@@ -245,6 +245,11 @@ textarea.three{width:100%;background:var(--bg-raise);border:1px solid var(--edge
   padding:12px;color:var(--text);font-family:'Crimson Pro',serif;font-size:16px;line-height:1.7;
   resize:vertical;min-height:104px;margin-top:6px}
 textarea.three:focus{outline:none;border-color:var(--rust)}
+.prev-entry{font-style:italic;font-size:14px;line-height:1.6;color:var(--text-soft);margin:2px 0 8px;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden}
+.prev-entry[hidden]{display:none}
+.prev-entry .d{font-family:'Courier Prime',monospace;font-style:normal;font-size:11px;letter-spacing:.1em;
+  color:var(--text-dim);margin-right:8px}
 
 .timer{position:fixed;left:0;right:0;bottom:calc(44px + env(safe-area-inset-bottom));
   background:var(--bg-sink);border-top:1px solid var(--rust);padding:13px 20px;z-index:60;
@@ -338,6 +343,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
         <div class="det-body">
           <div id="evening"></div>
           <h3 style="font-family:'Cormorant Garamond',serif;font-weight:700;font-size:21px;margin:22px 0 4px">Three sentences</h3>
+          <p class="prev-entry" id="prevEntry" hidden></p>
           <textarea class="three" id="journal" placeholder="What happened. What it cost. What tomorrow needs."></textarea>
         </div>
       </details>
@@ -1821,6 +1827,23 @@ renderEvening();
 const jr=document.getElementById('journal');
 jr.value=S.journal[todayKey()]||'';
 jr.oninput=function(){S.journal[todayKey()]=jr.value;save()};
+/* the latest earlier entry, or the latest from 28 to 35 days back when there is one */
+function prevEntry(){
+  const t=todayKey(),now=new Date(t+'T12:00:00');
+  const ds=Object.keys(S.journal).filter(function(d){
+    return /^\d{4}-\d{2}-\d{2}$/.test(d)&&d<t&&typeof S.journal[d]==='string'&&S.journal[d].trim();
+  }).sort();
+  const month=ds.filter(function(d){
+    const n=Math.round((now-new Date(d+'T12:00:00'))/864e5);return n>=28&&n<=35;
+  });
+  return month.length?month[month.length-1]:(ds[ds.length-1]||null);
+}
+function renderPrevEntry(){
+  const el=document.getElementById('prevEntry'),d=prevEntry();
+  el.innerHTML=d?'<span class="d">'+fmt(d).toUpperCase()+'</span>'+esc(S.journal[d].trim()):'';
+  el.hidden=!d;
+}
+renderPrevEntry();
 
 function renderShop(){
   const host=document.getElementById('shopping');host.innerHTML='';
