@@ -185,6 +185,9 @@ table.data .rm:hover{color:var(--rust)}
 .watch.fresh{margin:12px 0 0;display:inline-block}
 .watch.fresh.on{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
 .watch.stop{margin:16px 0 0;display:inline-block}
+.watch.today-play{display:table;margin:-12px auto 24px;text-decoration:none}
+.watch.today-play[hidden]{display:none}
+a.watch{text-decoration:none;display:inline-block}
 .grade{margin:4px 0 0 26px;font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim)}
 .watch.unit{min-width:44px;text-align:center}
 .sess-timer{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 8px}
@@ -364,6 +367,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     <div class="week" id="weekStrip"></div>
     <div class="strip-note" id="weekNote"></div>
     <button class="cta" id="goSession">Open today's session</button>
+    <a class="watch today-play" id="todayPlay" target="_blank" rel="noopener noreferrer" hidden></a>
 
     <div class="det-group">
       <details>
@@ -1011,6 +1015,7 @@ S.standing=Array.isArray(S.standing)              /* weekly standing plans, seed
   ?S.standing.filter(function(p){return p&&typeof p==='object'&&p.id})
   :STANDING.map(function(p){return {id:p.id,day:p.day,t:p.t,n:p.n,w:p.w}});
 S.bdays=Array.isArray(S.bdays)?S.bdays.filter(function(b){return b&&b.n&&/^\d{2}-\d{2}$/.test(b.d)}):[];   /* {n, d:'MM-DD'} */
+S.play=S.play&&typeof S.play==='object'?S.play:{};   /* session key, or R for runs -> playlist link */
 S.meet=S.meet||'';                             /* maps link for the run club meeting point */
 S.units=S.units&&typeof S.units==='object'?S.units:{};   /* exercise id -> 'kg'; absent means lb */
 S.unitMode=S.unitMode==='lb'||S.unitMode==='kg'?S.unitMode:'each';   /* 'lb' or 'kg' for all, 'each' per exercise */
@@ -1599,11 +1604,12 @@ function paintTimers(){
       h='<button class="watch" type="button" data-t="home">LEFT HOME</button>'+
         '<button class="watch" type="button" data-t="start">START</button>';
     }
-    top.innerHTML=h;
+    top.innerHTML=playlistBtn(k)+h;
     end.innerHTML=mine?'<button class="watch" type="button" data-t="end">END SESSION</button>':'';
     [top,end].forEach(function(el){
       el.querySelectorAll('[data-t]').forEach(function(b){b.onclick=function(){timerAct(k,b.dataset.t)}});
     });
+    top.querySelectorAll('[data-p]').forEach(function(b){b.onclick=function(){setPlaylist(b.dataset.p)}});
   });
 }
 function timerAct(k,act){
@@ -2348,6 +2354,9 @@ function openSettings(){
     '<div class="sheet-foot">'+opt('lb','ALL LB')+opt('kg','ALL KG')+opt('each','PER EXERCISE')+'</div>'+
     '<p class="set-note">'+(m==='each'?'Each exercise keeps its own unit, switched on its card.':'Every exercise shows and takes '+m+'. The cards hide their own switch.')+
     ' Weights are kept in pounds; this changes what you see and type, never what is saved.</p>'+
+    '<div class="set-hd">PLAYLISTS</div>'+
+    '<div class="sheet-foot">'+Object.keys(PLAY_FOR).map(function(k){return '<button type="button" data-pl="'+k+'"'+(S.play[k]?' class="on"':'')+'>'+PLAY_FOR[k].toUpperCase()+'</button>'}).join('')+'</div>'+
+    '<p class="set-note">Tap one to set or change its Spotify link. Filled means set.</p>'+
     '<div class="set-hd">BACKUP</div>'+
     '<div class="sheet-foot"><button type="button" id="sExport">EXPORT BACKUP</button><button type="button" id="sRestore">RESTORE FROM BACKUP</button></div>'+
     '<div class="sheet-foot" style="margin-top:18px"><button class="close" id="vClose">DONE</button></div>';
@@ -2356,6 +2365,7 @@ function openSettings(){
   });
   document.getElementById('sExport').onclick=exportBackup;
   document.getElementById('sRestore').onclick=restoreBackup;
+  document.querySelectorAll('#vBody [data-pl]').forEach(function(b){b.onclick=function(){setPlaylist(b.dataset.pl,openSettings)}});
   document.getElementById('vClose').onclick=closeVideo;
   scrim.classList.add('up');
 }
@@ -2487,6 +2497,29 @@ document.getElementById('addBday').onclick=function(){
   document.getElementById('bdName').value='';document.getElementById('bdDate').value='';
 };
 renderBdays();
+/* ── playlists: a Spotify link per session and one for runs, opened in the app ── */
+const PLAY_FOR={A:'Push',B:'Pull',C:'Legs',D:'Width',R:'Runs'};
+function playlistBtn(k){
+  return S.play[k]
+    ?'<a class="watch set" href="'+esc(S.play[k])+'" target="_blank" rel="noopener noreferrer">PLAYLIST</a>'
+    :'<button class="watch" type="button" data-p="'+k+'">＋ PLAYLIST</button>';
+}
+function setPlaylist(k,after){
+  const v=prompt('Paste the Spotify playlist link for '+PLAY_FOR[k]+'.\nLeave it empty to clear it.',S.play[k]||'');
+  if(v===null)return;
+  const t=v.trim();
+  if(t&&!/^(https:\/\/(open\.spotify\.com|spotify\.link)\/|spotify:)/i.test(t)){alert('That does not look like a Spotify link. In Spotify, use Share, then Copy link.');return}
+  if(t)S.play[k]=t;else delete S.play[k];
+  save();paintTimers();paintTodayPlay();if(after)after();
+}
+function paintTodayPlay(){
+  const a=document.getElementById('todayPlay');if(!a)return;
+  const k=sess?goTarget():(slot.s==='cardio1'||slot.s==='cardio2')?'R':null;
+  const u=k&&S.play[k];
+  a.hidden=!u;
+  if(u){a.href=u;a.textContent=PLAY_FOR[k].toUpperCase()+' PLAYLIST'}
+}
+paintTodayPlay();
 /* the page is built for one date; coming back to it on a later date rebuilds it */
 const LOADED_ON=todayKey();
 document.addEventListener('visibilitychange',function(){
