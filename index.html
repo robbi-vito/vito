@@ -1821,33 +1821,36 @@ function ytId(url){
   const m=String(url).match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([A-Za-z0-9_-]{11})/);
   return m?m[1]:(/^[A-Za-z0-9_-]{11}$/.test(String(url).trim())?String(url).trim():null);
 }
-function openVideo(item){
-  const id=S.vid[item.id];
-  document.getElementById('vTitle').textContent=item.n||item.t;
+function openVideo(item,alt){
+  const key=alt?item.id+'.2':item.id,id=S.vid[key],two=!!S.vid[item.id+'.2'];
+  document.getElementById('vTitle').textContent=(item.n||item.t)+(alt?' · second':'');
   document.getElementById('vSub').textContent=id?'Saved on this device':'Not set yet — one minute, once';
   const body=document.getElementById('vBody');
   const search='https://www.youtube.com/results?search_query='+encodeURIComponent(item.q);
   if(id){
-    const tall=S.vidShape[item.id]==='p';
+    const tall=S.vidShape[key]==='p';
     body.innerHTML='<div class="frame'+(tall?' tall':'')+'"><iframe src="https://www.youtube-nocookie.com/embed/'+id+
       '?rel=0&playsinline=1" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>'+
       '<div class="sheet-foot"><a href="https://youtu.be/'+id+'" target="_blank" rel="noopener">OPEN ON YOUTUBE</a>'+
-      '<button id="vShape">'+(tall?'LANDSCAPE':'PORTRAIT')+'</button><button id="vChange">CHANGE</button><button class="close" id="vClose">DONE</button></div>';
-    document.getElementById('vChange').onclick=function(){delete S.vid[item.id];delete S.vidShape[item.id];save();openVideo(item);renderSessions();renderDrills()};
-    document.getElementById('vShape').onclick=function(){if(tall)delete S.vidShape[item.id];else S.vidShape[item.id]='p';save();openVideo(item)};
+      '<button id="vShape">'+(tall?'LANDSCAPE':'PORTRAIT')+'</button>'+
+      '<button id="vAlt">'+(alt?'FIRST':two?'SECOND':'＋ SECOND')+'</button>'+
+      '<button id="vChange">CHANGE</button><button class="close" id="vClose">DONE</button></div>';
+    document.getElementById('vChange').onclick=function(){delete S.vid[key];delete S.vidShape[key];save();openVideo(item,alt);renderSessions();renderDrills()};
+    document.getElementById('vShape').onclick=function(){if(tall)delete S.vidShape[key];else S.vidShape[key]='p';save();openVideo(item,alt)};
   }else{
     body.innerHTML='<div class="prose"><p style="font-size:15px">Find one you like, copy its link, paste it here. It stays saved — you will never be asked again for this movement.</p></div>'+
       '<div class="sheet-foot" style="margin-bottom:12px"><a href="'+search+'" target="_blank" rel="noopener">SEARCH YOUTUBE</a></div>'+
       '<div class="log-row"><input type="text" id="vPaste" placeholder="Paste the YouTube link"><button id="vSave">Save</button></div>'+
-      '<div class="sheet-foot"><button class="close" id="vClose">CLOSE</button></div>';
+      '<div class="sheet-foot">'+(alt?'<button id="vAlt">FIRST</button>':'')+'<button class="close" id="vClose">CLOSE</button></div>';
     document.getElementById('vSave').onclick=function(){
       const raw=document.getElementById('vPaste').value,v=ytId(raw);
       if(!v){alert('That does not look like a YouTube link. Copy the address from the video page.');return}
-      S.vid[item.id]=v;
-      if(/\/shorts\//i.test(raw))S.vidShape[item.id]='p';else delete S.vidShape[item.id];
-      save();openVideo(item);renderSessions();renderDrills();
+      S.vid[key]=v;
+      if(/\/shorts\//i.test(raw))S.vidShape[key]='p';else delete S.vidShape[key];
+      save();openVideo(item,alt);renderSessions();renderDrills();
     };
   }
+  const va=document.getElementById('vAlt');if(va)va.onclick=function(){openVideo(item,!alt)};
   document.getElementById('vClose').onclick=closeVideo;
   scrim.classList.add('up');
 }
