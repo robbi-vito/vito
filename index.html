@@ -185,6 +185,7 @@ table.data .rm:hover{color:var(--rust)}
 .watch.fresh{margin:12px 0 0;display:inline-block}
 .watch.fresh.on{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
 .watch.stop{margin:16px 0 0;display:inline-block}
+.watch.stop+.watch.stop{margin-left:8px}
 .watch.today-play{display:table;margin:-12px auto 24px;text-decoration:none}
 .watch.today-play[hidden]{display:none}
 a.watch{text-decoration:none;display:inline-block}
@@ -380,6 +381,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
             <button id="addEvening">Add</button>
           </div>
           <button class="watch stop" id="stopBtn" type="button"></button>
+          <button class="watch stop" id="upBtn" type="button"></button>
           <div class="strip-note" id="stopAvg" style="text-align:left;margin:8px 0 0" hidden></div>
           <h3 style="font-family:'Cormorant Garamond',serif;font-weight:700;font-size:21px;margin:22px 0 4px">Three sentences</h3>
           <p class="ex-cue" style="margin:0 0 6px">Past tense, thirty seconds. What happened, what it cost, what tomorrow needs. No analysis.</p>
@@ -1047,6 +1049,7 @@ S.tonight=Array.isArray(S.tonight)                /* the Tonight items, seeded o
   ?S.tonight.filter(function(e){return e&&typeof e==='object'&&e.id})
   :EVENING.map(function(e){return {id:e.id,t:e.t,s:e.s}});
 S.stopped=S.stopped&&typeof S.stopped==='object'?S.stopped:{};   /* night date -> time stopped, ms */
+S.woke=S.woke&&typeof S.woke==='object'?S.woke:{};   /* date -> time up, ms */
 S.vid=S.vid||{};S.sound=S.sound===undefined?true:S.sound;
 S.vidShape=S.vidShape&&typeof S.vidShape==='object'?S.vidShape:{};   /* video key -> 'p' when portrait */
 S.warmup=S.warmup&&typeof S.warmup==='object'?S.warmup:{};   /* date -> warm-up item id -> ticked */
@@ -2212,11 +2215,18 @@ function stopAverage(){
   const t=(Math.round(m.reduce(function(a,b){return a+b},0)/m.length)+720)%1440;
   return 'Seven-night average '+String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')+'.';
 }
+function upAverage(){
+  const ks=Object.keys(S.woke).filter(function(k){return typeof S.woke[k]==='number'}).sort().slice(-7);
+  if(ks.length<7)return '';
+  const m=ks.map(function(k){const d=new Date(S.woke[k]);return d.getHours()*60+d.getMinutes()});
+  const t=Math.round(m.reduce(function(a,b){return a+b},0)/m.length);
+  return 'Up at '+String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')+' on average.';
+}
 function paintStop(){
   const at=S.stopped[nightKey()],on=typeof at==='number',b=document.getElementById('stopBtn');
   b.textContent=on?'STOPPED '+clockOf(at):'STOPPED FOR THE NIGHT';
   b.classList.toggle('set',on);b.setAttribute('aria-pressed',on?'true':'false');
-  const a=document.getElementById('stopAvg'),line=stopAverage();
+  const a=document.getElementById('stopAvg'),line=[stopAverage(),upAverage()].filter(Boolean).join(' ');
   a.textContent=line;a.hidden=!line;
 }
 document.getElementById('stopBtn').onclick=function(){
@@ -2225,6 +2235,18 @@ document.getElementById('stopBtn').onclick=function(){
   save();paintStop();
 };
 paintStop();
+/* up: the morning's time against its own date */
+function paintUp(){
+  const at=S.woke[todayKey()],on=typeof at==='number',b=document.getElementById('upBtn');
+  b.textContent=on?'UP '+clockOf(at):'UP THIS MORNING';
+  b.classList.toggle('set',on);b.setAttribute('aria-pressed',on?'true':'false');
+}
+document.getElementById('upBtn').onclick=function(){
+  const k=todayKey();
+  if(typeof S.woke[k]==='number')delete S.woke[k];else S.woke[k]=Date.now();
+  save();paintUp();paintStop();
+};
+paintUp();
 const jr=document.getElementById('journal');
 jr.value=S.journal[todayKey()]||'';
 jr.oninput=function(){S.journal[todayKey()]=jr.value;save()};
