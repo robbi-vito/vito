@@ -242,6 +242,7 @@ table.data .soft{font-family:'Crimson Pro',serif;font-style:italic;font-size:14p
 .chk .del{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:17px;padding:0 4px;line-height:1}
 .chk.off{opacity:.4}
 .chk.off .box{cursor:default}
+.shot-t{background:none;border:none;color:var(--rust);font-family:'Courier Prime',monospace;font-size:14px;cursor:pointer;padding:0 6px}
 .stretch{border-top:1px dashed var(--edge);padding-top:2px}
 .stretch h3{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:21px;margin:14px 0 0}
 
@@ -733,6 +734,20 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
 
     <div class="det-group" style="margin-top:28px">
       <details>
+        <summary><h2>Shot log</h2><span class="meta" id="shotMeta">AN INDEX</span></summary>
+        <div class="det-body">
+          <table class="data" id="shots"></table>
+          <div class="log-row">
+            <input type="date" id="shD" style="flex:1.3">
+            <input type="number" id="shC" placeholder="clips" inputmode="numeric" style="flex:1">
+          </div>
+          <div class="log-row">
+            <input type="text" id="shW" placeholder="What, and the light">
+            <button id="addShot">Add</button>
+          </div>
+        </div>
+      </details>
+      <details>
         <summary><h2>The phases</h2><span class="meta">TO 21 DEC</span></summary>
         <div class="det-body">
           <table class="data" id="phaseTable"></table>
@@ -974,6 +989,7 @@ S.wardrobe=S.wardrobe&&typeof S.wardrobe==='object'?S.wardrobe:{};
   if(!Array.isArray(S.wardrobe[k]))S.wardrobe[k]=[];
 });
 if(!Array.isArray(S.loops))S.loops=[];
+S.shots=Array.isArray(S.shots)?S.shots.filter(function(r){return r&&typeof r==='object'&&r.d}):[];   /* {d, w, c, i, u} per shoot */
 const save=()=>DB.set('vito.v3',S);
 document.documentElement.dataset.theme=S.theme;
 
@@ -2175,6 +2191,33 @@ document.getElementById('addCommit').onclick=function(){
   document.getElementById('cTitle').value='';document.getElementById('cDate').value='';
 };
 renderBuild();
+/* ── shot log: one row per shoot, newest first ── */
+function renderShots(){
+  const host=document.getElementById('shots');if(!host)return;
+  const rows=S.shots.map(function(r,i){return {r:r,i:i}}).sort(function(a,b){return a.r.d<b.r.d?1:-1});
+  const tog=function(x,k){return '<button class="shot-t" type="button" data-i="'+x.i+'" data-k="'+k+'" aria-pressed="'+!!x.r[k]+'">'+(x.r[k]?'✓':'–')+'</button>'};
+  host.innerHTML=rows.length
+    ?'<tr><th>Date</th><th>What</th><th>Clips</th><th>In</th><th>Used</th><th></th></tr>'+rows.map(function(x){
+      return '<tr><td>'+fmt(x.r.d)+'</td><td class="soft">'+esc(x.r.w||'')+'</td><td>'+(x.r.c||'—')+'</td>'+
+        '<td>'+tog(x,'i')+'</td><td>'+tog(x,'u')+'</td>'+
+        '<td style="text-align:right"><button class="del rm" data-i="'+x.i+'" aria-label="Remove">×</button></td></tr>'}).join('')
+    :'<tr><td class="soft" style="border:none;padding-left:0">Nothing logged yet. One row per shoot, the day it happens.</td></tr>';
+  host.querySelectorAll('.shot-t').forEach(function(b){
+    b.onclick=function(){const r=S.shots[+b.dataset.i];r[b.dataset.k]=!r[b.dataset.k];save();renderShots()};
+  });
+  host.querySelectorAll('.rm').forEach(function(b){b.onclick=function(){S.shots.splice(+b.dataset.i,1);save();renderShots()}});
+  const unused=S.shots.filter(function(r){return !r.u}).length;
+  document.getElementById('shotMeta').textContent=S.shots.length?S.shots.length+(S.shots.length===1?' SHOOT':' SHOOTS')+' · '+unused+' UNUSED':'AN INDEX';
+}
+document.getElementById('shD').value=todayKey();
+document.getElementById('addShot').onclick=function(){
+  const d=document.getElementById('shD').value,w=document.getElementById('shW').value.trim();
+  const c=parseInt(document.getElementById('shC').value,10);
+  if(!d||!w)return;
+  S.shots.push({d:d,w:w,c:c>0?c:null,i:false,u:false});save();renderShots();
+  document.getElementById('shW').value='';document.getElementById('shC').value='';
+};
+renderShots();
 const th=document.getElementById('three');
 th.value=S.three;th.oninput=function(){S.three=th.value;save()};
 
