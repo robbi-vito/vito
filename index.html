@@ -127,6 +127,10 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 .cta:hover{filter:brightness(1.12)}
 .cta.ghost{background:none;border:1px solid var(--edge);color:var(--text-soft);font-size:17px}
 .cta.ghost:hover{border-color:var(--rust);color:var(--rust);filter:none}
+.owed{display:block;margin:-18px auto 18px;background:none;border:none;cursor:pointer;
+  font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:.14em;color:var(--ember);
+  text-decoration:underline;text-underline-offset:4px;padding:6px 4px}
+.owed[hidden]{display:none}
 
 details{border-top:1px solid var(--edge)}
 .det-group details:last-of-type,details.solo{border-bottom:1px solid var(--edge)}
@@ -370,6 +374,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     <div class="week" id="weekStrip"></div>
     <div class="strip-note" id="weekNote"></div>
     <button class="cta" id="goSession">Open today's session</button>
+    <button class="owed" id="owedBtn" type="button" hidden></button>
     <a class="watch today-play" id="todayPlay" target="_blank" rel="noopener noreferrer" hidden></a>
 
     <div class="det-group">
@@ -1535,17 +1540,31 @@ renderInsight();
 
 const goBtn=document.getElementById('goSession');
 if(!sess){goBtn.textContent=slot.s?'Mark it done':'Nothing today';goBtn.classList.add('ghost')}
-/* the button opens the session the Train view opens; when that is not the weekday's own, it names it */
-function goTarget(){return sess?(nextSession()||sess.key):null}
-function paintGo(){
-  const b=document.getElementById('goSession'),k=goTarget();
-  if(!b||!k)return;
-  b.textContent=k===sess.key?'Open today\'s session':
-    'Open '+WEEK[PROG[k].day-1].k+' — '+(PROG[k].day<sess.day?'still owed':'next due');
+/* the button is today's session, always; anything still owed sits under it, quieter */
+function goTarget(){return sess?sess.key:null}
+function owedSession(){
+  if(!sess)return null;
+  const n=nextSession();
+  return n&&n!==sess.key?n:null;
 }
+function openSession(k){
+  switchView('train');
+  setTimeout(function(){
+    const d=document.getElementById('s-'+k);
+    if(d){closeOthers(d);d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'})}
+  },90);
+}
+function paintGo(){
+  const b=document.getElementById('goSession'),o=document.getElementById('owedBtn');
+  if(b&&sess)b.textContent='Open today\'s session';
+  if(!o)return;
+  const k=owedSession();
+  o.hidden=!k;
+  if(k)o.textContent=WEEK[PROG[k].day-1].k.toUpperCase()+(PROG[k].day<sess.day?' STILL OWED':' NEXT DUE');
+}
+document.getElementById('owedBtn').onclick=function(){const k=owedSession();if(k)openSession(k)};
 goBtn.onclick=function(){
-  if(sess){const k=goTarget();switchView('train');setTimeout(function(){const d=document.getElementById('s-'+k);
-    if(d){closeOthers(d);d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'})}},90)}
+  if(sess)openSession(sess.key);
   else if(slot.s){S.week.done[slot.s]=!S.week.done[slot.s];save();renderWeek();renderInsight()}
 };
 function renderWeek(){
