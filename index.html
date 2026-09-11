@@ -104,12 +104,13 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
   transition:background .25s ease,border-color .1s ease,transform .12s ease}
 .wd .l{font-family:'Courier Prime',monospace;font-size:9.5px;letter-spacing:.1em;color:var(--text-dim);display:block}
 .wd .k{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:13px;display:block;margin-top:2px;color:var(--text-soft)}
-.wd .tick{position:absolute;top:1px;right:3px;font-size:9px;line-height:1;color:var(--on-rust);
+.wd .tick{position:absolute;top:1px;right:3px;font-size:9px;line-height:1;color:var(--rust);
   opacity:0;transform:scale(.4);transition:opacity .2s ease,transform .2s cubic-bezier(.2,1.6,.4,1)}
 .wd.today{border-color:var(--rust)}
 .wd.today .k{color:var(--rust)}
-.wd.done{background:var(--rust-fill);border-color:var(--rust-fill)}
-.wd.done .k,.wd.done .l{color:var(--on-rust)}
+/* finished days recede to an outline and a tick; the only filled surface is the action */
+.wd.done{background:var(--bg-raise);border-color:var(--rust-lo)}
+.wd.done .k,.wd.done .l{color:var(--text-dim)}
 .wd.done .tick{opacity:1;transform:scale(1)}
 /* a finished day still has to read as today, so keep a ring the fill cannot swallow */
 .wd.done.today{border-color:var(--ember);box-shadow:inset 0 0 0 1px var(--ember)}
