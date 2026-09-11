@@ -951,9 +951,8 @@ function heaviestOn(key){
 }
 function panelHead(i,bd){
   const t=dayIdx();
-  if(i===t)return 'TODAY';
-  let h=DAYNAME[i],f=bd[i];
-  if(f&&i>t){h+=' · '+temp(f.tmax);if(f.precip>=20)h+=' · '+f.precip+'% RAIN'}
+  let h=i===t?'TODAY':DAYNAME[i],f=bd[i];
+  if(f&&i>=t){h+=' · '+temp(f.tmax);if(f.precip>=20)h+=' · '+f.precip+'% RAIN'}
   return h;
 }
 /* renders an anchor when S.meet holds a link, otherwise a button that prompts for one */
