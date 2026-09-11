@@ -286,6 +286,7 @@ textarea.three:focus{outline:none;border-color:var(--rust)}
 .sheet .sub{font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim);margin-bottom:16px}
 .frame{position:relative;width:100%;padding-bottom:56.25%;background:var(--bg-sink);margin-bottom:14px}
 .frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.frame.tall{padding-bottom:0;height:min(64vh,620px);aspect-ratio:9/16;width:auto;max-width:100%;margin:0 auto 14px}
 .sheet-foot{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px}
 .sheet-foot a,.sheet-foot button{font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:.1em;
   color:var(--text-soft);text-decoration:none;background:none;border:1px solid var(--edge);
@@ -892,6 +893,7 @@ S.tonight=Array.isArray(S.tonight)                /* the Tonight items, seeded o
   :EVENING.map(function(e){return {id:e.id,t:e.t,s:e.s}});
 S.stopped=S.stopped&&typeof S.stopped==='object'?S.stopped:{};   /* night date -> time stopped, ms */
 S.vid=S.vid||{};S.sound=S.sound===undefined?true:S.sound;
+S.vidShape=S.vidShape&&typeof S.vidShape==='object'?S.vidShape:{};   /* video key -> 'p' when portrait */
 S.warmup=S.warmup&&typeof S.warmup==='object'?S.warmup:{};   /* date -> warm-up item id -> ticked */
 S.stretch=S.stretch&&typeof S.stretch==='object'?S.stretch:{};  /* date -> stretch id -> ticked */
 S.timer=S.timer&&typeof S.timer==='object'?S.timer:{};   /* session timer */
@@ -1826,20 +1828,24 @@ function openVideo(item){
   const body=document.getElementById('vBody');
   const search='https://www.youtube.com/results?search_query='+encodeURIComponent(item.q);
   if(id){
-    body.innerHTML='<div class="frame"><iframe src="https://www.youtube-nocookie.com/embed/'+id+
+    const tall=S.vidShape[item.id]==='p';
+    body.innerHTML='<div class="frame'+(tall?' tall':'')+'"><iframe src="https://www.youtube-nocookie.com/embed/'+id+
       '?rel=0&playsinline=1" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>'+
       '<div class="sheet-foot"><a href="https://youtu.be/'+id+'" target="_blank" rel="noopener">OPEN ON YOUTUBE</a>'+
-      '<button id="vChange">CHANGE</button><button class="close" id="vClose">DONE</button></div>';
-    document.getElementById('vChange').onclick=function(){delete S.vid[item.id];save();openVideo(item);renderSessions();renderDrills()};
+      '<button id="vShape">'+(tall?'LANDSCAPE':'PORTRAIT')+'</button><button id="vChange">CHANGE</button><button class="close" id="vClose">DONE</button></div>';
+    document.getElementById('vChange').onclick=function(){delete S.vid[item.id];delete S.vidShape[item.id];save();openVideo(item);renderSessions();renderDrills()};
+    document.getElementById('vShape').onclick=function(){if(tall)delete S.vidShape[item.id];else S.vidShape[item.id]='p';save();openVideo(item)};
   }else{
     body.innerHTML='<div class="prose"><p style="font-size:15px">Find one you like, copy its link, paste it here. It stays saved — you will never be asked again for this movement.</p></div>'+
       '<div class="sheet-foot" style="margin-bottom:12px"><a href="'+search+'" target="_blank" rel="noopener">SEARCH YOUTUBE</a></div>'+
       '<div class="log-row"><input type="text" id="vPaste" placeholder="Paste the YouTube link"><button id="vSave">Save</button></div>'+
       '<div class="sheet-foot"><button class="close" id="vClose">CLOSE</button></div>';
     document.getElementById('vSave').onclick=function(){
-      const v=ytId(document.getElementById('vPaste').value);
+      const raw=document.getElementById('vPaste').value,v=ytId(raw);
       if(!v){alert('That does not look like a YouTube link. Copy the address from the video page.');return}
-      S.vid[item.id]=v;save();openVideo(item);renderSessions();renderDrills();
+      S.vid[item.id]=v;
+      if(/\/shorts\//i.test(raw))S.vidShape[item.id]='p';else delete S.vidShape[item.id];
+      save();openVideo(item);renderSessions();renderDrills();
     };
   }
   document.getElementById('vClose').onclick=closeVideo;
