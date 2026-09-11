@@ -894,6 +894,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
 
 <script>
 'use strict';
+const DAY_START=5;   /* the hour the day rolls at, before anything reads a date */
 const mem={};
 const DB={get(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return mem[k]??null}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){mem[k]=v}}};
@@ -1059,14 +1060,17 @@ const CADENCE=[
 
 function mondayOf(d){const x=new Date(d);const g=(x.getDay()+6)%7;x.setDate(x.getDate()-g);x.setHours(0,0,0,0);
   return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0')}
-function todayKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
-const dayIdx=()=>(new Date().getDay()+6)%7;
+/* the day rolls at 05:00: anything written at 00:30 belongs to the day that just ended */
+function appNow(){const d=new Date();if(d.getHours()<DAY_START)d.setDate(d.getDate()-1);return d}
+function todayKey(){return dkey(appNow())}
+function calKey(){return dkey(new Date())}   /* the calendar date, for the morning itself */
+const dayIdx=()=>(appNow().getDay()+6)%7;
 const fmt=s=>new Date(s+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
 function esc(x){return String(x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 
 let S=DB.get('vito.v3')||DB.get('vito.v2')||DB.get('vito.v1')||{};
-if(!S.week||S.week.start!==mondayOf(new Date())){
-  S.week={start:mondayOf(new Date()),done:{},posture:(S.week&&S.week.posture)||{},cadence:{}};
+if(!S.week||S.week.start!==mondayOf(appNow())){
+  S.week={start:mondayOf(appNow()),done:{},posture:(S.week&&S.week.posture)||{},cadence:{}};
 }
 S.week.done=S.week.done||{};S.week.posture=S.week.posture||{};S.week.cadence=S.week.cadence||{};
 S.logs=S.logs||{};S.body=S.body||[{d:'2026-08-14',w:167.2,f:15.0}];
@@ -1159,7 +1163,7 @@ const SKY={0:'clear',1:'mostly clear',2:'partly cloudy',3:'overcast',45:'fog',48
  85:'snow showers',86:'snow showers',95:'thunderstorms',96:'thunderstorms',99:'thunderstorms'};
 /* morning, afternoon, evening — the same day reads differently depending on
    whether the session is ahead of you, still owed, or done */
-function partOfDay(h){return h<12?0:h<17?1:2}
+function partOfDay(h){return h<DAY_START?2:h<12?0:h<17?1:2}
 const MOMENTUM=[
  ['The week starts heavy. Nothing else counts yet.',
   'Push still stands. It does not get lighter later.',
@@ -1320,7 +1324,7 @@ function panelLines(i,bd){
   return lines;
 }
 function renderBrief(){
-  const now=new Date();
+  const now=appNow();
   let head=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
   if(WX&&WX.now&&Date.now()-WX.at<3*60*60*1000)head+=' · '+temp(WX.now.t)+' '+(SKY[WX.now.code]||'');
   document.getElementById('todayDate').textContent=head;
@@ -2244,10 +2248,7 @@ document.getElementById('addEvening').onclick=function(){
   S.tonight.push({id:'e'+Date.now(),t:v,s:''});save();el.value='';renderEvening();
 };
 /* a night runs to 5am, so a tap after midnight belongs to the evening before */
-function nightKey(){
-  const d=new Date();if(d.getHours()<5)d.setDate(d.getDate()-1);
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
+function nightKey(){return todayKey()}
 function clockOf(ms){const d=new Date(ms);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
 /* averaged as minutes after noon, so 23:50 and 00:10 give midnight rather than midday */
 function stopAverage(){
@@ -2279,12 +2280,12 @@ document.getElementById('stopBtn').onclick=function(){
 paintStop();
 /* up: the morning's time against its own date */
 function paintUp(){
-  const at=S.woke[todayKey()],on=typeof at==='number',b=document.getElementById('upBtn');
+  const at=S.woke[calKey()],on=typeof at==='number',b=document.getElementById('upBtn');
   b.textContent=on?'UP '+clockOf(at):'UP THIS MORNING';
   b.classList.toggle('set',on);b.setAttribute('aria-pressed',on?'true':'false');
 }
 document.getElementById('upBtn').onclick=function(){
-  const k=todayKey();
+  const k=calKey();
   if(typeof S.woke[k]==='number')delete S.woke[k];else S.woke[k]=Date.now();
   save();paintUp();paintStop();
 };
