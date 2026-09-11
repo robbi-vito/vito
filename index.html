@@ -18,16 +18,16 @@
 <style>
 :root[data-theme="dark"]{
   --bg:#14100E;--bg-raise:#1D1815;--bg-sink:#0C0A09;--edge:#2E2622;
-  --text:#E8DFCF;--text-soft:#9A8F7E;--text-dim:#655A4E;
+  --text:#E8DFCF;--text-soft:#9A8F7E;--text-dim:#7B7062;
   --rust:#B4552B;--rust-fill:#95431F;--rust-lo:#6E3419;--ember:#D07C3E;
-  --glow:rgba(180,85,43,.11);--grain:.30;--leak:.58;--vig:.94;--on-rust:#F2E7D6;
+  --glow:rgba(180,85,43,.11);--grain:.15;--grain-hero:.32;--leak:.58;--vig:.94;--on-rust:#F2E7D6;
   --leak-a:#F57A30;--leak-b:#B8401A;--leak-c:#7E3016;
 }
 :root[data-theme="light"]{
   --bg:#EDE5D3;--bg-raise:#F6F0E3;--bg-sink:#E2D7C0;--edge:#C9BCA1;
-  --text:#241C18;--text-soft:#5A4E43;--text-dim:#8A7C6A;
+  --text:#241C18;--text-soft:#5A4E43;--text-dim:#7C6E5C;
   --rust:#96401D;--rust-fill:#96401D;--rust-lo:#C08A63;--ember:#B4552A;
-  --glow:rgba(150,64,29,.06);--grain:.18;--leak:.34;--vig:.46;--on-rust:#F6F0E3;
+  --glow:rgba(150,64,29,.06);--grain:.09;--grain-hero:.20;--leak:.34;--vig:.46;--on-rust:#F6F0E3;
   --leak-a:#E06A2C;--leak-b:#933012;--leak-c:#6E2A12;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -75,12 +75,18 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 .icon-btn.off::after{content:'';position:absolute;left:50%;top:50%;width:19px;height:1px;
   background:currentColor;transform:translate(-50%,-50%) rotate(-45deg)}
 
-.hero{padding:12px 0 26px}
+.hero{padding:12px 0 26px;position:relative}
+/* the hero keeps the full emulsion; body text reads through a thinner layer */
+.hero::after{content:'';position:absolute;inset:-14px -20px;pointer-events:none;z-index:0;
+  opacity:var(--grain-hero);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='2' seed='11' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='128' height='128' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:128px 128px}
+.hero>*{position:relative;z-index:1}
 .hero .date{font-family:'Courier Prime',monospace;font-size:12px;letter-spacing:.22em;color:var(--text-dim);margin-bottom:6px}
 .hero h1{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:clamp(52px,17vw,88px);
   line-height:.92;letter-spacing:-.01em;margin-bottom:8px;text-shadow:0 0 38px var(--glow)}
 .hero .sub{font-style:italic;color:var(--text-soft);font-size:18px}
-.hero .insight{font-family:'Courier Prime',monospace;font-size:13px;color:var(--text-dim);margin-top:8px}
+.hero .insight{font-family:'Courier Prime',monospace;font-size:13px;color:var(--text-soft);margin-top:8px}
 /* one panel per weekday, swiped sideways; the week strip shows which is in view */
 .brief{display:flex;align-items:flex-start;overflow-x:auto;gap:14px;margin-top:17px;
   scroll-snap-type:x mandatory;transition:height .2s ease;
@@ -118,7 +124,7 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 .wd.viewing::after{content:'';position:absolute;left:18%;right:18%;bottom:-5px;height:2px;background:var(--ember)}
 .wd:not(.rest):active{transform:scale(.93)}
 .wd.rest{opacity:.4;cursor:default}
-.strip-note{font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:26px}
+.strip-note{font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-soft);text-align:center;margin-bottom:26px}
 
 .cta{display:block;width:100%;padding:17px;margin:4px 0 26px;background:var(--rust-fill);color:var(--on-rust);
   border:none;border-radius:2px;font-family:'Cormorant Garamond',serif;font-weight:700;font-size:21px;
@@ -194,7 +200,7 @@ table.data .rm:hover{color:var(--rust)}
 .watch.today-play{display:table;margin:-12px auto 24px;text-decoration:none}
 .watch.today-play[hidden]{display:none}
 a.watch{text-decoration:none;display:inline-block}
-.grade{margin:4px 0 0 26px;font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim)}
+.grade{margin:4px 0 0 26px;font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-soft)}
 .watch.unit{min-width:44px;text-align:center}
 .sess-timer{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 8px}
 .sess-timer .watch,.sess-end .watch{margin:0}
