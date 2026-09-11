@@ -168,6 +168,10 @@ table.data .rm:hover{color:var(--rust)}
 .watch.set{border-color:var(--rust-lo);color:var(--ember)}
 .ex-foot{display:flex;justify-content:space-between;align-items:center;margin:10px 0 0 26px}
 .ex-foot .watch{margin:0}
+.plates{display:block;margin:7px 0 0 26px;background:none;border:none;padding:0;cursor:pointer;text-align:left;
+  font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim)}
+.plates[hidden]{display:none}
+.plates:hover{color:var(--rust)}
 .watch.unit{min-width:44px;text-align:center}
 
 .info{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;
@@ -819,6 +823,11 @@ function fromUnit(v,u){return u==='kg'?Math.round(v*LB_PER_KG*100)/100:v}
 /* sets are stored in lb; this is where they become text in the exercise's unit */
 function fmtW(lb,u){const v=Math.round(toUnit(lb,u)*10)/10;return v%1===0?String(v):v.toFixed(1)}
 function incText(id){return unitOf(id)==='kg'?'2.5 kg':'5 lb'}
+/* a value already in the display unit, as text */
+function fmtU(v){const r=Math.round(v*10)/10;return r%1===0?String(r):r.toFixed(1)}
+S.bar=S.bar&&typeof S.bar==='object'?S.bar:{};    /* exercise id -> bar weight in lb, when not the default */
+const BAR={a1:45,c1:45,c2:45};                    /* barbell exercises and their default bar, lb */
+const PLATES={lb:[45,25,10,5,2.5],kg:[25,20,10,5,2.5,1.25]};
 S.wardrobe=S.wardrobe&&typeof S.wardrobe==='object'?S.wardrobe:{};
 ['palette','measure','groom','sizes','uniforms','rules'].forEach(function(k){
   if(!Array.isArray(S.wardrobe[k]))S.wardrobe[k]=[];
@@ -1305,7 +1314,8 @@ function exNode(ex,num){
   w.innerHTML='<div class="ex-top"><span class="ex-n">'+num+'</span><span class="ex-name">'+ex.n+
     (ex.alt?' <em>('+ex.alt+')</em>':'')+flags+'</span><span class="ex-scheme">'+ex.sets+' × '+ex.rep+'</span></div>'+
     (ex.cue?'<p class="ex-cue">'+ex.cue+'</p>':'')+
-    '<div class="sets" id="sets-'+ex.id+'"></div>';
+    '<div class="sets" id="sets-'+ex.id+'"></div>'+
+    (BAR[ex.id]?'<button class="plates" id="plates-'+ex.id+'" type="button" hidden></button>':'');
   const btn=document.createElement('button');
   btn.className='watch'+(S.vid[ex.id]?' set':'');
   btn.textContent=S.vid[ex.id]?'▶ WATCH':'＋ SET VIDEO';
@@ -1338,6 +1348,52 @@ function paintSets(ex){
   }
   const l=lastFor(ex.id);
   if(l){const s=document.createElement('span');s.className='last';s.textContent=l;host.appendChild(s)}
+  paintPlates(ex);
+}
+/* today's latest weight on this exercise, else the top set last time, in lb */
+function loadWeight(id){
+  const today=((S.logs[todayKey()]||{})[id]||[]).filter(function(s){return s&&typeof s.w==='number'&&isFinite(s.w)});
+  if(today.length)return today[today.length-1].w;
+  const ds=Object.keys(S.logs).filter(function(d){return d!==todayKey()}).sort();
+  for(let i=ds.length-1;i>=0;i--){
+    const sets=((S.logs[ds[i]]||{})[id]||[]).filter(function(s){return s&&typeof s.w==='number'&&isFinite(s.w)});
+    if(sets.length)return sets.reduce(function(a,b){return b.w>a.w?b:a}).w;
+  }
+  return null;
+}
+/* greedy split of one side into standard plates; null when it does not come out even */
+function plateList(side,u){
+  let left=Math.round(side*100)/100;const out=[];
+  PLATES[u].forEach(function(p){while(left>=p-1e-6){out.push(p);left=Math.round((left-p)*100)/100}});
+  return left<0.01?out:null;
+}
+function barLb(id){
+  if(typeof S.bar[id]==='number')return S.bar[id];
+  return unitOf(id)==='kg'?20*LB_PER_KG:BAR[id];
+}
+/* display only: the entry is the total including the bar and is never altered */
+function paintPlates(ex){
+  const el=document.getElementById('plates-'+ex.id);
+  if(!el)return;
+  const lb=loadWeight(ex.id);
+  if(lb===null){el.hidden=true;return}
+  const u=unitOf(ex.id),T=Math.round(toUnit(lb,u)*100)/100,B=Math.round(toUnit(barLb(ex.id),u)*100)/100;
+  const side=Math.round((T-B)/2*100)/100;
+  let txt;
+  if(side<0)txt=fmtU(T)+' is lighter than the '+fmtU(B)+' bar';
+  else if(side===0)txt=fmtU(T)+' = the '+fmtU(B)+' bar alone';
+  else{const pl=plateList(side,u);txt=fmtU(T)+' = '+fmtU(B)+' bar + '+fmtU(side)+' per side'+(pl?' ('+pl.map(fmtU).join(' + ')+')':'')}
+  el.textContent=txt;el.hidden=false;
+  el.setAttribute('aria-label',txt+'. Tap to set the bar weight.');
+  el.onclick=function(){
+    const v=prompt('Bar weight for '+ex.n+' in '+u+'.\n45 lb or 20 kg is a standard bar; an EZ bar is lighter.',fmtU(B));
+    if(v===null)return;
+    const n=parseFloat(v);
+    if(!(n>0)){alert('That is not a weight. Nothing has been changed.');return}
+    const lbv=fromUnit(n,u),def=u==='kg'?20*LB_PER_KG:BAR[ex.id];
+    if(Math.abs(lbv-def)<0.05)delete S.bar[ex.id];else S.bar[ex.id]=lbv;
+    save();paintPlates(ex);
+  };
 }
 /* weight and reps however the keyboard makes it easy - 135x8, 135*8, 135 8, 135,8,
    135-8, 135/8 - plus reps alone (x8) and a typed unit (60kg x 8), which overrides
