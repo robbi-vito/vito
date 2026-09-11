@@ -1514,6 +1514,39 @@ function parseSet(raw,u){
   const n=parseFloat(t);
   return {w:isFinite(n)&&n>0?fromUnit(n,unit):null,r:null};
 }
+/* the heaviest set before today; on a tie, the one with more reps */
+function bestSet(id){
+  let b=null;
+  Object.keys(S.logs).forEach(function(d){
+    if(d===todayKey())return;
+    ((S.logs[d]||{})[id]||[]).forEach(function(s){
+      if(s&&typeof s.w==='number'&&isFinite(s.w)&&(!b||s.w>b.w||(s.w===b.w&&(s.r||0)>(b.r||0))))b=s;
+    });
+  });
+  return b;
+}
+/* the set prompt beyond its title: target, last and best, the current advice, and an
+   example built from this exercise's own numbers */
+function setContext(ex,u){
+  const last=prevTop(ex.id),best=bestSet(ex.id),rr=repRange(ex),fresh=freshOn();
+  const ctx=['Target '+ex.rep];
+  if(last)ctx.push('last '+fmtW(last.w,u)+'×'+(last.r||'?'));
+  if(best&&(!last||best.w!==last.w||best.r!==last.r))ctx.push('best '+fmtW(best.w,u)+'×'+(best.r||'?'));
+  let adv='';
+  if(fresh)adv=freshLine(ex);
+  else{const p=progress(ex);if(p)adv=p.fact+' '+p.act}
+  let tail;
+  if(!rr)tail='Leave it empty to tick the set off.';
+  else{
+    const step=u==='kg'?2.5:5,reps=rr[1];
+    let w=last?toUnit(last.w,u):null;
+    if(fresh&&last){const fw=Math.floor(toUnit(last.w,u)*0.7/step)*step;if(fw>0)w=fw}
+    tail=w===null
+      ? 'Weight × reps in '+u+', e.g. '+(u==='kg'?60:135)+'x'+reps+', or x'+reps+' for reps alone'
+      : 'Weight × reps in '+u+', e.g. '+fmtU(w)+'x'+reps+', '+fmtU(w)+'*'+reps+' or '+fmtU(w)+' '+reps;
+  }
+  return '\n'+ctx.join(' · ')+(adv?'\n'+adv:'')+'\n'+tail;
+}
 function sessionOf(ex){
   return Object.keys(PROG).filter(function(k){return PROG[k].ex.indexOf(ex)>-1})[0]||null;
 }
@@ -1531,7 +1564,7 @@ function logSet(ex,i){
   const u=unitOf(ex.id);
   const seed=prev?((prev.w?fmtW(prev.w,u):'')+(prev.r?'x'+prev.r:'')):'';
   const rule=ex.left?'\nLeft first. Right stops where left stopped.':'';
-  const raw=prompt(ex.n+' — set '+(i+1)+rule+'\nWeight × reps in '+u+', e.g. 135x8',seed);
+  const raw=prompt(ex.n+' — set '+(i+1)+rule+setContext(ex,u),seed);
   if(raw===null)return;
   arr[i]=parseSet(raw,u);
   /* a finished session ticks its day; removing a set later does not untick it */
