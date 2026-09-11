@@ -175,6 +175,7 @@ table.data .rm:hover{color:var(--rust)}
 .advice{margin:6px 0 0 26px;font-family:'Courier Prime',monospace;font-size:11px;color:var(--ember)}
 .watch.fresh{margin:12px 0 0;display:inline-block}
 .watch.fresh.on{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
+.grade{margin:4px 0 0 26px;font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim)}
 .watch.unit{min-width:44px;text-align:center}
 
 .info{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;
@@ -826,7 +827,8 @@ function toUnit(lb,u){return u==='kg'?lb/LB_PER_KG:lb}
 function fromUnit(v,u){return u==='kg'?Math.round(v*LB_PER_KG*100)/100:v}
 /* sets are stored in lb; this is where they become text in the exercise's unit */
 function fmtW(lb,u){const v=Math.round(toUnit(lb,u)*10)/10;return v%1===0?String(v):v.toFixed(1)}
-function incText(id){return unitOf(id)==='kg'?'2.5 kg':'5 lb'}
+const STEP={c1:10,c2:10,c3:10};                  /* lb added per progression step; 5 unless listed */
+function incText(id){const s=STEP[id]||5;return unitOf(id)==='kg'?fmtU(s/2)+' kg':s+' lb'}
 /* a value already in the display unit, as text */
 function fmtU(v){const r=Math.round(v*10)/10;return r%1===0?String(r):r.toFixed(1)}
 S.bar=S.bar&&typeof S.bar==='object'?S.bar:{};    /* exercise id -> bar weight in lb, when not the default */
@@ -835,6 +837,17 @@ const PLATES={lb:[45,25,10,5,2.5],kg:[25,20,10,5,2.5,1.25]};
 /* fresh start is a daily switch: on only for the date it was set */
 function freshOn(){try{return localStorage.getItem('vito.fresh')===todayKey()}catch(e){return false}}
 function setFresh(on){try{if(on)localStorage.setItem('vito.fresh',todayKey());else localStorage.removeItem('vito.fresh')}catch(e){}}
+const GRADES_FROM='2026-10-15';                    /* barbell grades are withheld before this date */
+/* approximate 1RM thresholds as multiples of bodyweight, one per band */
+const STD={squat:[.75,1.25,1.5,2,2.5],bench:[.5,.75,1,1.5,2],deadlift:[1,1.5,2,2.5,3]};
+const BANDS=['beginner','novice','intermediate','advanced','elite'];
+/* graded exercises: the standard each is read against, and the factor that derives it */
+const GRADED={a1:['bench',.8],c1:['squat',1],c2:['deadlift',.75]};
+function bodyLb(){
+  const b=(S.body||[]).filter(function(e){return e&&e.d&&typeof e.w==='number'}).sort(function(x,y){return x.d<y.d?-1:1});
+  return b.length?b[b.length-1].w:null;
+}
+function exById(id){let f=null;Object.keys(PROG).forEach(function(k){PROG[k].ex.forEach(function(e){if(e.id===id)f=e})});return f}
 S.wardrobe=S.wardrobe&&typeof S.wardrobe==='object'?S.wardrobe:{};
 ['palette','measure','groom','sizes','uniforms','rules'].forEach(function(k){
   if(!Array.isArray(S.wardrobe[k]))S.wardrobe[k]=[];
@@ -1182,7 +1195,8 @@ function iStalled(){
     for(let i=h.length-2;i>=0&&h[i]===last;i--)run++;
     if(run<3)return;
     const n=exName(id);
-    if(n)hit=n+' has not moved in '+count(run)+' sessions. Add '+incText(id)+'.';
+    const ex=exById(id),p=ex?progress(ex):null;
+    if(n)hit=n+' has not moved in '+count(run)+' sessions. '+(p?p.act:'Add '+incText(id)+'.');
   });
   return hit;
 }
@@ -1323,7 +1337,8 @@ function exNode(ex,num){
     (ex.cue?'<p class="ex-cue">'+ex.cue+'</p>':'')+
     '<div class="sets" id="sets-'+ex.id+'"></div>'+
     (BAR[ex.id]?'<button class="plates" id="plates-'+ex.id+'" type="button" hidden></button>':'')+
-    '<div class="advice" id="adv-'+ex.id+'" hidden></div>';
+    '<div class="advice" id="adv-'+ex.id+'" hidden></div>'+
+    (GRADED[ex.id]?'<div class="grade" id="grade-'+ex.id+'" hidden></div>':'');
   const btn=document.createElement('button');
   btn.className='watch'+(S.vid[ex.id]?' set':'');
   btn.textContent=S.vid[ex.id]?'▶ WATCH':'＋ SET VIDEO';
@@ -1376,11 +1391,63 @@ function freshLine(ex){
   if(w<=0)return 'Fresh start · 8–10 reps from a light weight, stop two short';
   return 'Fresh start · '+fmtU(w)+' × 8–10, stop two reps short';
 }
+function repRange(ex){
+  if(/s$/.test(ex.rep))return null;
+  const n=(ex.rep.match(/\d+/g)||[]).map(Number);
+  if(!n.length)return null;
+  return /[–-]/.test(ex.rep)?[n[0],n[1]]:[n[0],n[0]];
+}
+/* the two most recent sessions before today with a weight logged, newest first */
+function recentSessions(id){
+  return Object.keys(S.logs).filter(function(d){return d!==todayKey()}).sort().reverse()
+    .map(function(d){return ((S.logs[d]||{})[id]||[]).filter(function(s){return s&&typeof s.w==='number'&&isFinite(s.w)})})
+    .filter(function(a){return a.length}).slice(0,2);
+}
+/* double progression: every set at the top of the range twice running means add weight,
+   most sets under the bottom twice running means drop, anything else is building */
+function progress(ex){
+  const rr=repRange(ex);if(!rr)return null;
+  const ss=recentSessions(ex.id);if(!ss.length)return null;
+  const lo=rr[0],hi=rr[1],inc=incText(ex.id),u=unitOf(ex.id);
+  const top=function(a){return a.every(function(s){return s.r!=null&&s.r>=hi})};
+  const under=function(a){return a.filter(function(s){return s.r!=null&&s.r<lo}).length*2>a.length};
+  const wt=function(a){return Math.max.apply(null,a.map(function(s){return s.w}))};
+  const a=ss[0],b=ss[1];
+  if(b&&top(a)&&top(b)&&wt(a)>=wt(b))return {fact:'Top of the range two sessions running.',act:'Add '+inc+'.'};
+  if(b&&under(a)&&under(b))return {fact:'Under '+lo+' two sessions running.',act:'Drop '+inc+'.'};
+  if(top(a))return {fact:'Top of the range last time.',act:'Match it once more, then add weight.'};
+  if(under(a))return {fact:'Under '+lo+' last time.',act:'Hold '+fmtW(wt(a),u)+' until every set reaches '+lo+'.'};
+  return {fact:'Building.',act:'Take every set to '+hi+', then add weight.'};
+}
+/* position in a band from the last top set; the estimated max is internal only */
+function gradeLine(ex){
+  const g=GRADED[ex.id];if(!g)return '';
+  if(todayKey()<GRADES_FROM)return 'Grades return '+new Date(GRADES_FROM+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long'})+
+    '. This block builds the pattern, not the number.';
+  const top=prevTop(ex.id),bw=bodyLb();
+  if(!top||!top.r||!bw)return '';
+  const f=1+top.r/30,thr=STD[g[0]].map(function(x){return x*g[1]});
+  const ratio=top.w*f/bw;
+  let k=-1;thr.forEach(function(t,i){if(ratio>=t)k=i});
+  const u=unitOf(ex.id),step=u==='kg'?2.5:5;
+  let t=fmtW(top.w,u)+'×'+top.r+' — '+(k<0?'below the beginner band':BANDS[k]+' band');
+  if(k<BANDS.length-1){
+    const need=thr[k+1]*bw/f,gap=Math.max(step,Math.ceil(toUnit(need-top.w,u)/step)*step);
+    t+=', '+fmtU(gap)+' '+u+' from '+BANDS[k+1]+' at this rep range';
+  }
+  if(top.r>8)t+='. Indicative past eight reps';
+  return t;
+}
 function paintAdvice(ex){
   const el=document.getElementById('adv-'+ex.id);
-  if(!el)return;
-  const t=freshOn()?freshLine(ex):'';
-  el.textContent=t;el.hidden=!t;
+  if(el){
+    let t='';
+    if(freshOn())t=freshLine(ex);
+    else{const p=progress(ex);if(p)t=p.fact+' '+p.act}
+    el.textContent=t;el.hidden=!t;
+  }
+  const gEl=document.getElementById('grade-'+ex.id);
+  if(gEl){const t=gradeLine(ex);gEl.textContent=t;gEl.hidden=!t}
 }
 /* today's latest weight on this exercise, else the top set last time, in lb */
 function loadWeight(id){
@@ -1735,6 +1802,7 @@ document.getElementById('saveBody').onclick=function(){
   const w=parseFloat(document.getElementById('inWeight').value);if(!w)return;
   const f=parseFloat(document.getElementById('inBf').value)||null;
   S.body.push({d:todayKey(),w:w,f:f});save();renderBody();renderInsight();
+  Object.keys(PROG).forEach(function(k){PROG[k].ex.forEach(paintAdvice)});
   document.getElementById('inWeight').value='';document.getElementById('inBf').value='';
 };
 renderBody();
