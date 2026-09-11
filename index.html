@@ -290,6 +290,11 @@ textarea.three{width:100%;background:var(--bg-raise);border:1px solid var(--edge
   padding:12px;color:var(--text);font-family:'Crimson Pro',serif;font-size:16px;line-height:1.7;
   resize:vertical;min-height:104px;margin-top:6px}
 textarea.three:focus{outline:none;border-color:var(--rust)}
+.log-row[hidden]{display:none}
+/* a saved entry is set text, not a field waiting to be filled */
+.set-text{font-family:'Crimson Pro',serif;font-size:16px;line-height:1.7;color:var(--text);
+  white-space:pre-wrap;margin:6px 0 0}
+#journalSetBox .watch,#reviewSetBox .watch{margin:10px 0 0}
 .prev-entry{font-style:italic;font-size:14px;line-height:1.6;color:var(--text-soft);margin:2px 0 8px;
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden}
 .prev-entry[hidden]{display:none}
@@ -403,7 +408,12 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
           <h3 style="font-family:'Cormorant Garamond',serif;font-weight:700;font-size:21px;margin:22px 0 4px">Three sentences</h3>
           <p class="ex-cue" style="margin:0 0 6px">Past tense, thirty seconds. What happened, what it cost, what tomorrow needs. No analysis.</p>
           <p class="prev-entry" id="prevEntry" hidden></p>
+          <div id="journalSetBox" hidden>
+            <p class="set-text" id="journalText"></p>
+            <button class="watch" id="journalEdit" type="button">EDIT</button>
+          </div>
           <textarea class="three" id="journal" placeholder="What happened. What it cost. What tomorrow needs."></textarea>
+          <div class="log-row" id="journalSaveRow"><button id="journalSave">Save</button></div>
         </div>
       </details>
 
@@ -1062,6 +1072,7 @@ S.week.done=S.week.done||{};S.week.posture=S.week.posture||{};S.week.cadence=S.w
 S.logs=S.logs||{};S.body=S.body||[{d:'2026-08-14',w:167.2,f:15.0}];
 S.theme=S.theme||'dark';S.shop=S.shop||{};S.three=S.three||'';
 S.journal=S.journal||{};S.evening=S.evening||{};S.commit=S.commit||[];
+S.journalSet=S.journalSet&&typeof S.journalSet==='object'?S.journalSet:{};   /* date -> entry settled */
 S.tonight=Array.isArray(S.tonight)                /* the Tonight items, seeded once */
   ?S.tonight.filter(function(e){return e&&typeof e==='object'&&e.id})
   :EVENING.map(function(e){return {id:e.id,t:e.t,s:e.s}});
@@ -2278,9 +2289,25 @@ document.getElementById('upBtn').onclick=function(){
   save();paintUp();paintStop();
 };
 paintUp();
+/* typing always saves; the Save button only settles it into set text */
 const jr=document.getElementById('journal');
-jr.value=S.journal[todayKey()]||'';
+function paintJournal(){
+  const t=todayKey(),txt=S.journal[t]||'',set=!!S.journalSet[t]&&!!txt.trim();
+  document.getElementById('journalText').textContent=txt;
+  document.getElementById('journalSetBox').hidden=!set;
+  jr.hidden=set;document.getElementById('journalSaveRow').hidden=set;
+  if(!set&&jr.value!==txt)jr.value=txt;
+}
 jr.oninput=function(){S.journal[todayKey()]=jr.value;save()};
+document.getElementById('journalSave').onclick=function(){
+  const t=todayKey();
+  if(!(S.journal[t]||'').trim())return;
+  S.journalSet[t]=true;save();paintJournal();
+};
+document.getElementById('journalEdit').onclick=function(){
+  delete S.journalSet[todayKey()];save();paintJournal();jr.focus();
+};
+paintJournal();
 /* the latest earlier entry, or the latest from 28 to 35 days back when there is one */
 function prevEntry(){
   const t=todayKey(),now=new Date(t+'T12:00:00');
