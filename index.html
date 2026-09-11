@@ -665,10 +665,10 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
         <div class="det-body">
           <table class="data">
             <tr><th>Fix</th><th>Standard</th></tr>
-            <tr><td>Monitor height</td><td class="hl">Top edge = eye level</td></tr>
-            <tr><td>Break the position</td><td class="hl">Every 45 min</td></tr>
-            <tr><td>Phone height</td><td class="hl">Raise it to you</td></tr>
-            <tr><td>Seat depth</td><td class="hl">Hips level or above knees</td></tr>
+            <tr><td>Monitor height<br><span id="vs-dk1"></span></td><td class="hl">Top edge = eye level</td></tr>
+            <tr><td>Break the position<br><span id="vs-dk2"></span></td><td class="hl">Every 45 min</td></tr>
+            <tr><td>Phone height<br><span id="vs-dk3"></span></td><td class="hl">Raise it to you</td></tr>
+            <tr><td>Seat depth<br><span id="vs-dk4"></span></td><td class="hl">Hips level or above knees</td></tr>
           </table>
           <div class="prose" style="margin-top:14px">
             <p>If you look down at the 32" even slightly, you hold forward head for eight hours and undo everything above. Raise it on books if the stand won't go higher.</p>
@@ -682,6 +682,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
           <p><strong>Week 1–2:</strong> the chin tuck feels strange and slightly effortful. The hip flexor stretch may be sharp on the left. Nothing visible yet.</p>
           <p><strong>Week 3–4:</strong> you catch yourself drifting forward and correct without thinking. This is the actual mechanism — a habit change, not a strength gain.</p>
           <p><strong>Week 4–6:</strong> visible in a side profile. Take one now, straight on to a mirror, arms relaxed. Retake at six weeks. That's the only measurement that counts.</p>
+          <p><span id="vs-fx1"></span></p>
           <div class="note"><div class="hd">STOP AND GET IT LOOKED AT IF</div>
             <p>Sharp or persistent neck or low-back pain, or any numbness or tingling running into the arms or hands, is a physiotherapist question rather than a mobility-drill question. Don't work through it and don't self-diagnose from the internet.</p></div>
         </div>
@@ -975,6 +976,13 @@ const STRETCH={
   {id:'st11',t:'Standing quad stretch',s:'30s per side',q:'standing quad stretch proper form'},
   {id:'st12',t:'Figure-four glute stretch',s:'45s per side',q:'figure four glute stretch'},
   STRETCH_ALL[0]]};
+/* reference videos for the desk fixes and the Frame target, set once like the exercises */
+const VIDSLOTS=[
+ {id:'dk1',n:'Monitor height',q:'monitor height eye level desk setup'},
+ {id:'dk2',n:'Break the position',q:'two minute desk posture reset routine'},
+ {id:'dk3',n:'Phone height',q:'text neck phone posture fix'},
+ {id:'dk4',n:'Seat depth',q:'office chair setup seat depth hips above knees'},
+ {id:'fx1',n:'What good looks like',q:'forward head posture correction side profile before after'}];
 
 /* places to be among people; seeded once, then the list is the user's own */
 const PLACES=[
@@ -2084,6 +2092,7 @@ function renderDrills(){
     days===0?'About five minutes. Resets at midnight.':days+' of 7 days this week';
   renderWarmup();
   renderStretches();
+  renderVidSlots();
   renderInsight();
 }
 /* legs today: the weekday, the rotation, or sets already logged */
@@ -2557,6 +2566,17 @@ function paintTodayPlay(){
   if(u){a.href=u;a.textContent=PLAY_FOR[k].toUpperCase()+' PLAYLIST'}
 }
 paintTodayPlay();
+function renderVidSlots(){
+  VIDSLOTS.forEach(function(it){
+    const host=document.getElementById('vs-'+it.id);if(!host)return;
+    host.innerHTML='';
+    const b=document.createElement('button');b.type='button';
+    b.className='watch'+(S.vid[it.id]?' set':'');b.style.margin='6px 0 0';
+    b.textContent=S.vid[it.id]?'▶ WATCH':'＋ SET VIDEO';
+    b.onclick=function(){openVideo(it)};
+    host.appendChild(b);
+  });
+}
 /* the page is built for one date; coming back to it on a later date rebuilds it */
 const LOADED_ON=todayKey();
 document.addEventListener('visibilitychange',function(){
