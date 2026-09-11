@@ -834,6 +834,8 @@ function fmtU(v){const r=Math.round(v*10)/10;return r%1===0?String(r):r.toFixed(
 S.bar=S.bar&&typeof S.bar==='object'?S.bar:{};    /* exercise id -> bar weight in lb, when not the default */
 const BAR={a1:45,c1:45};                          /* barbell exercises and their default bar, lb */
 const PLATES={lb:[45,25,10,5,2.5],kg:[25,20,10,5,2.5,1.25]};
+/* bodyweight movements: a lone number is reps, or seconds when the scheme is timed */
+const BODYWT={a6:1,c6:1};
 /* fresh start is a daily switch: on only for the date it was set */
 function freshOn(){try{return localStorage.getItem('vito.fresh')===todayKey()}catch(e){return false}}
 function setFresh(on){try{if(on)localStorage.setItem('vito.fresh',todayKey());else localStorage.removeItem('vito.fresh')}catch(e){}}
@@ -1304,7 +1306,14 @@ function lastFor(id){
   const ds=Object.keys(S.logs).filter(function(d){return d!==todayKey()&&S.logs[d][id]&&S.logs[d][id].length}).sort();
   for(let i=ds.length-1;i>=0;i--){
     const sets=S.logs[ds[i]][id].filter(function(s){return s&&typeof s.w==='number'&&isFinite(s.w)});
-    if(!sets.length)continue;
+    if(!sets.length){
+      /* bodyweight: the most reps that session, or seconds when timed */
+      if(!BODYWT[id])continue;
+      const reps=S.logs[ds[i]][id].filter(function(s){return s&&typeof s.r==='number'}).map(function(s){return s.r});
+      if(!reps.length)continue;
+      const ex=exById(id),best=Math.max.apply(null,reps);
+      return 'last '+(ex&&/s$/.test(ex.rep)?best+'s':'×'+best);
+    }
     const top=sets.reduce(function(a,b){return b.w>a.w?b:a});
     return 'last '+fmtW(top.w,unitOf(id))+'×'+(top.r||'?');
   }
@@ -1364,7 +1373,7 @@ function paintSets(ex){
   for(let i=0;i<ex.sets;i++){
     const b=document.createElement('button');const r=done[i];
     b.className='dot'+(r?' filled':'');
-    b.textContent=r?(r.w?fmtW(r.w,unitOf(ex.id)):'✓'):(i+1);
+    b.textContent=r?(r.w?fmtW(r.w,unitOf(ex.id)):(r.r?(/s$/.test(ex.rep)?r.r+'s':'×'+r.r):'✓')):(i+1);
     b.setAttribute('aria-label','Set '+(i+1)+' of '+ex.sets);
     b.onclick=function(){logSet(ex,i)};
     host.appendChild(b);
@@ -1388,7 +1397,7 @@ function freshLine(ex){
   if(/s$/.test(ex.rep))return 'Fresh start · stop well short of failure';
   const top=prevTop(ex.id),u=unitOf(ex.id),step=u==='kg'?2.5:5;
   const w=top?Math.floor(toUnit(top.w,u)*0.7/step)*step:0;
-  if(w<=0)return 'Fresh start · 8–10 reps from a light weight, stop two short';
+  if(w<=0)return BODYWT[ex.id]?'Fresh start · 8–10 reps, stop two short':'Fresh start · 8–10 reps from a light weight, stop two short';
   return 'Fresh start · '+fmtU(w)+' × 8–10, stop two reps short';
 }
 function repRange(ex){
@@ -1496,8 +1505,9 @@ function paintPlates(ex){
 }
 /* weight and reps however the keyboard makes it easy - 135x8, 135*8, 135 8, 135,8,
    135-8, 135/8 - plus reps alone (x8) and a typed unit (60kg x 8), which overrides
-   the exercise's toggle. Reps above 50 alongside a lighter weight are read as swapped. */
-function parseSet(raw,u){
+   the exercise's toggle. Reps above 50 alongside a lighter weight are read as swapped.
+   On a bodyweight movement a lone number is reps, not a weight. */
+function parseSet(raw,u,bw){
   let t=String(raw).trim().toLowerCase();
   if(!t)return {w:null,r:null};
   const typed=/kg/.test(t)?'kg':(/lb/.test(t)?'lb':null);
@@ -1512,6 +1522,7 @@ function parseSet(raw,u){
     return {w:fromUnit(w,unit),r:r};
   }
   const n=parseFloat(t);
+  if(bw)return {w:null,r:isFinite(n)&&n>0?Math.round(n):null};
   return {w:isFinite(n)&&n>0?fromUnit(n,unit):null,r:null};
 }
 /* the heaviest set before today; on a tie, the one with more reps */
@@ -1531,12 +1542,14 @@ function setContext(ex,u){
   const last=prevTop(ex.id),best=bestSet(ex.id),rr=repRange(ex),fresh=freshOn();
   const ctx=['Target '+ex.rep];
   if(last)ctx.push('last '+fmtW(last.w,u)+'×'+(last.r||'?'));
+  else if(BODYWT[ex.id]){const lf=lastFor(ex.id);if(lf)ctx.push(lf)}
   if(best&&(!last||best.w!==last.w||best.r!==last.r))ctx.push('best '+fmtW(best.w,u)+'×'+(best.r||'?'));
   let adv='';
   if(fresh)adv=freshLine(ex);
   else{const p=progress(ex);if(p)adv=p.fact+' '+p.act}
   let tail;
-  if(!rr)tail='Leave it empty to tick the set off.';
+  if(!rr)tail=BODYWT[ex.id]?'Seconds, e.g. '+(parseInt(ex.rep,10)||45)+', or leave it empty to tick the set off.':'Leave it empty to tick the set off.';
+  else if(BODYWT[ex.id]&&!last)tail='Reps, e.g. '+rr[1]+'. With added weight, 10x'+rr[1]+'.';
   else{
     const step=u==='kg'?2.5:5,reps=rr[1];
     let w=last?toUnit(last.w,u):null;
@@ -1566,7 +1579,7 @@ function logSet(ex,i){
   const rule=ex.left?'\nLeft first. Right stops where left stopped.':'';
   const raw=prompt(ex.n+' — set '+(i+1)+rule+setContext(ex,u),seed);
   if(raw===null)return;
-  arr[i]=parseSet(raw,u);
+  arr[i]=parseSet(raw,u,!!BODYWT[ex.id]);
   /* a finished session ticks its day; removing a set later does not untick it */
   const k=sessionOf(ex);
   const ticked=k&&!S.week.done[k]&&sessionComplete(k);
