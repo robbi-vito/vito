@@ -242,6 +242,16 @@ table.data .soft{font-family:'Crimson Pro',serif;font-style:italic;font-size:14p
 .chk .del{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:17px;padding:0 4px;line-height:1}
 .chk.off{opacity:.4}
 .chk.off .box{cursor:default}
+.place{padding:12px 0;border-top:1px dashed var(--edge)}
+.pl-group{font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.16em;color:var(--text-dim);padding:16px 0 2px}
+.pl-top{display:flex;align-items:baseline;gap:10px}
+.pl-n{flex:1;font-size:17px;color:var(--text);text-decoration:none}
+a.pl-n{text-decoration:underline;text-decoration-color:var(--rust-lo);text-underline-offset:3px}
+.pl-sub{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:7px}
+.pl-k{flex:1;min-width:120px;font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim)}
+.place .watch{margin:0}
+.place .del{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:17px;padding:0 4px;line-height:1}
+.pl-time{background:none;border:none;border-bottom:1px dashed var(--rust-lo);color:var(--rust);font:inherit;padding:0;cursor:pointer}
 .shot-t{background:none;border:none;color:var(--rust);font-family:'Courier Prime',monospace;font-size:14px;cursor:pointer;padding:0 6px}
 .stretch{border-top:1px dashed var(--edge);padding-top:2px}
 .stretch h3{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:21px;margin:14px 0 0}
@@ -299,7 +309,7 @@ textarea.three:focus{outline:none;border-color:var(--rust)}
 .set-note{font-style:italic;font-size:14px;line-height:1.5;color:var(--text-soft);margin:10px 0 18px}
 
 nav{position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--bg-sink);border-top:1px solid var(--edge);
-  display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom)}
+  display:grid;grid-template-columns:repeat(6,1fr);padding-bottom:env(safe-area-inset-bottom)}
 nav button{background:none;border:none;padding:17px 2px 16px;cursor:pointer;font-family:'Courier Prime',monospace;
   font-size:9.5px;letter-spacing:.11em;color:var(--text-dim);transition:color .2s;position:relative}
 nav button.on{color:var(--rust)}
@@ -759,6 +769,26 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     </div>
     <p class="foot">Be what you respect.</p>
   </section>
+
+  <!-- ═══ OUT ═══ -->
+  <section class="view" id="v-out">
+    <div class="hero small">
+      <div class="date">Among people, on purpose</div><h1>Out</h1>
+      <div class="insight" id="outNote" hidden></div>
+    </div>
+
+    <div class="group-label">EVERY WEEK</div>
+    <div id="standing"></div>
+
+    <div class="group-label">PLACES</div>
+    <div id="places"></div>
+    <div class="log-row">
+      <input type="text" id="plName" placeholder="Somewhere new" style="flex:1.2">
+      <input type="text" id="plLink" placeholder="Maps link, optional" style="flex:1.5">
+      <button id="addPlace">Add</button>
+    </div>
+    <p class="foot">Somewhere with people in it, once a week. The coffee is the excuse.</p>
+  </section>
 </div>
 
 <div class="timer" id="timer">
@@ -780,6 +810,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
   <button data-v="fuel">FUEL</button>
   <button data-v="frame">FRAME</button>
   <button data-v="build">BUILD</button>
+  <button data-v="out">OUT</button>
 </nav>
 
 <script>
@@ -897,6 +928,26 @@ const STRETCH={
   {id:'st12',t:'Figure-four glute stretch',s:'45s per side',q:'figure four glute stretch'},
   STRETCH_ALL[0]]};
 
+/* places to be among people; seeded once, then the list is the user's own */
+const PLACES=[
+ {id:'pl1',n:'Kilo Coffee',k:'COFFEE',u:'https://maps.app.goo.gl/NEhuW3NF42mJkwRk7'},
+ {id:'pl2',n:'Full City Rooster',k:'COFFEE',u:'https://maps.app.goo.gl/xMGKyPtDZVFGu4Ud7'},
+ {id:'pl3',n:'Common Good',k:'COFFEE',u:'https://maps.app.goo.gl/V2XsUW3MQ3tQ7KsJ8'},
+ {id:'pl4',n:'LDU Coffee · 1',k:'COFFEE',u:'https://maps.app.goo.gl/854KvuzL8Kmp1A7n6'},
+ {id:'pl5',n:'LDU Coffee · 2',k:'COFFEE',u:'https://maps.app.goo.gl/tidp2uyJ7KTnk3Pm8'},
+ {id:'pl6',n:'LDU Coffee · 3',k:'COFFEE',u:'https://maps.app.goo.gl/mY4FsJfiwaVR2eoV7'},
+ {id:'pl7',n:'Inclusion Cafe',k:'COFFEE',u:'https://maps.app.goo.gl/sBn1B3AdNooSpCck6'},
+ {id:'pl8',n:"Juju's Coffee",k:'COFFEE',u:'https://maps.app.goo.gl/bZad6Kz7kt6etatVA'},
+ {id:'pl9',n:'Hey Koneko',k:'CAFE',u:'https://www.google.com/maps/search/?api=1&query=Hey+Koneko+Dallas'},
+ {id:'pl10',n:'Good Boy Cafe',k:'CAFE',u:'https://maps.app.goo.gl/XfCX7YVgEs3pLk869'},
+ {id:'pl11',n:'Cafe Duro',k:'COFFEE',u:'https://maps.app.goo.gl/HkvQURjXosaTm2F7A'},
+ {id:'pl12',n:'Killer Joe',k:'COFFEE',u:'https://maps.app.goo.gl/7WNRTTtBTfirjKbW9'},
+ {id:'pl13',n:'Fount Board & Table',k:'GAMES',u:'https://maps.app.goo.gl/niaSPKrqc7kGuoNR8'},
+ {id:'pl14',n:'Texas Theatre',k:'CINEMA',u:'https://maps.app.goo.gl/8KRkWgZ59EHVHKjJ8'},
+ {id:'pl15',n:'Valley House Art Gallery',k:'GALLERY',u:'https://maps.app.goo.gl/owBD9818WZpXwr5d8'}];
+/* standing plans by weekday index; the time can be changed in the app */
+const STANDING=[{id:'sp1',day:4,t:'19:30',n:'Walk & Talk',w:'Katy Trail to Thomsen Overlook. Park at Reverchon Park.'}];
+
 /* the Tonight list on first run; after that it is the user's own */
 const EVENING=[{id:'e1',t:'Phone charging across the room',s:'Not in the bed'},
  {id:'e2',t:'Alarm set',s:'06:00'}];
@@ -946,6 +997,12 @@ S.stretch=S.stretch&&typeof S.stretch==='object'?S.stretch:{};  /* date -> stret
 S.timer=S.timer&&typeof S.timer==='object'?S.timer:{};   /* session timer */
 S.timer.log=Array.isArray(S.timer.log)?S.timer.log:[];   /* finished: {k, d, home, start, end}, times in ms */
 S.timer.run=S.timer.run&&typeof S.timer.run==='object'&&PROG[S.timer.run.k]?S.timer.run:null;   /* running: {k, home, start} */
+S.places=Array.isArray(S.places)                  /* places: seeded once, then the user's own */
+  ?S.places.filter(function(p){return p&&typeof p==='object'&&p.id&&p.n})
+  :PLACES.map(function(p){return {id:p.id,n:p.n,k:p.k,u:p.u,st:'want',went:[]}});
+S.standing=Array.isArray(S.standing)              /* weekly standing plans, seeded once */
+  ?S.standing.filter(function(p){return p&&typeof p==='object'&&p.id})
+  :STANDING.map(function(p){return {id:p.id,day:p.day,t:p.t,n:p.n,w:p.w}});
 S.meet=S.meet||'';                             /* maps link for the run club meeting point */
 S.units=S.units&&typeof S.units==='object'?S.units:{};   /* exercise id -> 'kg'; absent means lb */
 S.unitMode=S.unitMode==='lb'||S.unitMode==='kg'?S.unitMode:'each';   /* 'lb' or 'kg' for all, 'each' per exercise */
@@ -1158,6 +1215,7 @@ function panelLines(i,bd){
   if(i===t){                                     /* today, and the week ahead of it */
     lines.push(MOMENTUM[t][partOfDay(new Date().getHours())]);
     if(i===5)lines.push(meetLine());
+    {const sl=standingLine(i);if(sl)lines.push(sl)}
     const p=plantLine();if(p)lines.push(p);
     const a=advice(bd);
     if(a)lines.push('<span class="cue">'+(a.i>t?'Ahead — ':'')+esc(a.text)+'</span>');
@@ -1165,6 +1223,7 @@ function panelLines(i,bd){
   }
   lines.push(w.k+'. '+subFor(w));                /* still ahead */
   if(i===5)lines.push(meetLine());
+  {const sl=standingLine(i);if(sl)lines.push(sl)}
   const s=dayAdvice(i,bd);
   if(s)lines.push('<span class="cue">'+esc(s)+'</span>');
   return lines;
@@ -1361,7 +1420,7 @@ function iPhase(){
   return w.charAt(0).toUpperCase()+w.slice(1)+' day'+(days===1?'':'s')+' left in '+p.n.toLowerCase()+'.';
 }
 function insight(){
-  try{return iStalled()||iTrend()||iPhase()||''}
+  try{return iStalled()||iTrend()||iPhase()||iNew()||''}
   catch(e){return ''}                          /* a bad read must never take the page down */
 }
 function capCount(n){const w=count(n);return w.charAt(0).toUpperCase()+w.slice(1)}
@@ -1397,7 +1456,7 @@ function iBuild(){
     ? 'One loop still open. They close in the order they were opened.'
     : capCount(open)+' loops still open. They close in the order they were opened.';
 }
-const NOTES=[['todayNote',insight],['fuelNote',iFuel],['frameNote',iFrame],['buildNote',iBuild]];
+const NOTES=[['todayNote',insight],['fuelNote',iFuel],['frameNote',iFrame],['buildNote',iBuild],['outNote',iOut]];
 function renderInsight(){
   NOTES.forEach(function(pair){
     const el=document.getElementById(pair[0]);
@@ -2314,6 +2373,73 @@ document.getElementById('themeBtn').onclick=function(){
   document.querySelector('meta[name=theme-color]').content=S.theme==='dark'?'#14100E':'#EDE5D3';
   save();
 };
+/* ── out: standing plans and places ── */
+function standingLine(i){
+  return S.standing.filter(function(p){return p.day===i}).map(function(p){return esc(p.n+' — '+p.t+'. '+(p.w||''))}).join(' ');
+}
+function lastOut(){                               /* the latest visit to any place */
+  let m='';S.places.forEach(function(p){(p.went||[]).forEach(function(d){if(d>m)m=d})});return m;
+}
+function nextPlace(){                             /* somewhere not yet been, else the one left longest */
+  const fresh=S.places.filter(function(p){return p.st!=='fav'&&!(p.went||[]).length});
+  if(fresh.length)return fresh[0];
+  const lastOf=function(p){return (p.went||[]).slice(-1)[0]||''};
+  return S.places.slice().sort(function(a,b){return lastOf(a)<lastOf(b)?-1:1})[0]||null;
+}
+function iOut(){const p=nextPlace();return p?'Next on the list: '+p.n+'.':''}
+function iNew(){
+  const m=lastOut();if(!m)return '';
+  const days=Math.round((new Date(todayKey()+'T12:00:00')-new Date(m+'T12:00:00'))/864e5);
+  if(days<21)return '';
+  const p=nextPlace();
+  return capCount(Math.floor(days/7))+' weeks since anywhere on the list.'+(p?' '+p.n+' is next.':'');
+}
+function renderOut(){
+  const sh=document.getElementById('standing');
+  sh.innerHTML=S.standing.length?S.standing.map(function(p,i){
+    return '<div class="place"><div class="pl-top"><span class="pl-n">'+esc(p.n)+'</span>'+
+      '<button class="del" type="button" data-sd="'+i+'" aria-label="Remove">×</button></div>'+
+      '<div class="pl-sub"><span class="pl-k">'+(WEEK[p.day]?WEEK[p.day].l.toUpperCase():'')+' · '+
+      '<button class="pl-time" type="button" data-st="'+i+'" aria-label="Change the time">'+esc(p.t)+'</button> · '+esc(p.w||'')+'</span></div></div>'}).join('')
+    :'<p class="ex-cue" style="margin-left:0">Nothing standing. The week has room for one.</p>';
+  const t=todayKey();
+  const row=function(p){
+    const i=S.places.indexOf(p),w=p.went||[],today=w[w.length-1]===t;
+    return '<div class="place"><div class="pl-top">'+
+      (p.u?'<a class="pl-n" href="'+esc(p.u)+'" target="_blank" rel="noopener noreferrer">'+esc(p.n)+'</a>':'<span class="pl-n">'+esc(p.n)+'</span>')+
+      '<button class="del" type="button" data-rm="'+i+'" aria-label="Remove">×</button></div>'+
+      '<div class="pl-sub"><span class="pl-k">'+esc(p.k||'')+(w.length?(p.k?' · ':'')+(w.length===1?'once':w.length+' times')+', last '+fmt(w[w.length-1]):'')+'</span>'+
+      '<button class="watch'+(today?' set':'')+'" type="button" data-went="'+i+'">'+(today?'WENT TODAY':'WENT')+'</button>'+
+      '<button class="watch'+(p.st==='fav'?' set':'')+'" type="button" data-fav="'+i+'">'+(p.st==='fav'?'FAVOURITE':'WANT TO GO')+'</button></div></div>'};
+  const fav=S.places.filter(function(p){return p.st==='fav'}),want=S.places.filter(function(p){return p.st!=='fav'});
+  const host=document.getElementById('places');
+  host.innerHTML=(fav.length?'<div class="pl-group">FAVOURITES</div>'+fav.map(row).join(''):'')+
+    (want.length?'<div class="pl-group">WANT TO GO</div>'+want.map(row).join(''):'')+
+    (S.places.length?'':'<p class="ex-cue" style="margin-left:0">Nothing listed. Add somewhere you would go alone and still talk to someone.</p>');
+  const on=function(root,sel,fn){root.querySelectorAll(sel).forEach(function(b){b.onclick=function(){fn(b)}})};
+  on(sh,'[data-sd]',function(b){S.standing.splice(+b.dataset.sd,1);save();renderOut();renderBrief()});
+  on(sh,'[data-st]',function(b){
+    const p=S.standing[+b.dataset.st],v=prompt('New time for '+p.n+', as HH:MM.',p.t);
+    if(v===null)return;
+    if(!/^\d{1,2}:\d{2}$/.test(v.trim())){alert('That is not a time. Nothing has been changed.');return}
+    p.t=v.trim().padStart(5,'0');save();renderOut();renderBrief();
+  });
+  on(host,'[data-rm]',function(b){S.places.splice(+b.dataset.rm,1);save();renderOut();renderInsight()});
+  on(host,'[data-went]',function(b){
+    const p=S.places[+b.dataset.went];p.went=p.went||[];
+    if(p.went[p.went.length-1]===t)p.went.pop();else p.went.push(t);
+    save();renderOut();renderInsight();
+  });
+  on(host,'[data-fav]',function(b){const p=S.places[+b.dataset.fav];p.st=p.st==='fav'?'want':'fav';save();renderOut();renderInsight()});
+}
+document.getElementById('addPlace').onclick=function(){
+  const n=document.getElementById('plName').value.trim(),u=document.getElementById('plLink').value.trim();
+  if(!n)return;
+  if(u&&!/^https:\/\//i.test(u)){alert('That does not look like a link. Copy it from Google Maps.');return}
+  S.places.push({id:'pl'+Date.now(),n:n,k:'',u:u,st:'want',went:[]});save();renderOut();renderInsight();
+  document.getElementById('plName').value='';document.getElementById('plLink').value='';
+};
+renderOut();
 /* the page is built for one date; coming back to it on a later date rebuilds it */
 const LOADED_ON=todayKey();
 document.addEventListener('visibilitychange',function(){
