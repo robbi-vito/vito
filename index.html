@@ -21,6 +21,7 @@
   --text:#E8DFCF;--text-soft:#9A8F7E;--text-dim:#7B7062;
   --rust:#B4552B;--rust-fill:#95431F;--rust-lo:#6E3419;--ember:#D07C3E;
   --glow:rgba(180,85,43,.11);--grain:.15;--grain-hero:.32;--leak:.58;--vig:.94;--on-rust:#F2E7D6;
+  --ease:cubic-bezier(.22,.61,.36,1);--spring:cubic-bezier(.2,1.5,.4,1);
   --leak-a:#F57A30;--leak-b:#B8401A;--leak-c:#7E3016;
 }
 :root[data-theme="light"]{
@@ -28,6 +29,7 @@
   --text:#241C18;--text-soft:#5A4E43;--text-dim:#7C6E5C;
   --rust:#96401D;--rust-fill:#96401D;--rust-lo:#C08A63;--ember:#B4552A;
   --glow:rgba(150,64,29,.06);--grain:.09;--grain-hero:.20;--leak:.34;--vig:.46;--on-rust:#F6F0E3;
+  --ease:cubic-bezier(.22,.61,.36,1);--spring:cubic-bezier(.2,1.5,.4,1);
   --leak-a:#E06A2C;--leak-b:#933012;--leak-c:#6E2A12;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -247,10 +249,13 @@ table.data .soft{font-family:'Crimson Pro',serif;font-style:italic;font-size:14p
 
 .chk{display:flex;align-items:flex-start;gap:13px;padding:13px 0;border-top:1px dashed var(--edge)}
 .chk:first-child{border-top:none}
-.box{width:23px;height:23px;border:1px solid var(--edge);border-radius:2px;flex-shrink:0;
-  display:grid;place-items:center;background:var(--bg-raise);transition:all .2s;font-size:13px;
-  color:transparent;cursor:pointer;margin-top:2px}
-.chk.on .box{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
+.box{width:24px;height:24px;border:1px solid var(--rust-lo);border-radius:2px;flex-shrink:0;
+  display:grid;place-items:center;background:var(--bg-raise);font-size:14px;position:relative;
+  color:transparent;cursor:pointer;margin-top:2px;
+  transition:border-color .2s var(--ease),color .3s var(--spring),background .3s var(--ease)}
+/* the visible box stays small while the tap target reaches 44px */
+.box::before{content:'';position:absolute;inset:-10px}
+.chk.on .box{background:var(--bg-raise);border-color:var(--edge);color:var(--rust)}
 .chk-body{flex:1;min-width:0}
 .chk-t{font-size:16px}
 .chk.on .chk-t{color:var(--text-dim);text-decoration:line-through}
