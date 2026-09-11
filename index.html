@@ -1339,6 +1339,26 @@ function paintSets(ex){
   const l=lastFor(ex.id);
   if(l){const s=document.createElement('span');s.className='last';s.textContent=l;host.appendChild(s)}
 }
+/* weight and reps however the keyboard makes it easy - 135x8, 135*8, 135 8, 135,8,
+   135-8, 135/8 - plus reps alone (x8) and a typed unit (60kg x 8), which overrides
+   the exercise's toggle. Reps above 50 alongside a lighter weight are read as swapped. */
+function parseSet(raw,u){
+  let t=String(raw).trim().toLowerCase();
+  if(!t)return {w:null,r:null};
+  const typed=/kg/.test(t)?'kg':(/lb/.test(t)?'lb':null);
+  t=t.replace(/kgs?|lbs?/g,' ').trim();
+  const only=t.match(/^[x×*]\s*(\d+)/);
+  if(only)return {w:null,r:parseInt(only[1],10)};
+  const m=t.match(/(\d*\.?\d+)\s*(?:[x×*,\/-]|\s)\s*(\d+)/);
+  const unit=typed||u;
+  if(m){
+    let w=parseFloat(m[1]),r=parseInt(m[2],10);
+    if(r>50&&w<r){const x=w;w=r;r=Math.round(x)}
+    return {w:fromUnit(w,unit),r:r};
+  }
+  const n=parseFloat(t);
+  return {w:isFinite(n)&&n>0?fromUnit(n,unit):null,r:null};
+}
 function sessionOf(ex){
   return Object.keys(PROG).filter(function(k){return PROG[k].ex.indexOf(ex)>-1})[0]||null;
 }
@@ -1358,8 +1378,7 @@ function logSet(ex,i){
   const rule=ex.left?'\nLeft first. Right stops where left stopped.':'';
   const raw=prompt(ex.n+' — set '+(i+1)+rule+'\nWeight × reps in '+u+', e.g. 135x8',seed);
   if(raw===null)return;
-  const m=raw.match(/([\d.]+)\s*[x×*]\s*(\d+)/i);
-  arr[i]=m?{w:fromUnit(parseFloat(m[1]),u),r:parseInt(m[2])}:(raw.trim()?{w:parseFloat(raw)?fromUnit(parseFloat(raw),u):null,r:null}:{w:null,r:null});
+  arr[i]=parseSet(raw,u);
   /* a finished session ticks its day; removing a set later does not untick it */
   const k=sessionOf(ex);
   const ticked=k&&!S.week.done[k]&&sessionComplete(k);
