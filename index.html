@@ -172,6 +172,9 @@ table.data .rm:hover{color:var(--rust)}
   font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim)}
 .plates[hidden]{display:none}
 .plates:hover{color:var(--rust)}
+.advice{margin:6px 0 0 26px;font-family:'Courier Prime',monospace;font-size:11px;color:var(--ember)}
+.watch.fresh{margin:12px 0 0;display:inline-block}
+.watch.fresh.on{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
 .watch.unit{min-width:44px;text-align:center}
 
 .info{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;
@@ -438,7 +441,8 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
           <div class="note"><div class="hd">RETURNING FROM A LAYOFF</div>
             <p>Two weeks off detrains stabilisers faster than the muscles moving the bar. Everything feels ready before it is.</p>
             <p>After any break of a week or more: <strong>two weeks at 70%.</strong> Sets of 8–10, stop two reps short, no grinding. You will feel underworked — that is the point. Progress resumes in week three and lands further ahead than forcing it would have.</p>
-            <p>If a movement produces a tweak, that movement is finished for the day. No second attempt to check.</p></div>
+            <p>If a movement produces a tweak, that movement is finished for the day. No second attempt to check.</p>
+            <button class="watch fresh" id="freshBtn" type="button" aria-pressed="false"></button></div>
         </div>
       </details>
     </div>
@@ -828,6 +832,9 @@ function fmtU(v){const r=Math.round(v*10)/10;return r%1===0?String(r):r.toFixed(
 S.bar=S.bar&&typeof S.bar==='object'?S.bar:{};    /* exercise id -> bar weight in lb, when not the default */
 const BAR={a1:45,c1:45,c2:45};                    /* barbell exercises and their default bar, lb */
 const PLATES={lb:[45,25,10,5,2.5],kg:[25,20,10,5,2.5,1.25]};
+/* fresh start is a daily switch: on only for the date it was set */
+function freshOn(){try{return localStorage.getItem('vito.fresh')===todayKey()}catch(e){return false}}
+function setFresh(on){try{if(on)localStorage.setItem('vito.fresh',todayKey());else localStorage.removeItem('vito.fresh')}catch(e){}}
 S.wardrobe=S.wardrobe&&typeof S.wardrobe==='object'?S.wardrobe:{};
 ['palette','measure','groom','sizes','uniforms','rules'].forEach(function(k){
   if(!Array.isArray(S.wardrobe[k]))S.wardrobe[k]=[];
@@ -1315,7 +1322,8 @@ function exNode(ex,num){
     (ex.alt?' <em>('+ex.alt+')</em>':'')+flags+'</span><span class="ex-scheme">'+ex.sets+' × '+ex.rep+'</span></div>'+
     (ex.cue?'<p class="ex-cue">'+ex.cue+'</p>':'')+
     '<div class="sets" id="sets-'+ex.id+'"></div>'+
-    (BAR[ex.id]?'<button class="plates" id="plates-'+ex.id+'" type="button" hidden></button>':'');
+    (BAR[ex.id]?'<button class="plates" id="plates-'+ex.id+'" type="button" hidden></button>':'')+
+    '<div class="advice" id="adv-'+ex.id+'" hidden></div>';
   const btn=document.createElement('button');
   btn.className='watch'+(S.vid[ex.id]?' set':'');
   btn.textContent=S.vid[ex.id]?'▶ WATCH':'＋ SET VIDEO';
@@ -1349,6 +1357,30 @@ function paintSets(ex){
   const l=lastFor(ex.id);
   if(l){const s=document.createElement('span');s.className='last';s.textContent=l;host.appendChild(s)}
   paintPlates(ex);
+  paintAdvice(ex);
+}
+/* the top set from the most recent session before today */
+function prevTop(id){
+  const ds=Object.keys(S.logs).filter(function(d){return d!==todayKey()}).sort();
+  for(let i=ds.length-1;i>=0;i--){
+    const sets=((S.logs[ds[i]]||{})[id]||[]).filter(function(s){return s&&typeof s.w==='number'&&isFinite(s.w)});
+    if(sets.length)return sets.reduce(function(a,b){return b.w>a.w?b:a});
+  }
+  return null;
+}
+/* the layoff rule: 70% of the last working weight, sets of 8-10, two reps short */
+function freshLine(ex){
+  if(/s$/.test(ex.rep))return 'Fresh start · stop well short of failure';
+  const top=prevTop(ex.id),u=unitOf(ex.id),step=u==='kg'?2.5:5;
+  const w=top?Math.floor(toUnit(top.w,u)*0.7/step)*step:0;
+  if(w<=0)return 'Fresh start · 8–10 reps from a light weight, stop two short';
+  return 'Fresh start · '+fmtU(w)+' × 8–10, stop two reps short';
+}
+function paintAdvice(ex){
+  const el=document.getElementById('adv-'+ex.id);
+  if(!el)return;
+  const t=freshOn()?freshLine(ex):'';
+  el.textContent=t;el.hidden=!t;
 }
 /* today's latest weight on this exercise, else the top set last time, in lb */
 function loadWeight(id){
@@ -1444,6 +1476,18 @@ function logSet(ex,i){
   renderInsight();startRest(ex.rest,ex.n);
 }
 renderSessions();
+function paintFresh(){
+  const b=document.getElementById('freshBtn');if(!b)return;
+  const on=freshOn();
+  b.textContent=on?'FRESH START · ON TODAY':'FRESH START · OFF';
+  b.classList.toggle('on',on);
+  b.setAttribute('aria-pressed',on?'true':'false');
+}
+document.getElementById('freshBtn').onclick=function(){
+  setFresh(!freshOn());paintFresh();
+  Object.keys(PROG).forEach(function(k){PROG[k].ex.forEach(paintAdvice)});
+};
+paintFresh();
 
 /* ── video modal: you pick once, it is saved for good ── */
 const scrim=document.getElementById('scrim');
