@@ -183,6 +183,7 @@ table.data .rm:hover{color:var(--rust)}
 .flag.go{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
 .watch.fresh{margin:12px 0 0;display:inline-block}
 .watch.fresh.on{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
+.watch.stop{margin:16px 0 0;display:inline-block}
 .grade{margin:4px 0 0 26px;font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim)}
 .watch.unit{min-width:44px;text-align:center}
 
@@ -348,6 +349,8 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
             <input type="text" id="eTitle" placeholder="Add to tonight">
             <button id="addEvening">Add</button>
           </div>
+          <button class="watch stop" id="stopBtn" type="button"></button>
+          <div class="strip-note" id="stopAvg" style="text-align:left;margin:8px 0 0" hidden></div>
           <h3 style="font-family:'Cormorant Garamond',serif;font-weight:700;font-size:21px;margin:22px 0 4px">Three sentences</h3>
           <p class="prev-entry" id="prevEntry" hidden></p>
           <textarea class="three" id="journal" placeholder="What happened. What it cost. What tomorrow needs."></textarea>
@@ -853,6 +856,7 @@ S.journal=S.journal||{};S.evening=S.evening||{};S.commit=S.commit||[];
 S.tonight=Array.isArray(S.tonight)                /* the Tonight items, seeded once */
   ?S.tonight.filter(function(e){return e&&typeof e==='object'&&e.id})
   :EVENING.map(function(e){return {id:e.id,t:e.t,s:e.s}});
+S.stopped=S.stopped&&typeof S.stopped==='object'?S.stopped:{};   /* night date -> time stopped, ms */
 S.vid=S.vid||{};S.sound=S.sound===undefined?true:S.sound;
 S.warmup=S.warmup&&typeof S.warmup==='object'?S.warmup:{};   /* date -> warm-up item id -> ticked */
 S.meet=S.meet||'';                             /* maps link for the run club meeting point */
@@ -1859,6 +1863,33 @@ document.getElementById('addEvening').onclick=function(){
   const el=document.getElementById('eTitle'),v=el.value.trim();if(!v)return;
   S.tonight.push({id:'e'+Date.now(),t:v,s:''});save();el.value='';renderEvening();
 };
+/* a night runs to 5am, so a tap after midnight belongs to the evening before */
+function nightKey(){
+  const d=new Date();if(d.getHours()<5)d.setDate(d.getDate()-1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function clockOf(ms){const d=new Date(ms);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+/* averaged as minutes after noon, so 23:50 and 00:10 give midnight rather than midday */
+function stopAverage(){
+  const ks=Object.keys(S.stopped).filter(function(k){return typeof S.stopped[k]==='number'}).sort().slice(-7);
+  if(ks.length<7)return '';
+  const m=ks.map(function(k){const d=new Date(S.stopped[k]);return (d.getHours()*60+d.getMinutes()+720)%1440});
+  const t=(Math.round(m.reduce(function(a,b){return a+b},0)/m.length)+720)%1440;
+  return 'Seven-night average '+String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')+'.';
+}
+function paintStop(){
+  const at=S.stopped[nightKey()],on=typeof at==='number',b=document.getElementById('stopBtn');
+  b.textContent=on?'STOPPED '+clockOf(at):'STOPPED FOR THE NIGHT';
+  b.classList.toggle('set',on);b.setAttribute('aria-pressed',on?'true':'false');
+  const a=document.getElementById('stopAvg'),line=stopAverage();
+  a.textContent=line;a.hidden=!line;
+}
+document.getElementById('stopBtn').onclick=function(){
+  const k=nightKey();
+  if(typeof S.stopped[k]==='number')delete S.stopped[k];else S.stopped[k]=Date.now();
+  save();paintStop();
+};
+paintStop();
 const jr=document.getElementById('journal');
 jr.value=S.journal[todayKey()]||'';
 jr.oninput=function(){S.journal[todayKey()]=jr.value;save()};
