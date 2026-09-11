@@ -458,6 +458,14 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     <div class="group-label">THE FOUR SESSIONS</div>
     <div class="det-group" id="sessions"></div>
 
+    <details class="solo" style="margin-top:22px">
+      <summary><h2>After a run</h2><span class="meta">TUE · SAT</span></summary>
+      <div class="det-body">
+        <p class="ex-cue" style="margin:0 0 8px">Walk five minutes first, then hold each one. The legs are warmest now.</p>
+        <div id="stretch-R"></div>
+      </div>
+    </details>
+
     <div class="group-label">REFERENCE</div>
     <div class="det-group">
       <details>
@@ -848,7 +856,13 @@ const STRETCH={
   {id:'st7',t:'Couch stretch',s:'60s per side',q:'couch stretch proper form'},
   {id:'st8',t:'Standing hamstring stretch',s:'45s per side',q:'standing hamstring stretch proper form'},
   {id:'st9',t:'Calf stretch on a step',s:'45s per side',q:'calf stretch on a step'}]),
- D:STRETCH_ALL.concat(STRETCH_UPPER)};
+ D:STRETCH_ALL.concat(STRETCH_UPPER),
+ R:[
+  {id:'st10',t:'Wall calf stretch',s:'45s per side, knee straight then bent',q:'wall calf stretch for runners'},
+  {id:'st8',t:'Standing hamstring stretch',s:'45s per side',q:'standing hamstring stretch proper form'},
+  {id:'st11',t:'Standing quad stretch',s:'30s per side',q:'standing quad stretch proper form'},
+  {id:'st12',t:'Figure-four glute stretch',s:'45s per side',q:'figure four glute stretch'},
+  STRETCH_ALL[0]]};
 
 /* the Tonight list on first run; after that it is the user's own */
 const EVENING=[{id:'e1',t:'Phone charging across the room',s:'Not in the bed'},
