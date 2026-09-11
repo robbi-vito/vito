@@ -468,6 +468,16 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
       </div>
     </details>
 
+    <details class="solo" style="margin-top:22px">
+      <summary><h2>Speed</h2><span class="meta" id="speedMeta">TUE</span></summary>
+      <div class="det-body prose">
+        <p>Heavy lifting builds force, not the speed of it, and speed is the quality that fades first with age. It is kept, not chased: once a week is plenty.</p>
+        <p><strong>Tuesday, hills or the bike.</strong> Six to eight efforts of 10–15 seconds, walking back down between. Both cap top speed, which is what keeps the hamstrings safe.</p>
+        <p><strong>Push day, before lifting.</strong> Pogo hops and low box jumps, in the warm-up. Twenty seconds of stiff-ankle bounces is tendon and bone work.</p>
+        <p><strong>Flat sprints come last,</strong> after six weeks of hills. A flat-out sprint on unprepared legs is the quickest way to a pulled hamstring.</p>
+      </div>
+    </details>
+
     <div class="group-label">REFERENCE</div>
     <div class="det-group">
       <details>
@@ -821,6 +831,10 @@ const PROG={
 
 const WEEK=[{l:'Mon',k:'Push',s:'A'},{l:'Tue',k:'Zone 2',s:'cardio1'},{l:'Wed',k:'Pull',s:'B'},
  {l:'Thu',k:'Legs',s:'C'},{l:'Fri',k:'Width',s:'D'},{l:'Sat',k:'Run',s:'cardio2'},{l:'Sun',k:'Rest',s:null}];
+/* speed work starts on this date; before it Tuesday stays Zone 2 */
+const SPEED_FROM='2026-10-15';
+if(todayKey()>=SPEED_FROM)WEEK[1].k='Sprints';
+{const sm=document.getElementById('speedMeta');if(sm)sm.textContent=todayKey()<SPEED_FROM?'TUE · FROM 15 OCT':'TUESDAYS'}
 
 const DRILLS=[
  {id:'p1',t:'Chin tuck',s:'10 × 5s hold',q:'chin tuck exercise forward head posture',
@@ -839,6 +853,8 @@ const WARMUP=[
  {id:'p1',t:'Chin tucks, 5s hold',s:'×10 · the Frame drill'},
  {id:'wu4',t:'Slow bodyweight squats',s:'×10 · leg day only',leg:true},
  {id:'wu5',t:'Hip hinge drill',s:'×8 · leg day only',leg:true},
+ {id:'wu7',t:'Pogo hops, stiff ankles',s:'3 × 20s · Push day only',push:true,from:SPEED_FROM},
+ {id:'wu8',t:'Low box jumps, step down',s:'3 × 5 · Push day only',push:true,from:SPEED_FROM},
  {id:'wu6',t:'Two ramp-up sets of the first lift',s:'Then'}];
 
 const STRETCH_ALL=[
@@ -966,7 +982,7 @@ const di=dayIdx(),slot=WEEK[di],sess=(slot.s&&PROG[slot.s])?PROG[slot.s]:null;
 let viewDay=di;                                /* which day's brief panel is swiped into view */
 document.getElementById('todayName').textContent=slot.k==='Run'?'Run club':slot.k;
 document.getElementById('todaySub').textContent=sess?sess.sub:
-  slot.s==='cardio1'?'Conversational pace. If you could not talk, you are racing.':
+  slot.s==='cardio1'?(todayKey()>=SPEED_FROM?'Hills or the bike. Six to eight efforts, walk back down between.':'Conversational pace. If you could not talk, you are racing.'):
   slot.s==='cardio2'?'Turn up regardless of pace. The coffee afterwards is half the point.':
   'Walk, coffee, the Sunday review. Do not train.';
 /* ── the brief: how the day is framed, and what the week's weather argues for ── */
@@ -985,8 +1001,8 @@ const MOMENTUM=[
   'Push still stands. It does not get lighter later.',
   'One down. The heaviest day is behind you.'],
  ['Air today, not iron.',
-  'Conversational pace. If you could not talk, you were racing.',
-  'Easy day banked. Wednesday pulls.'],
+  todayKey()>=SPEED_FROM?'Six to eight efforts. Stop while they are still fast.':'Conversational pace. If you could not talk, you were racing.',
+  todayKey()>=SPEED_FROM?'Speed banked. Wednesday pulls.':'Easy day banked. Wednesday pulls.'],
  ['Midweek. This is the session people quietly skip.',
   'Pull is still owed.',
   'Past the hinge of the week.'],
@@ -1082,7 +1098,7 @@ function dayDate(i){                             /* the date of day i in the wee
 function subFor(w){
   if(!w.s)return 'Walk, coffee, the review.';
   if(PROG[w.s])return PROG[w.s].sub;
-  return w.s==='cardio1'?'Conversational pace.':'Turn up regardless of pace.';
+  return w.s==='cardio1'?(todayKey()>=SPEED_FROM?'Hills or the bike, six to eight efforts.':'Conversational pace.'):'Turn up regardless of pace.';
 }
 /* the heaviest thing logged on a given date, for reading a past day back */
 function heaviestOn(key){
@@ -1949,12 +1965,21 @@ function legDay(){
   const log=S.logs[todayKey()]||{};
   return slot.s==='C'||nextSession()==='C'||PROG.C.ex.some(function(e){return (log[e.id]||[]).some(Boolean)});
 }
+/* push today, by the same test */
+function pushDay(){
+  const log=S.logs[todayKey()]||{};
+  return slot.s==='A'||nextSession()==='A'||PROG.A.ex.some(function(e){return (log[e.id]||[]).some(Boolean)});
+}
 /* warm-up ticks are stored per date; the chin tuck reads and writes the Frame drill's entry */
 function renderWarmup(){
-  const t=todayKey(),legs=legDay();
+  const t=todayKey(),legs=legDay(),push=pushDay();
   S.warmup[t]=S.warmup[t]||{};S.week.posture[t]=S.week.posture[t]||{};
   const view=Object.assign({},S.warmup[t],{p1:!!S.week.posture[t].p1});
-  const items=WARMUP.map(function(it){return it.leg&&!legs?Object.assign({off:true},it):it});
+  const items=WARMUP.map(function(it){
+    if(it.from&&t<it.from)return Object.assign({},it,{off:true,
+      s:it.s+' · from '+new Date(it.from+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long'})});
+    return (it.leg&&!legs)||(it.push&&!push)?Object.assign({off:true},it):it;
+  });
   checklist(document.getElementById('warmup'),items,view,function(){
     S.week.posture[t].p1=!!view.p1;
     Object.keys(view).forEach(function(k){if(k!=='p1')S.warmup[t][k]=view[k]});
