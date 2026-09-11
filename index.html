@@ -278,6 +278,9 @@ a.pl-n{text-decoration:underline;text-decoration-color:var(--rust-lo);text-under
 .stretch h3{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:21px;margin:14px 0 0}
 
 .track{height:3px;background:var(--edge);border-radius:2px;overflow:hidden;margin:14px 0 7px}
+.loop{padding:8px 0;border-top:1px dashed var(--edge);font-size:15px;color:var(--text-soft)}
+.loop:first-child{border-top:none}
+.loop.done{color:var(--text-dim);text-decoration:line-through}
 .track i{display:block;height:100%;background:var(--rust-fill)}
 
 .log-row{display:flex;gap:8px;margin-top:12px}
@@ -800,6 +803,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     </div>
     <div class="track"><i id="phaseBar"></i></div>
     <div class="strip-note" id="phaseNote" style="text-align:left"></div>
+    <div id="phaseLoops"></div>
 
     <div class="note">
       <div class="hd">THE HARD RULE</div>
@@ -814,6 +818,11 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     <div class="log-row">
       <input type="text" id="lTitle" placeholder="Add a loop, in arrival order">
       <button id="addLoop">Add</button>
+    </div>
+    <button class="watch" id="lManyBtn" type="button" style="margin:10px 0 0">＋ PASTE A LIST</button>
+    <div id="lMany" hidden>
+      <textarea class="three" id="lManyBox" placeholder="One loop per line"></textarea>
+      <div class="log-row"><button id="addMany">Add all</button></div>
     </div>
 
     <div class="group-label">THE THREE</div>
@@ -1160,6 +1169,10 @@ S.wardrobe=S.wardrobe&&typeof S.wardrobe==='object'?S.wardrobe:{};
   if(!Array.isArray(S.wardrobe[k]))S.wardrobe[k]=[];
 });
 if(!Array.isArray(S.loops))S.loops=[];
+S.loopsDone=S.loopsDone&&typeof S.loopsDone==='object'?S.loopsDone:{};   /* loop id -> closed */
+S.loops.forEach(function(l){
+  if(l&&l.id&&S.week.cadence&&S.week.cadence[l.id]&&!S.loopsDone[l.id])S.loopsDone[l.id]=true;
+});
 S.shots=Array.isArray(S.shots)?S.shots.filter(function(r){return r&&typeof r==='object'&&r.d}):[];   /* {d, w, c, i, u} per shoot */
 const save=()=>DB.set('vito.v3',S);
 document.documentElement.dataset.theme=S.theme;
@@ -1565,7 +1578,7 @@ function iFrame(){
 }
 /* Build: what is still open. Days left in the phase already print under the bar. */
 function iBuild(){
-  const open=(S.loops||[]).filter(function(l){return l&&l.id&&!S.week.cadence[l.id]}).length;
+  const open=(S.loops||[]).filter(function(l){return l&&l.id&&!S.loopsDone[l.id]}).length;
   if(!open)return '';
   return open===1
     ? 'One loop still open. They close in the order they were opened.'
@@ -2423,9 +2436,10 @@ function renderBuild(){
   document.getElementById('phaseBar').style.width=(b>a?Math.max(0,Math.min(100,(n-a)/(b-a)*100)):100)+'%';
   const left=Math.max(0,Math.ceil((b-n)/864e5));
   document.getElementById('phaseNote').textContent=left===0?'Last day of this phase.':left+' days left in '+p.n.toLowerCase();
+  renderPhaseLoops();
 
   checklist(document.getElementById('cadence'),CADENCE,S.week.cadence,renderBuild);
-  checklist(document.getElementById('loops'),S.loops,S.week.cadence,renderBuild,
+  checklist(document.getElementById('loops'),S.loops,S.loopsDone,renderBuild,
     function(i){S.loops.splice(i,1);save();renderBuild()});
   renderInsight();
 
@@ -2434,6 +2448,27 @@ function renderBuild(){
       fmt(x.from)+'–'+fmt(x.to)+'</td><td class="soft">'+x.d+'</td></tr>'}).join('');
   renderCommit();
 }
+/* the phase is its loops, so they sit under the phase bar rather than further down the page */
+function renderPhaseLoops(){
+  const host=document.getElementById('phaseLoops');if(!host)return;
+  const done=S.loops.filter(function(l){return S.loopsDone[l.id]}).length;
+  host.innerHTML=S.loops.length
+    ?S.loops.map(function(l){
+        return '<div class="loop'+(S.loopsDone[l.id]?' done':'')+'">'+esc(l.t)+'</div>'}).join('')+
+      '<div class="strip-note" style="text-align:left;margin:10px 0 22px">'+done+' of '+S.loops.length+' closed</div>'
+    :'<p class="ex-cue" style="margin:0 0 20px">Nothing listed yet. The phase is whatever is in this list.</p>';
+}
+document.getElementById('lManyBtn').onclick=function(){
+  const w=document.getElementById('lMany');w.hidden=!w.hidden;
+  if(!w.hidden)document.getElementById('lManyBox').focus();
+};
+document.getElementById('addMany').onclick=function(){
+  const box=document.getElementById('lManyBox');
+  const lines=box.value.split('\n').map(function(x){return x.trim()}).filter(Boolean);
+  if(!lines.length)return;
+  lines.forEach(function(t,i){S.loops.push({id:'l'+(Date.now()+i),t:t,s:''})});
+  save();box.value='';document.getElementById('lMany').hidden=true;renderBuild();
+};
 document.getElementById('addLoop').onclick=function(){
   const v=document.getElementById('lTitle').value.trim();if(!v)return;
   S.loops.push({id:'l'+Date.now(),t:v,s:''});save();
