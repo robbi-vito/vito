@@ -2767,11 +2767,13 @@ function renderMorning(){
   checklist(document.getElementById('morning'),S.mornList,S.morning[t],renderMorning,
     function(i){S.mornList.splice(i,1);save();renderMorning()},'morning');
 
-  const last=sleepPair(todayKey()),el=document.getElementById('sleepLine');
+  /* last night is the night before this calendar morning, whichever side of 05:00 it is read */
+  const lastD=new Date(t+'T12:00:00');lastD.setDate(lastD.getDate()-1);
+  const lastK=dkey(lastD),last=sleepPair(lastK),el=document.getElementById('sleepLine');
   let line='';
-  if(last.off&&last.up)line='Last night '+clockOf(last.off)+' to '+clockOf(last.up)+' · '+hoursBetween(last.off,last.up)+'.';
+  if(last.off&&last.up)line='Last night '+clockOf(last.off)+' to '+clockOf(last.up)+' · '+'<span class="g-'+sleptGrade(last.up-last.off)+'">'+hoursBetween(last.off,last.up)+'</span>.';
   else if(last.off)line='Stopped at '+clockOf(last.off)+' last night.';
-  el.textContent=line;el.hidden=!line;
+  el.innerHTML=line;el.hidden=!line;
 
   /* the scale prompt shows up only on the mornings it is owed */
   const b=(S.body||[]).filter(function(e){return e&&e.d}).sort(function(x,y){return x.d<y.d?-1:1});
