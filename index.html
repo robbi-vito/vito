@@ -55,19 +55,24 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     radial-gradient(circle 35vw at 32% 88%,rgba(140,88,48,.07),transparent 70%),
     radial-gradient(circle 48vw at 68% 12%,rgba(70,44,26,.11),transparent 68%)}
 .leak{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:var(--leak);mix-blend-mode:var(--stain,screen);
+  --leak-scroll:0%;
   --leak-x:104%;--leak-y:-8%;--leak-w:58%;--leak-h:40%;
   --leak2-x:110%;--leak2-y:20%;--leak3-x:-10%;--leak3-y:106%;
   --leak4-x:50%;--leak4-y:50%;--leak4-w:0%;--leak4-h:0%;
   --spk-w:0%;--spk1-x:50%;--spk1-y:50%;--spk2-x:50%;--spk2-y:50%;--spk3-x:50%;--spk3-y:50%;
+  --spk4-x:50%;--spk4-y:50%;--spk5-x:50%;--spk5-y:50%;--spk6-x:50%;--spk6-y:50%;
   transition:opacity .6s var(--ease);
   background:
-    radial-gradient(ellipse var(--leak-w) var(--leak-h) at calc(var(--leak-x) + var(--leak-drift-x,0%)) calc(var(--leak-y) + var(--leak-drift-y,0%)),var(--leak-a),transparent 60%),
-    radial-gradient(ellipse 28% 58% at calc(var(--leak2-x) - var(--leak-drift-x,0%)) calc(var(--leak2-y) + var(--leak-drift-y,0%)),var(--leak-b),transparent 68%),
-    radial-gradient(ellipse 74% 24% at calc(var(--leak3-x) + var(--leak-drift-y,0%)) calc(var(--leak3-y) - var(--leak-drift-x,0%)),var(--leak-c),transparent 64%),
-    radial-gradient(ellipse var(--leak4-w) var(--leak4-h) at var(--leak4-x) var(--leak4-y),var(--leak-c),transparent 62%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk1-x) var(--spk1-y),var(--leak-c),transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk2-x) var(--spk2-y),var(--leak-b),transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk3-x) var(--spk3-y),var(--leak-c),transparent 74%)}
+    radial-gradient(ellipse var(--leak-w) var(--leak-h) at calc(var(--leak-x) + var(--leak-drift-x,0%)) calc(var(--leak-y) + var(--leak-drift-y,0%) - var(--leak-scroll)),var(--leak-a),transparent 60%),
+    radial-gradient(ellipse 28% 58% at calc(var(--leak2-x) - var(--leak-drift-x,0%)) calc(var(--leak2-y) + var(--leak-drift-y,0%) - var(--leak-scroll)),var(--leak-b),transparent 68%),
+    radial-gradient(ellipse 74% 24% at calc(var(--leak3-x) + var(--leak-drift-y,0%)) calc(var(--leak3-y) - var(--leak-drift-x,0%) - var(--leak-scroll)),var(--leak-c),transparent 64%),
+    radial-gradient(ellipse var(--leak4-w) var(--leak4-h) at var(--leak4-x) calc(var(--leak4-y) - var(--leak-scroll)),var(--leak-c),transparent 62%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk1-x) calc(var(--spk1-y) - var(--leak-scroll)),var(--leak-c),transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk2-x) calc(var(--spk2-y) - var(--leak-scroll)),var(--leak-b),transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk3-x) calc(var(--spk3-y) - var(--leak-scroll)),var(--leak-c),transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk4-x) calc(var(--spk4-y) - var(--leak-scroll)),var(--leak-b),transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk5-x) calc(var(--spk5-y) - var(--leak-scroll)),var(--leak-c),transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk6-x) calc(var(--spk6-y) - var(--leak-scroll)),var(--leak-b),transparent 74%)}
 /* each view catches the light from somewhere else */
 body[data-view="train"] .leak{--leak-x:-6%;--leak-y:-10%;--leak-w:52%;--leak-h:46%;--leak2-x:-8%;--leak2-y:26%;--leak3-x:108%;--leak3-y:102%}
 body[data-view="fuel"] .leak{--leak-x:50%;--leak-y:-14%;--leak-w:78%;--leak-h:30%;--leak2-x:104%;--leak2-y:64%;--leak3-x:-6%;--leak3-y:104%}
@@ -3181,7 +3186,7 @@ paintSound();
 function switchView(v){
   document.body.dataset.view=v;
   paintLeak();
-  setTimeout(paintCollapse,0);
+  setTimeout(function(){measureReach();paintCollapse()},0);
   document.querySelectorAll('.view').forEach(function(s){s.classList.toggle('on',s.id==='v-'+v)});
   document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('on',b.dataset.v===v)});
   window.scrollTo(0,0);
@@ -3581,13 +3586,27 @@ function paintCollapse(){
   const anyOpen=!!(view&&view.querySelector('details[open]'));
   b.classList.toggle('show',anyOpen&&window.scrollY>140);
 }
+/* one custom property per frame; the layer stays a screen tall and only slides */
+let leakTick=false;
+addEventListener('resize',measureReach);
+function paintLeakScroll(){
+  const el=document.querySelector('.leak');
+  if(!el)return;
+  el.style.setProperty('--leak-scroll',Math.round(window.scrollY/innerHeight*100)+'%');
+}
+addEventListener('scroll',function(){
+  if(leakTick)return;
+  leakTick=true;
+  requestAnimationFrame(function(){leakTick=false;paintLeakScroll()});
+},{passive:true});
+paintLeakScroll();
 let collapseTick=false;
 addEventListener('scroll',function(){
   if(collapseTick)return;
   collapseTick=true;
   requestAnimationFrame(function(){collapseTick=false;paintCollapse()});
 },{passive:true});
-document.addEventListener('toggle',paintCollapse,true);
+document.addEventListener('toggle',function(){paintCollapse();measureReach()},true);
 document.getElementById('splashBtn').onclick=function(){openMorningSheet()};
 document.getElementById('collapseAll').onclick=function(){
   const view=document.querySelector('.view.on');if(!view)return;
@@ -3599,6 +3618,15 @@ paintCollapse();
 /* the date, the half-hour and the view together seed the leak, so the light
    moves through the day and no two views hold the same frame at once */
 var leakFrame='';
+/* how far down the page there is room to place something, in screens. Measured after
+   the view has laid out: paintLeak runs during the switch, when scrollHeight still
+   belongs to the page being left. */
+let leakReach=100;
+function measureReach(){
+  const r=Math.max(100,Math.round(document.documentElement.scrollHeight/innerHeight*100));
+  if(r===leakReach)return;
+  leakReach=r;leakFrame='';paintLeak();
+}
 function paintLeak(){
   const el=document.querySelector('.leak');
   if(!el)return;
@@ -3612,14 +3640,16 @@ function paintLeak(){
   const rnd=function(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
   const rint=function(lo,hi){return Math.floor(lo+rnd()*(hi-lo))};
   const set=function(n,v){el.style.setProperty(n,v)};
-  /* a burst picks an edge and a place along it, so the middle stays clear */
+  const reach=leakReach;
+  /* a burst keeps one coordinate off-screen so the middle of the page stays clear.
+     A side burst may sit at any depth; a top or bottom one belongs near the ends. */
   const edge=function(){
-    const along=rint(-10,110),lip=rint(-18,4);
+    const lip=rint(-18,4);
     switch(rint(0,4)){
-      case 0:return [along+'%',lip+'%'];
-      case 1:return [along+'%',(100-lip)+'%'];
-      case 2:return [lip+'%',along+'%'];
-      default:return [(100-lip)+'%',along+'%'];
+      case 0:return [rint(-10,110)+'%',lip+'%'];
+      case 1:return [rint(-10,110)+'%',(reach-lip)+'%'];
+      case 2:return [lip+'%',rint(-10,reach+10)+'%'];
+      default:return [(100-lip)+'%',rint(-10,reach+10)+'%'];
     }
   };
   set('--leak-drift-x','0%');set('--leak-drift-y','0%');
@@ -3631,13 +3661,14 @@ function paintLeak(){
     p=edge();set('--leak4-x',p[0]);set('--leak4-y',p[1]);
     set('--leak4-w',rint(24,44)+'%');set('--leak4-h',rint(16,32)+'%');
   }else{set('--leak4-w','0%');set('--leak4-h','0%')}
-  /* wear, not decoration: small enough to read straight through.
-     vmin because a percentage resolves per axis and stretches the spot */
-  const boost=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spk-boost'))||1;
-  if(rnd()<.45){
-    set('--spk-w',((0.35+rnd()*0.7)*boost).toFixed(2)+'vmin');
-    for(let n=1;n<=3;n++){set('--spk'+n+'-x',rint(6,94)+'%');set('--spk'+n+'-y',rint(6,94)+'%')}
-  }else{set('--spk-w','0vmin')}
+  /* wear belongs to the paper rather than to the moment, so it is always there.
+     The register decides how coarse: ink sits on a sheet, light only glints on glass. */
+  const paper=getComputedStyle(document.documentElement).getPropertyValue('--stain').trim()==='multiply';
+  set('--spk-w',((paper?0.7:0.4)+rnd()*(paper?0.8:0.5)).toFixed(2)+'vmin');
+  for(let n=1;n<=6;n++){
+    set('--spk'+n+'-x',rint(4,96)+'%');
+    set('--spk'+n+'-y',rint(2,reach)+'%');
+  }
 }
 (function(){
   document.body.dataset.view='today';
