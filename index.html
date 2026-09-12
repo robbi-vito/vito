@@ -378,13 +378,29 @@ textarea.three:focus{outline:none;border-color:var(--rust)}
 .set-hd{font-family:'Courier Prime',monospace;font-size:10.5px;letter-spacing:.2em;color:var(--text-dim);margin:6px 0 8px}
 .set-note{font-style:italic;font-size:14px;line-height:1.5;color:var(--text-soft);margin:10px 0 18px}
 
-.collapse-all{position:fixed;top:calc(12px + env(safe-area-inset-top));
-  right:max(20px,calc((100vw - 620px)/2 + 20px));z-index:50;
-  font-family:'Courier Prime',monospace;font-size:10px;font-weight:700;letter-spacing:.16em;
-  color:var(--ember);background:var(--bg-raise);border:1px solid var(--rust-lo);
-  border-radius:var(--round);padding:7px 11px;cursor:pointer;line-height:1;
-  opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}
+.float-btn{position:fixed;z-index:50;width:44px;height:44px;border-radius:50%;
+  display:grid;place-items:center;cursor:pointer;padding:0;
+  background:var(--bg-raise);border:1px solid var(--rust-lo);color:var(--ember);
+  transition:opacity .2s var(--ease),transform .18s var(--spring),border-color .2s var(--ease)}
+.float-btn:active{transform:scale(.92)}
+.collapse-all{top:calc(12px + env(safe-area-inset-top));
+  right:max(20px,calc((100vw - 620px)/2 + 20px));
+  opacity:0;pointer-events:none}
 .collapse-all.show{opacity:1;pointer-events:auto}
+/* a chevron drawn from two borders: up, because the panels fold upward */
+.collapse-all::before{content:'';width:12px;height:12px;
+  border-left:1.5px solid currentColor;border-top:1.5px solid currentColor;
+  transform:rotate(45deg) translate(2px,2px)}
+/* the aperture: concentric rings, the shutter this app is already made of */
+.splash-btn{right:max(20px,calc((100vw - 620px)/2 + 20px));
+  bottom:calc(64px + env(safe-area-inset-bottom));
+  opacity:0;pointer-events:none}
+body[data-view="today"] .splash-btn{opacity:1;pointer-events:auto}
+.splash-btn::before{content:'';position:absolute;inset:7px;border-radius:50%;
+  border:1.5px solid currentColor}
+.splash-btn::after{content:'';position:absolute;inset:14px;border-radius:50%;
+  background:currentColor;opacity:.55;transition:opacity .2s var(--ease)}
+.splash-btn:active::after{opacity:1}
 nav{position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--bg-sink);border-top:1px solid var(--edge);
   display:grid;grid-template-columns:repeat(6,1fr);padding-bottom:env(safe-area-inset-bottom)}
 nav button{background:none;border:none;padding:17px 2px 16px;cursor:pointer;font-family:'Courier Prime',monospace;
@@ -403,6 +419,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
   .wrap{max-width:880px;padding:0 40px}
   .collapse-all{right:max(40px,calc((100vw - 880px)/2 + 40px));
     top:calc(58px + env(safe-area-inset-top))}
+  .splash-btn{right:max(40px,calc((100vw - 880px)/2 + 40px));bottom:28px}
   nav{top:0;bottom:auto;border-top:none;border-bottom:1px solid var(--edge);
     display:flex;justify-content:center;gap:2px;padding:0}
   nav button{padding:15px 22px 14px;font-size:11px;letter-spacing:.16em}
@@ -972,7 +989,8 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
   </div>
 </div>
 
-<button class="collapse-all" id="collapseAll" type="button">CLOSE ALL</button>
+<button class="float-btn collapse-all" id="collapseAll" type="button" aria-label="Close everything open on this page"></button>
+<button class="float-btn splash-btn" id="splashBtn" type="button" aria-label="Today at a glance"></button>
 
 <nav>
   <button class="on" data-v="today">TODAY</button>
@@ -3069,10 +3087,24 @@ function paintTrainDefaults(){
 
 /* the first open of a morning: the day, the time you got up, and the list.
    It writes to the same stores the Morning section reads, so nothing drifts. */
+const HELLO={
+  morning:['Good morning.','Morning, Vito.','Up and at it.','Early doors.','Howdy.'],
+  afternoon:['Afternoon.','Afternoon, Vito.','Middle of it.','What is good, Vito.','Still going.'],
+  evening:['Evening.','Evening, Vito.','Winding down.','Late shift.','That is the day.']
+};
+let lastHello='';
+function greeting(){
+  const h=new Date().getHours();
+  const set=HELLO[h<12?'morning':h<18?'afternoon':'evening'];
+  let pick=set[Math.floor(Math.random()*set.length)];
+  if(set.length>1&&pick===lastHello)pick=set[(set.indexOf(pick)+1)%set.length];
+  lastHello=pick;
+  return pick;
+}
 function openMorningSheet(){
   const k=calKey();
   S.morning[k]=S.morning[k]||{};
-  document.getElementById('vTitle').textContent='Good morning.';
+  document.getElementById('vTitle').textContent=greeting();
   document.getElementById('vSub').textContent=fmt(todayKey()).toUpperCase()+' · '+(slot.k||'REST');
   const body=document.getElementById('vBody');
   body.innerHTML='<p class="ex-cue" style="margin:0 0 12px">Log the time you got up, then the first hour.</p>'+
@@ -3119,6 +3151,7 @@ addEventListener('scroll',function(){
   requestAnimationFrame(function(){collapseTick=false;paintCollapse()});
 },{passive:true});
 document.addEventListener('toggle',paintCollapse,true);
+document.getElementById('splashBtn').onclick=function(){openMorningSheet()};
 document.getElementById('collapseAll').onclick=function(){
   const view=document.querySelector('.view.on');if(!view)return;
   view.querySelectorAll('details[open]').forEach(function(d){d.open=false});
