@@ -649,6 +649,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
         <summary><h2>The shop</h2><span class="meta">BY STORE</span></summary>
         <div class="det-body">
           <div class="prose"><p style="font-size:15px">Tick as you go. Kroger is next door and covers most weeks; Costco is the bulk protein run.</p></div>
+          <button class="watch" id="shopMerge" type="button" style="margin:0 0 4px"></button>
           <div id="shopping"></div>
           <button class="cta ghost" id="clearShop" style="margin-top:20px">Clear the list</button>
         </div>
@@ -1253,6 +1254,13 @@ S.loops.forEach(function(l){
 });
 S.shots=Array.isArray(S.shots)?S.shots.filter(function(r){return r&&typeof r==='object'&&r.d}):[];   /* {d, w, c, i, u} per shoot */
 const save=()=>DB.set('vito.v3',S);
+S.shopNeed=S.shopNeed&&typeof S.shopNeed==='object'?S.shopNeed:{};   /* store|index -> still short of it */
+S.shopMerged=!!S.shopMerged;                        /* the needed-only view, a lens rather than a setting */
+S.shopDay=typeof S.shopDay==='string'?S.shopDay:'';
+if(S.shopDay!==todayKey()){
+  Object.keys(S.shop).forEach(function(k){if(S.shop[k])delete S.shopNeed[k]});
+  S.shop={};S.shopMerged=false;S.shopDay=todayKey();save();
+}
 /* kinds became types, and two seeded entries were one venue; only untouched rows change */
 (function(){
   const map={COFFEE:'coffee',CAFE:'coffee',GAMES:'coffee',CINEMA:'creative',GALLERY:'creative'};
@@ -2508,17 +2516,65 @@ function renderPrevEntry(){
 }
 renderPrevEntry();
 
+function shopItems(){
+  const out=[];
+  Object.keys(SHOP).forEach(function(store){
+    SHOP[store].forEach(function(t,i){out.push({id:store+'|'+i,t:t,store:store})});
+  });
+  return out;
+}
+function shopRow(it,withStore){
+  const d=document.createElement('div');
+  d.className='chk'+(S.shop[it.id]?' on':'');
+  d.innerHTML='<span class="box">\u2713</span><span class="chk-body"><span class="chk-t">'+esc(it.t)+'</span>'+
+    (withStore?'<br><span class="chk-s">'+esc(it.store.split('\u2014')[0].trim())+'</span>':'')+'</span>';
+  d.querySelector('.box').onclick=function(e){
+    e.stopPropagation();S.shop[it.id]=!S.shop[it.id];save();renderShop();
+  };
+  const n=document.createElement('button');
+  n.type='button';n.className='watch'+(S.shopNeed[it.id]?' set':'');n.style.margin='0';
+  n.textContent=S.shopNeed[it.id]?'NEEDED':'NEED';
+  n.setAttribute('aria-pressed',S.shopNeed[it.id]?'true':'false');
+  n.onclick=function(e){
+    e.stopPropagation();
+    if(S.shopNeed[it.id])delete S.shopNeed[it.id];else S.shopNeed[it.id]=1;
+    save();renderShop();
+  };
+  d.appendChild(n);
+  return d;
+}
 function renderShop(){
   const host=document.getElementById('shopping');host.innerHTML='';
+  const mb=document.getElementById('shopMerge');
+  if(mb){mb.textContent=S.shopMerged?'BY STORE':'WHAT I AM SHORT OF';mb.classList.toggle('set',S.shopMerged)}
+  if(S.shopMerged){
+    const lab=document.createElement('div');lab.className='group-label';lab.style.marginTop='6px';
+    lab.textContent='SHORT OF \u2014 EVERY STORE';host.appendChild(lab);
+    const need=shopItems().filter(function(it){return S.shopNeed[it.id]});
+    if(!need.length){
+      const p=document.createElement('p');p.className='ex-cue';p.style.marginLeft='0';
+      p.textContent='Nothing marked yet. Mark what you are short of and it collects here.';
+      host.appendChild(p);return;
+    }
+    need.forEach(function(it){host.appendChild(shopRow(it,true))});
+    return;
+  }
   Object.keys(SHOP).forEach(function(store){
     const lab=document.createElement('div');lab.className='group-label';lab.style.marginTop='22px';
     lab.textContent=store;host.appendChild(lab);
-    const box=document.createElement('div');host.appendChild(box);
-    checklist(box,SHOP[store].map(function(t,i){return {id:store+'|'+i,t:t,s:''}}),S.shop,renderShop);
+    const items=shopItems().filter(function(it){return it.store===store});
+    items.sort(function(a,b){
+      const na=S.shopNeed[a.id]?0:1,nb=S.shopNeed[b.id]?0:1;
+      return na!==nb?na-nb:a.t.localeCompare(b.t);
+    });
+    items.forEach(function(it){host.appendChild(shopRow(it,false))});
   });
 }
+document.getElementById('shopMerge').onclick=function(){
+  S.shopMerged=!S.shopMerged;save();renderShop();
+};
 renderShop();
-document.getElementById('clearShop').onclick=function(){S.shop={};save();renderShop()};
+document.getElementById('clearShop').onclick=function(){S.shop={};S.shopNeed={};S.shopMerged=false;save();renderShop()};
 
 /* ── build ── */
 function currentPhase(){
