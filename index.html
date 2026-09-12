@@ -3712,18 +3712,24 @@ function paintLeak(){
   const set=function(n,v){el.style.setProperty(n,v)};
   const reach=leakBasis;
   /* a burst keeps one coordinate off-screen so the middle of the page stays clear.
-     A side burst may sit at any depth; a top or bottom one belongs near the ends. */
+     A side burst may sit at any depth; a top or bottom one is held to a corner. */
+  const corner=function(){return rnd()<.5?rint(-10,14):rint(86,110)};
   const edge=function(){
     const lip=rint(-18,4);
     switch(rint(0,4)){
-      case 0:return [rint(-10,110)+'%',lip+'%'];
-      case 1:return [rint(-10,110)+'%',(reach-lip)+'%'];
+      case 0:return [corner()+'%',lip+'%'];
+      case 1:return [corner()+'%',(reach-lip)+'%'];
       case 2:return [lip+'%',rint(-10,reach+10)+'%'];
       default:return [(100-lip)+'%',rint(-10,reach+10)+'%'];
     }
   };
   set('--leak-drift-x','0%');set('--leak-drift-y','0%');
-  let p=edge();set('--leak-x',p[0]);set('--leak-y',p[1]);
+  let p=edge();
+  if((document.body.dataset.view||'today')==='today'){   /* Today opens with light in its first screen */
+    const lip=rint(-18,4);
+    p=rnd()<.5?[corner()+'%',lip+'%']:[(rnd()<.5?lip:100-lip)+'%',rint(-10,60)+'%'];
+  }
+  set('--leak-x',p[0]);set('--leak-y',p[1]);
   set('--leak-w',rint(38,72)+'%');set('--leak-h',rint(22,48)+'%');
   p=edge();set('--leak2-x',p[0]);set('--leak2-y',p[1]);
   p=edge();set('--leak3-x',p[0]);set('--leak3-y',p[1]);
