@@ -1721,6 +1721,7 @@ document.addEventListener('visibilitychange',function(){
   /* a quick switch mid-session keeps your place; a long gap or a new day goes back to today */
   const away=hiddenAt?Date.now()-hiddenAt:0;
   if(away>72e5||builtFor!==todayKey())viewDay=dayIdx();
+  if(away>18e5&&!S.timer.run)shutAfterAway();
   renderBrief();
   loadWeather();                                 /* it decides for itself whether a refetch is due */
 });
@@ -3568,12 +3569,22 @@ function paintTrainDefaults(){
   if(p)p.open=!viaShortcut&&run;
   if(r)r.open=!viaShortcut&&run;
 }
-(function(){
+function openForHour(){
   const h=hourNow();
   const m=document.getElementById('morningBox'),n=document.getElementById('tonightBox');
   if(m)m.open=h>=5.5&&h<10.5;
   if(n)n.open=h>=18.5||h<5;
-})();
+}
+openForHour();
+/* half an hour away puts the page back to what the hour would open, unless a session is running */
+function shutAfterAway(){
+  const open=document.querySelectorAll('.view details[open]');
+  if(!open.length)return;
+  open.forEach(function(d){d.open=false});
+  openForHour();
+  window.scrollTo(0,0);
+  paintCollapse();
+}
 
 /* the first open of a morning: the day, the time you got up, and the list.
    It writes to the same stores the Morning section reads, so nothing drifts. */
