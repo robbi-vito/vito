@@ -413,6 +413,10 @@ textarea.three:focus{outline:none;border-color:var(--rust)}
   border-radius:2px;padding:9px 14px;cursor:pointer;transition:all .2s}
 @media (hover:hover){.sheet-foot a:hover,.sheet-foot button:hover{border-color:var(--rust);color:var(--rust)}}
 .sheet-foot .close{margin-left:auto;border-color:var(--rust-lo);color:var(--ember)}
+/* a way out that is there on arrival and stays in reach down a long sheet */
+.sheet-x{position:sticky;top:0;float:right;z-index:2;margin:-4px -4px 0 12px;font-family:var(--face-mono);
+  font-size:11px;letter-spacing:.1em;color:var(--ember);background:var(--bg-raise);
+  border:1px solid var(--rust-lo);border-radius:2px;padding:9px 14px;cursor:pointer}
 .sheet-foot button.on,.sheet-foot button.on:hover{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
 .set-hd{font-family:var(--face-mono);font-size:10.5px;letter-spacing:.2em;color:var(--text-dim);margin:6px 0 8px}
 .face-opt{display:block;width:100%;text-align:left;background:var(--bg-raise);cursor:pointer;
@@ -1059,6 +1063,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
 
 <div class="scrim" id="scrim">
   <div class="sheet">
+    <button class="sheet-x" id="vTop" type="button" hidden>DONE</button>
     <h3 id="vTitle"></h3>
     <div class="sub" id="vSub"></div>
     <div id="vBody"></div>
@@ -2444,7 +2449,8 @@ function openVideo(item,alt){
   document.getElementById('vClose').onclick=closeVideo;
   scrim.classList.add('up');
 }
-function closeVideo(){document.getElementById('vBody').innerHTML='';scrim.classList.remove('up')}
+function closeVideo(){document.getElementById('vBody').innerHTML='';document.getElementById('vTop').hidden=true;scrim.classList.remove('up')}
+document.getElementById('vTop').onclick=function(){closeVideo()};
 scrim.onclick=function(e){if(e.target===scrim)closeVideo()};
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&scrim.classList.contains('up'))closeVideo()});
 
@@ -3167,6 +3173,7 @@ function openSettings(){
   const m=S.unitMode;
   const opt=function(v,l){return '<button type="button" data-u="'+v+'"'+(m===v?' class="on"':'')+' aria-pressed="'+(m===v)+'">'+l+'</button>'};
   document.getElementById('vTitle').textContent='Settings';
+  document.getElementById('vTop').hidden=false;
   document.getElementById('vSub').textContent='';
   document.getElementById('vBody').innerHTML=
     '<div class="set-hd">UNITS</div>'+
