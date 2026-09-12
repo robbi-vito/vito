@@ -402,6 +402,12 @@ textarea.three:focus{outline:none;border-color:var(--rust)}
 .face-opt.on .face-n{color:var(--rust)}
 .face-d{display:block;font-family:var(--face-body);font-style:italic;font-size:14px;color:var(--text-soft);margin-top:2px}
 .face-s{display:block;font-size:10px;letter-spacing:.16em;color:var(--text-dim);margin-top:7px}
+/* the buttons that read as sentences; the Courier caps are a different job */
+:root[data-case="lower"] .cta,:root[data-case="lower"] .log-row button,
+:root[data-case="lower-all"] .cta,:root[data-case="lower-all"] .log-row button{text-transform:lowercase}
+:root[data-case="lower-all"] summary h2,:root[data-case="lower-all"] details.nest>summary h3,
+:root[data-case="lower-all"] .prose h3,:root[data-case="lower-all"] .stretch h3,
+:root[data-case="lower-all"] .pl-group,:root[data-case="lower-all"] .sheet h3{text-transform:lowercase}
 .set-note{font-style:italic;font-size:14px;line-height:1.5;color:var(--text-soft);margin:10px 0 18px}
 
 .float-btn{position:fixed;z-index:50;width:44px;height:44px;border-radius:50%;
@@ -1281,6 +1287,7 @@ S.protein=S.protein&&typeof S.protein==='object'?S.protein:{};   /* date -> prot
 S.meet=S.meet||'';                             /* maps link for the run club meeting point */
 S.splash=typeof S.splash==='string'?S.splash:'';   /* the morning the greeting was last shown */
 S.fontTheme=typeof S.fontTheme==='string'?S.fontTheme:'protocol';   /* which typography theme is set */
+S.caseStyle=typeof S.caseStyle==='string'?S.caseStyle:'sentence';   /* how the interface text is cased */
 S.units=S.units&&typeof S.units==='object'?S.units:{};   /* exercise id -> 'kg'; absent means lb */
 S.unitMode=S.unitMode==='lb'||S.unitMode==='kg'?S.unitMode:'each';   /* 'lb' or 'kg' for all, 'each' per exercise */
 const LB_PER_KG=2.20462;
@@ -2969,6 +2976,17 @@ function openSettings(){
         '<span class="face-s" style="font-family:'+t.mono.replace(/"/g,'&quot;')+'">HEADINGS · PROSE · DATA</span></button>';
     }).join('')+
     '<p class="set-note">Headings and large numbers take the first face, prose the second, labels and timings the third. The Protocol is how it was built, and is always here to come back to.</p>'+
+    '<div class="set-hd">CASE</div>'+
+    '<div class="sheet-foot">'+
+      ['sentence','As built','lower','lower buttons','lower-all','lower headings too']
+        .reduce(function(acc,v,i,arr){
+          if(i%2)return acc;
+          const id=arr[i],lab=arr[i+1],on=S.caseStyle===id;
+          return acc+'<button type="button" data-cs="'+id+'"'+(on?' class="on"':'')+
+            ' style="text-transform:none">'+lab+'</button>';
+        },'')+
+    '</div>'+
+    '<p class="set-note">The first is how it was written. The others lower the buttons, and then the section headings as well. The small caps labels are a different job and are left as they are.</p>'+
     '<div class="set-hd">VIDEOS</div>'+
     '<div class="sheet-foot">'+VID_GROUPS.map(function(g){
       return '<button type="button" data-vg="'+g[0]+'"'+(S.hideVid[g[0]]?'':' class="on"')+'>'+g[1]+'</button>'}).join('')+'</div>'+
@@ -2979,6 +2997,9 @@ function openSettings(){
     '<div class="set-hd">BACKUP</div>'+
     '<div class="sheet-foot"><button type="button" id="sExport">EXPORT BACKUP</button><button type="button" id="sRestore">RESTORE FROM BACKUP</button></div>'+
     '<div class="sheet-foot" style="margin-top:18px"><button class="close" id="vClose">DONE</button></div>';
+  document.querySelectorAll('#vBody [data-cs]').forEach(function(b){
+    b.onclick=function(){S.caseStyle=b.dataset.cs;save();applyCase();openSettings()};
+  });
   document.querySelectorAll('#vBody [data-ft]').forEach(function(b){
     b.onclick=function(){
       S.fontTheme=b.dataset.ft;save();applyFontTheme(S.fontTheme);openSettings();
@@ -3193,6 +3214,8 @@ function applyFontTheme(id){
   r.style.setProperty('--face-mono',t.mono);
 }
 applyFontTheme(S.fontTheme);
+function applyCase(){document.documentElement.dataset.case=S.caseStyle}
+applyCase();
 const VID_GROUPS=[['A','PUSH'],['B','PULL'],['C','LEGS'],['D','WIDTH'],['stretch','STRETCHES'],['drills','DRILLS'],['desk','DESK'],['recipes','RECIPES']];
 function playlistBtn(k){
   return S.play[k]
