@@ -841,7 +841,13 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
 
     <div class="group-label">THE THREE</div>
     <p class="ex-cue" style="margin:4px 0 6px">Future tense, on Sunday, fifteen minutes. Three priorities for the week ahead, what you said you would do and did not, and what you are deliberately dropping. If it reads like a long journal entry, it has drifted.</p>
+    <p class="prev-entry" id="lastReview" hidden></p>
+    <div id="reviewSetBox" hidden>
+      <p class="set-text" id="reviewText"></p>
+      <button class="watch" id="reviewEdit" type="button">EDIT</button>
+    </div>
     <textarea class="three" id="three" placeholder="Sunday, for the week ahead. Maximum three. Write them here and nowhere else."></textarea>
+    <div class="log-row" id="reviewSaveRow"><button id="reviewSave">Save</button></div>
 
     <div class="group-label">DATES THAT MATTER</div>
     <table class="data" id="commitments"></table>
@@ -1117,6 +1123,9 @@ if(!S.week||S.week.start!==mondayOf(appNow())){
 S.week.done=S.week.done||{};S.week.posture=S.week.posture||{};S.week.cadence=S.week.cadence||{};
 S.logs=S.logs||{};S.body=S.body||[{d:'2026-08-14',w:167.2,f:15.0}];
 S.theme=S.theme||'dark';S.shop=S.shop||{};S.three=S.three||'';
+S.reviews=S.reviews&&typeof S.reviews==='object'?S.reviews:{};   /* week start -> the three */
+S.reviewSet=S.reviewSet&&typeof S.reviewSet==='object'?S.reviewSet:{};
+if(S.three.trim()&&!S.reviews[S.week.start])S.reviews[S.week.start]=S.three;
 S.journal=S.journal||{};S.evening=S.evening||{};S.commit=S.commit||[];
 S.journalSet=S.journalSet&&typeof S.journalSet==='object'?S.journalSet:{};   /* date -> entry settled */
 S.tonight=Array.isArray(S.tonight)                /* the Tonight items, seeded once */
@@ -2570,8 +2579,30 @@ document.getElementById('addShot').onclick=function(){
   document.getElementById('shW').value='';document.getElementById('shC').value='';
 };
 renderShots();
+/* the box plans the week it is written for; last week's sits above it, read-only */
 const th=document.getElementById('three');
-th.value=S.three;th.oninput=function(){S.three=th.value;save()};
+function lastWeekStart(){
+  const d=new Date(S.week.start+'T12:00:00');d.setDate(d.getDate()-7);return dkey(d);
+}
+function paintReview(){
+  const wk=S.week.start,txt=S.reviews[wk]||'',set=!!S.reviewSet[wk]&&!!txt.trim();
+  document.getElementById('reviewText').textContent=txt;
+  document.getElementById('reviewSetBox').hidden=!set;
+  th.hidden=set;document.getElementById('reviewSaveRow').hidden=set;
+  if(!set&&th.value!==txt)th.value=txt;
+  const prev=S.reviews[lastWeekStart()]||'',el=document.getElementById('lastReview');
+  el.innerHTML=prev.trim()?'<span class="d">LAST WEEK</span>'+esc(prev.trim()):'';
+  el.hidden=!prev.trim();
+}
+th.oninput=function(){S.reviews[S.week.start]=th.value;S.three=th.value;save()};
+document.getElementById('reviewSave').onclick=function(){
+  if(!(S.reviews[S.week.start]||'').trim())return;
+  S.reviewSet[S.week.start]=true;save();paintReview();
+};
+document.getElementById('reviewEdit').onclick=function(){
+  delete S.reviewSet[S.week.start];save();paintReview();th.focus();
+};
+paintReview();
 
 /* ── body ── */
 function renderBody(){
