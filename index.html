@@ -167,8 +167,7 @@ summary .meta{font-family:'Courier Prime',monospace;font-size:11px;font-weight:7
   color:var(--text-dim);white-space:nowrap;flex-shrink:0;margin-left:auto}
 summary::after{content:'+';font-family:'Courier Prime',monospace;color:var(--rust);font-size:18px;flex-shrink:0}
 details[open]>summary::after{content:'–'}
-@keyframes unfold{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
-details[open]>.det-body{animation:unfold .28s var(--ease) both}
+details>.det-body.flowing{overflow:hidden;will-change:height}
 details[open]>summary h2{color:var(--rust)}
 .det-body{padding:0 0 22px}
 details.nest{border-top:1px dashed var(--edge)}
@@ -2920,6 +2919,38 @@ function warmupDone(){
     return !(it.leg&&!legs)&&!(it.push&&!push)&&!(it.from&&t<it.from);
   }).every(function(it){return it.id==='p1'?!!po.p1:!!st[it.id]});
 }
+/* opening and closing are animated from the summary, so a panel that is opened in
+   code — the session shortcut, the time-aware defaults — still arrives instantly.
+   The reduced-motion rule in the stylesheet cannot reach a Web Animations call,
+   so the preference is read here. */
+function flowDetails(e){
+  const sum=e.target.closest&&e.target.closest('summary');
+  if(!sum||e.target.closest('button,a,input,textarea,select'))return;
+  const d=sum.parentElement;
+  if(!d||d.tagName!=='DETAILS')return;
+  const body=d.querySelector(':scope>.det-body');
+  if(!body)return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  if(d.dataset.anim)return;
+  e.preventDefault();
+  const open=d.open;
+  d.dataset.anim='1';
+  body.classList.add('flowing');
+  const done=function(){delete d.dataset.anim;body.classList.remove('flowing');body.style.height=''};
+  if(!open){
+    d.open=true;
+    const h=body.scrollHeight;
+    const a=body.animate([{height:'0px',opacity:0},{height:h+'px',opacity:1}],
+      {duration:300,easing:'cubic-bezier(.22,.61,.36,1)'});
+    a.onfinish=done;a.oncancel=done;
+  }else{
+    const h=body.scrollHeight;
+    const a=body.animate([{height:h+'px',opacity:1},{height:'0px',opacity:0}],
+      {duration:240,easing:'cubic-bezier(.22,.61,.36,1)'});
+    a.onfinish=function(){d.open=false;done()};a.oncancel=done;
+  }
+}
+document.addEventListener('click',flowDetails);
 function paintTrainDefaults(){
   const w=document.getElementById('warmupBox'),r=document.getElementById('runStretchBox');
   const p=document.getElementById('preRunBox'),run=slot.s==='cardio1'||slot.s==='cardio2';
