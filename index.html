@@ -112,6 +112,8 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 /* one panel per weekday, swiped sideways; the week strip shows which is in view */
 .brief{display:flex;align-items:flex-start;overflow-x:auto;gap:14px;margin-top:17px;
   scroll-snap-type:x mandatory;transition:height .2s ease;
+  -webkit-mask-image:linear-gradient(to right,#000 0,#000 86%,transparent 99%);
+  mask-image:linear-gradient(to right,#000 0,#000 86%,transparent 99%);
   scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior-x:contain}
 .brief::-webkit-scrollbar{display:none}
 .brief .day{flex:0 0 91%;scroll-snap-align:start;border-left:2px solid var(--rust-lo);padding-left:13px}
@@ -1475,15 +1477,22 @@ function renderBrief(){
 }
 /* the track carries an explicit height so a short day does not inherit a tall one's
    whitespace. Mid-swipe two panels overlap the viewport, so take the taller of them
-   and nothing is clipped on the way past. */
-function fitTrack(){
+   and nothing is clipped on the way past. At rest the peeked neighbour is still in
+   view, so settled measures only the panel you landed on and the heights match. */
+function fitTrack(settled){
   const track=document.getElementById('brief'),ps=track.children;
   if(!ps.length)return;
   const base=ps[0].offsetLeft,sl=track.scrollLeft,w=track.clientWidth;
   let h=0;
-  for(let i=0;i<ps.length;i++){
-    const x=ps[i].offsetLeft-base;
-    if(x+ps[i].offsetWidth>sl+1&&x<sl+w-1)h=Math.max(h,ps[i].offsetHeight);
+  if(settled){
+    const p=ps[viewedSlot()];
+    if(p)h=p.offsetHeight;
+  }
+  if(!h){
+    for(let i=0;i<ps.length;i++){
+      const x=ps[i].offsetLeft-base;
+      if(x+ps[i].offsetWidth>sl+1&&x<sl+w-1)h=Math.max(h,ps[i].offsetHeight);
+    }
   }
   if(h)track.style.height=h+'px';
 }
@@ -1498,7 +1507,7 @@ function gotoDay(i){
   if(i<0||i>6)i=dayIdx();
   viewDay=i;
   track.scrollLeft=slotLeft(i+1);                /* real days live in slots 1..7 */
-  fitTrack();
+  fitTrack(true);
   renderWeek();
 }
 function slotToDay(s){return s===0?6:s===8?0:s-1}
@@ -1561,7 +1570,7 @@ renderBrief();loadWeather();
       const d=s-1;
       if(d!==viewDay){viewDay=d}
       renderWeek();                              /* settle: full repaint of the strip */
-      fitTrack();
+      fitTrack(true);
     },90);
   },{passive:true});
   addEventListener('resize',fitTrack);            /* text rewraps, so heights change */
