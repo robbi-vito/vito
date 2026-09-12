@@ -273,6 +273,7 @@ a.watch{text-decoration:none;display:inline-block}
 .prose p{margin-bottom:13px;max-width:60ch;color:var(--text-soft)}
 .prose p strong{color:var(--text);font-weight:600}
 .prose h3{font-family:var(--face-display);font-weight:700;font-size:21px;margin:22px 0 9px;color:var(--text)}
+.journal-h{font-family:var(--face-display);font-weight:700;font-size:21px;margin:22px 0 4px}
 .prose .rc{font-family:var(--face-mono);font-size:11px;letter-spacing:.06em;color:var(--text-dim);margin:-6px 0 8px}
 .note{border-left:2px solid var(--rust);padding:13px 0 13px 16px;margin:18px 0;
   background:linear-gradient(90deg,var(--glow),transparent 62%)}
@@ -435,7 +436,13 @@ textarea.three:focus{outline:none;border-color:var(--rust)}
 :root[data-case="lower-all"] .cta,:root[data-case="lower-all"] .log-row button{text-transform:lowercase}
 :root[data-case="lower-all"] summary h2,:root[data-case="lower-all"] details.nest>summary h3,
 :root[data-case="lower-all"] .prose h3,:root[data-case="lower-all"] .stretch h3,
-:root[data-case="lower-all"] .pl-group,:root[data-case="lower-all"] .sheet h3{text-transform:lowercase}
+:root[data-case="lower-all"] .pl-group,:root[data-case="lower-all"] .sheet h3,
+:root[data-case="lower-all"] .journal-h{text-transform:lowercase}
+/* without capitals a section and what sits inside it read alike, so size and slant carry the step */
+:root[data-case="lower-all"] summary h2{font-size:28px}
+:root[data-case="lower-all"] details.nest>summary h3,:root[data-case="lower-all"] .prose h3,
+:root[data-case="lower-all"] .stretch h3,:root[data-case="lower-all"] .pl-group,
+:root[data-case="lower-all"] .journal-h{font-style:italic;font-weight:500;font-size:20px}
 .set-note{font-style:italic;font-size:14px;line-height:1.5;color:var(--text-soft);margin:10px 0 18px}
 
 .float-btn{position:fixed;z-index:50;width:44px;height:44px;border-radius:50%;
@@ -551,7 +558,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
           </div>
           <button class="watch stop" id="stopBtn" type="button"></button>
           <div class="strip-note" id="stopAvg" style="text-align:left;margin:8px 0 0" hidden></div>
-          <h3 style="font-family:var(--face-display);font-weight:700;font-size:21px;margin:22px 0 4px">Journal</h3>
+          <h3 class="journal-h">Journal</h3>
           <p class="ex-cue" style="margin:0 0 6px">Three sentences, past tense, in thirty seconds. What happened, what it cost, what tomorrow needs. No analysis.</p>
           <p class="prev-entry" id="prevEntry" hidden></p>
           <div id="journalSetBox" hidden>
