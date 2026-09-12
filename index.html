@@ -50,11 +50,17 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .leak{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:var(--leak);mix-blend-mode:screen;
   --leak-x:104%;--leak-y:-8%;--leak-w:58%;--leak-h:40%;
   --leak2-x:110%;--leak2-y:20%;--leak3-x:-10%;--leak3-y:106%;
+  --leak4-x:50%;--leak4-y:50%;--leak4-w:0%;--leak4-h:0%;
+  --spk-w:0%;--spk1-x:50%;--spk1-y:50%;--spk2-x:50%;--spk2-y:50%;--spk3-x:50%;--spk3-y:50%;
   transition:opacity .6s var(--ease);
   background:
     radial-gradient(ellipse var(--leak-w) var(--leak-h) at calc(var(--leak-x) + var(--leak-drift-x,0%)) calc(var(--leak-y) + var(--leak-drift-y,0%)),var(--leak-a),transparent 60%),
     radial-gradient(ellipse 28% 58% at calc(var(--leak2-x) - var(--leak-drift-x,0%)) calc(var(--leak2-y) + var(--leak-drift-y,0%)),var(--leak-b),transparent 68%),
-    radial-gradient(ellipse 74% 24% at calc(var(--leak3-x) + var(--leak-drift-y,0%)) calc(var(--leak3-y) - var(--leak-drift-x,0%)),var(--leak-c),transparent 64%)}
+    radial-gradient(ellipse 74% 24% at calc(var(--leak3-x) + var(--leak-drift-y,0%)) calc(var(--leak3-y) - var(--leak-drift-x,0%)),var(--leak-c),transparent 64%),
+    radial-gradient(ellipse var(--leak4-w) var(--leak4-h) at var(--leak4-x) var(--leak4-y),var(--leak-a),transparent 62%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk1-x) var(--spk1-y),var(--leak-b),transparent 70%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk2-x) var(--spk2-y),var(--leak-a),transparent 70%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk3-x) var(--spk3-y),var(--leak-c),transparent 70%)}
 /* each view catches the light from somewhere else */
 body[data-view="train"] .leak{--leak-x:-6%;--leak-y:-10%;--leak-w:52%;--leak-h:46%;--leak2-x:-8%;--leak2-y:26%;--leak3-x:108%;--leak3-y:102%}
 body[data-view="fuel"] .leak{--leak-x:50%;--leak-y:-14%;--leak-w:78%;--leak-h:30%;--leak2-x:104%;--leak2-y:64%;--leak3-x:-6%;--leak3-y:104%}
@@ -2727,6 +2733,7 @@ document.getElementById('soundBtn').onclick=function(){S.sound=!S.sound;save();p
 paintSound();
 function switchView(v){
   document.body.dataset.view=v;
+  paintLeak();
   document.querySelectorAll('.view').forEach(function(s){s.classList.toggle('on',s.id==='v-'+v)});
   document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('on',b.dataset.v===v)});
   window.scrollTo(0,0);
@@ -2924,16 +2931,41 @@ function paintTrainDefaults(){
   if(m)m.open=h>=5.5&&h<10.5;
   if(n)n.open=h>=18.5||h<5;
 })();
-/* a day's own drift on the leak: the same date always lands the same way */
-(function(){
-  document.body.dataset.view='today';
+/* the date, the half-hour and the view together seed the leak, so the light
+   moves through the day and no two views hold the same frame at once */
+var leakFrame='';
+function paintLeak(){
   const el=document.querySelector('.leak');
   if(!el)return;
-  const k=todayKey();
-  let h=0;for(let i=0;i<k.length;i++)h=(h*31+k.charCodeAt(i))>>>0;
-  const pick=function(n,spread){return ((h>>>(n*5))%spread)-spread/2};
-  el.style.setProperty('--leak-drift-x',pick(0,16)+'%');
-  el.style.setProperty('--leak-drift-y',pick(1,14)+'%');
+  const d=new Date();
+  const blk=Math.floor((d.getHours()*60+d.getMinutes())/30);
+  const key=todayKey()+'|'+blk+'|'+(document.body.dataset.view||'today');
+  if(key===leakFrame)return;
+  leakFrame=key;
+  let h=0;for(let i=0;i<key.length;i++)h=(h*31+key.charCodeAt(i))>>>0;
+  let seed=h;
+  const rnd=function(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+  const rint=function(lo,hi){return Math.floor(lo+rnd()*(hi-lo))};
+  const set=function(n,v){el.style.setProperty(n,v)};
+  set('--leak-drift-x','0%');set('--leak-drift-y','0%');
+  set('--leak-x',rint(-14,114)+'%');set('--leak-y',rint(-14,114)+'%');
+  set('--leak-w',rint(40,84)+'%');set('--leak-h',rint(24,56)+'%');
+  set('--leak2-x',rint(-12,112)+'%');set('--leak2-y',rint(-12,112)+'%');
+  set('--leak3-x',rint(-12,112)+'%');set('--leak3-y',rint(-12,112)+'%');
+  if(rnd()<.72){
+    set('--leak4-x',rint(10,90)+'%');set('--leak4-y',rint(10,90)+'%');
+    set('--leak4-w',rint(28,66)+'%');set('--leak4-h',rint(20,48)+'%');
+  }else{set('--leak4-w','0%');set('--leak4-h','0%')}
+  /* vmin so a spot stays round; a percentage resolves per axis and stretches it */
+  if(rnd()<.5){
+    set('--spk-w',(1.6+rnd()*2.4).toFixed(1)+'vmin');
+    for(let n=1;n<=3;n++){set('--spk'+n+'-x',rint(5,95)+'%');set('--spk'+n+'-y',rint(5,95)+'%')}
+  }else{set('--spk-w','0vmin')}
+}
+(function(){
+  document.body.dataset.view='today';
+  paintLeak();
+  setInterval(paintLeak,60000);
 })();
 /* the page is built for one date; coming back to it on a later date rebuilds it */
 const LOADED_ON=todayKey();
