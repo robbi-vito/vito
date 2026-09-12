@@ -309,7 +309,8 @@ textarea.three:focus{outline:none;border-color:var(--rust)}
 .log-row[hidden]{display:none}
 /* a saved entry is set text, not a field waiting to be filled */
 .set-text{font-family:'Crimson Pro',serif;font-size:16px;line-height:1.7;color:var(--text);
-  white-space:pre-wrap;margin:6px 0 0}
+  white-space:pre-wrap;margin:6px 0 0;padding:14px 16px;background:var(--bg-raise);
+  border:1px solid var(--edge);border-left:2px solid var(--rust-lo);border-radius:2px}
 #journalSetBox .watch,#reviewSetBox .watch{margin:10px 0 0}
 .prev-entry{font-style:italic;font-size:14px;line-height:1.6;color:var(--text-soft);margin:2px 0 8px;
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden}
@@ -1116,6 +1117,8 @@ function todayKey(){return dkey(appNow())}
 function calKey(){return dkey(new Date())}   /* the calendar date, for the morning itself */
 const dayIdx=()=>(appNow().getDay()+6)%7;
 const fmt=s=>new Date(s+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+/* settling an entry changes the page height; the reader should not be moved */
+function keepScroll(fn){const y=window.scrollY;fn();window.scrollTo(0,y)}
 function nb(x){return String(x).replace(/ /g,'\u00A0')}   /* keeps a phrase whole across a wrap */
 function esc(x){return String(x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 
@@ -2430,7 +2433,7 @@ jr.oninput=function(){S.journal[todayKey()]=jr.value;save()};
 document.getElementById('journalSave').onclick=function(){
   const t=todayKey();
   if(!(S.journal[t]||'').trim())return;
-  S.journalSet[t]=true;save();paintJournal();
+  keepScroll(function(){S.journalSet[t]=true;save();paintJournal()});
 };
 document.getElementById('journalEdit').onclick=function(){
   delete S.journalSet[todayKey()];save();paintJournal();jr.focus();
@@ -2600,7 +2603,7 @@ function paintReview(){
 th.oninput=function(){S.reviews[S.week.start]=th.value;S.three=th.value;save()};
 document.getElementById('reviewSave').onclick=function(){
   if(!(S.reviews[S.week.start]||'').trim())return;
-  S.reviewSet[S.week.start]=true;save();paintReview();
+  keepScroll(function(){S.reviewSet[S.week.start]=true;save();paintReview()});
 };
 document.getElementById('reviewEdit').onclick=function(){
   delete S.reviewSet[S.week.start];save();paintReview();th.focus();
