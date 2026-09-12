@@ -1891,17 +1891,50 @@ function owedToday(){
     label:n===1?'One thing left tonight':n+' things left tonight'});}
   return out;
 }
+/* the button goes where the thing it names actually lives */
+function goOwed(k){
+  if(k==='session'&&sess)return openSession(sess.key);
+  if(k==='warmup'||k==='stretch'){
+    viaShortcut=true;switchView('train');
+    setTimeout(function(){
+      const id=k==='warmup'?'warmupBox'
+        :(slot.s==='cardio1'||slot.s==='cardio2')?'runStretchBox':'s-'+slot.s;
+      const d=document.getElementById(id);
+      if(d){d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'})}
+    },90);
+    return;
+  }
+  if(k==='drills'){
+    switchView('frame');
+    setTimeout(function(){const d=document.getElementById('drills');
+      if(d)d.scrollIntoView({behavior:'smooth',block:'start'})},90);
+    return;
+  }
+  if(k==='morning'||k==='evening'){
+    switchView('today');
+    setTimeout(function(){
+      const d=document.getElementById(k==='morning'?'morningBox':'tonightBox');
+      if(d){d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'})}
+    },90);
+    return;
+  }
+  if(slot.s){S.week.done[slot.s]=!S.week.done[slot.s];save();renderWeek();renderInsight()}
+}
 function paintGo(){
   const b=document.getElementById('goSession'),o=document.getElementById('owedBtn');
   if(b){
     /* the fill is for the one thing left to do, so a finished day gives it back
        and a rest day never takes the room */
-    b.hidden=!sess&&!slot.s;
-    if(sess){b.classList.remove('ghost');b.textContent='Open today\'s session'}
-    else if(slot.s){
-      const done=!!S.week.done[slot.s];
-      b.classList.toggle('ghost',done);
-      b.textContent=done?slot.k+' done ✓':'Mark it done';
+    const owed=owedToday();
+    const done=slot.s?!!S.week.done[slot.s]:false;
+    if(owed.length){
+      b.hidden=false;b.classList.remove('ghost');
+      b.textContent=owed[0].label;b.dataset.go=owed[0].k;
+    }else if(slot.s){
+      b.hidden=false;b.classList.toggle('ghost',done);
+      b.textContent=done?slot.k+' done \u2713':'Mark it done';b.dataset.go='done';
+    }else{
+      b.hidden=true;b.dataset.go='done';
     }
   }
   if(!o)return;
@@ -1910,10 +1943,7 @@ function paintGo(){
   if(k)o.textContent=WEEK[PROG[k].day-1].k.toUpperCase()+(PROG[k].day<sess.day?' STILL OWED':' NEXT DUE');
 }
 document.getElementById('owedBtn').onclick=function(){const k=owedSession();if(k)openSession(k)};
-goBtn.onclick=function(){
-  if(sess)openSession(sess.key);
-  else if(slot.s){S.week.done[slot.s]=!S.week.done[slot.s];save();renderWeek();renderInsight()}
-};
+goBtn.onclick=function(){goOwed(goBtn.dataset.go||'done')};
 function renderWeek(){
   const el=document.getElementById('weekStrip');el.innerHTML='';
   WEEK.forEach(function(w,i){
@@ -2463,6 +2493,7 @@ function renderDrills(){
     return k>=S.week.start&&Object.values(S.week.posture[k]).some(Boolean)}).length;
   document.getElementById('postureCount').textContent=
     days===0?'About five minutes. Resets at midnight.':days+' of 7 days this week';
+  paintGo();
   renderWarmup();
   renderStretches();
   renderVidSlots();
@@ -2560,6 +2591,7 @@ renderWardrobe();
 
 function renderEvening(){
   const t=todayKey();S.evening[t]=S.evening[t]||{};
+  setTimeout(paintGo,0);
   checklist(document.getElementById('evening'),S.tonight,S.evening[t],renderEvening,
     function(i){S.tonight.splice(i,1);save();renderEvening()});
 }
@@ -2655,6 +2687,7 @@ function hoursBetween(a,b){
 function renderMorning(){
   const t=calKey();
   S.morning[t]=S.morning[t]||{};
+  setTimeout(paintGo,0);
   checklist(document.getElementById('morning'),S.mornList,S.morning[t],renderMorning,
     function(i){S.mornList.splice(i,1);save();renderMorning()},'morning');
 
