@@ -2616,6 +2616,8 @@ function nightKey(){return todayKey()}
 function clockOf(ms){const d=new Date(ms);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
 /* averaged as minutes after noon, so 23:50 and 00:10 give midnight rather than midday */
 function hhmmOf(mins){return String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0')}
+/* a span of sleep as 6h30m; every duration on the page goes through this */
+function durOf(mins){return Math.floor(mins/60)+'h'+String(mins%60).padStart(2,'0')+'m'}
 /* seven and a half hours is the mark; under seven is the one worth saying out loud */
 function sleptGrade(ms){
   if(typeof ms!=='number'||ms<=0)return '';
@@ -2660,7 +2662,7 @@ function sleptAverage(){
   });
   if(spans.length<2)return '';
   const avg=Math.round(spans.reduce(function(a,b){return a+b},0)/spans.length/60000);
-  return 'Slept '+Math.floor(avg/60)+' h '+String(avg%60).padStart(2,'0')+' on average.';
+  return 'Slept '+durOf(avg)+' on average.';
 }
 /* a correction: the night half and the morning half belong to different dates */
 function editSleep(nightK,which){
@@ -2713,7 +2715,7 @@ function sleepPair(night){                        /* a night key, and the mornin
 }
 function hoursBetween(a,b){
   const m=Math.round((b-a)/60000);
-  return m>0?Math.floor(m/60)+' h '+String(m%60).padStart(2,'0'):'';
+  return m>0?durOf(m):'';
 }
 function renderMorning(){
   const t=calKey();
@@ -3504,10 +3506,10 @@ function sleepNote(){
   if(spans.length<3)return '';
   const avg=spans.reduce(function(a,b){return a+b},0)/spans.length;
   if(avg>=7.5*36e5)return '';
-  const h=Math.floor(avg/36e5),m=Math.round((avg%36e5)/6e4);
+  const t=durOf(Math.round(avg/6e4));
   return avg<7*36e5
-    ? 'You are averaging '+h+' h '+String(m).padStart(2,'0')+' across the last '+spans.length+' nights. That is under seven. The deficit, the lifts and the mood all run on this one.'
-    : 'Averaging '+h+' h '+String(m).padStart(2,'0')+' across the last '+spans.length+' nights. Half an hour short of the mark.';
+    ? 'You are averaging '+t+' across the last '+spans.length+' nights. That is under seven. The deficit, the lifts and the mood all run on this one.'
+    : 'Averaging '+t+' across the last '+spans.length+' nights. Half an hour short of the mark.';
 }
 function openMorningSheet(){
   const k=calKey(),t=todayKey(),when=splashSlot();
