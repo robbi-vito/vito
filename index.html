@@ -2924,8 +2924,9 @@ function warmupDone(){
 }
 function paintTrainDefaults(){
   const w=document.getElementById('warmupBox'),r=document.getElementById('runStretchBox');
-  if(w)w.open=!viaShortcut&&trainingWindow()&&!warmupDone();
   const p=document.getElementById('preRunBox'),run=slot.s==='cardio1'||slot.s==='cardio2';
+  /* on a run day the moving warm-up is the warm-up; the lifting one stays shut */
+  if(w)w.open=!viaShortcut&&!run&&trainingWindow()&&!warmupDone();
   if(p)p.open=!viaShortcut&&run;
   if(r)r.open=!viaShortcut&&run;
 }
