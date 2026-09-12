@@ -88,6 +88,8 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 .masthead{padding:calc(20px + env(safe-area-inset-top)) 0 14px;display:flex;align-items:center;justify-content:space-between}
 .mark{font-family:var(--face-mono);font-size:11px;letter-spacing:.3em;color:var(--text-dim)}
 .head-btns{display:flex;gap:8px}
+/* the toggle governs the rest timer, and the timer only runs on Train */
+body:not([data-view="train"]) #soundBtn{display:none}
 .icon-btn{background:none;border:1px solid var(--text-dim);border-radius:50%;width:34px;height:34px;
   color:var(--text-soft);cursor:pointer;font-size:14px;line-height:1;display:grid;place-items:center;
   position:relative;transition:border-color .2s,color .2s,background .2s}
