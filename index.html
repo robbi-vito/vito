@@ -1676,7 +1676,6 @@ function renderInsight(){
 renderInsight();
 
 const goBtn=document.getElementById('goSession');
-if(!sess){goBtn.textContent=slot.s?'Mark it done':'Nothing today';goBtn.classList.add('ghost')}
 /* the button is today's session, always; anything still owed sits under it, quieter */
 function goTarget(){return sess?sess.key:null}
 function owedSession(){
@@ -1695,7 +1694,17 @@ function openSession(k){
 }
 function paintGo(){
   const b=document.getElementById('goSession'),o=document.getElementById('owedBtn');
-  if(b&&sess)b.textContent='Open today\'s session';
+  if(b){
+    /* the fill is for the one thing left to do, so a finished day gives it back
+       and a rest day never takes the room */
+    b.hidden=!sess&&!slot.s;
+    if(sess){b.classList.remove('ghost');b.textContent='Open today\'s session'}
+    else if(slot.s){
+      const done=!!S.week.done[slot.s];
+      b.classList.toggle('ghost',done);
+      b.textContent=done?slot.k+' done ✓':'Mark it done';
+    }
+  }
   if(!o)return;
   const k=owedSession();
   o.hidden=!k;
