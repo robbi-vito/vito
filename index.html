@@ -152,6 +152,8 @@ summary .meta{font-family:'Courier Prime',monospace;font-size:11px;font-weight:7
   color:var(--text-dim);white-space:nowrap;flex-shrink:0;margin-left:auto}
 summary::after{content:'+';font-family:'Courier Prime',monospace;color:var(--rust);font-size:18px;flex-shrink:0}
 details[open]>summary::after{content:'–'}
+@keyframes unfold{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+details[open]>.det-body{animation:unfold .28s var(--ease) both}
 details[open]>summary h2{color:var(--rust)}
 .det-body{padding:0 0 22px}
 details.nest{border-top:1px dashed var(--edge)}
