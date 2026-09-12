@@ -1144,6 +1144,8 @@ S.standing=Array.isArray(S.standing)              /* weekly standing plans, seed
   :STANDING.map(function(p){return {id:p.id,day:p.day,t:p.t,n:p.n,w:p.w}});
 S.bdays=Array.isArray(S.bdays)?S.bdays.filter(function(b){return b&&b.n&&/^\d{2}-\d{2}$/.test(b.d)}):[];   /* {n, d:'MM-DD'} */
 S.play=S.play&&typeof S.play==='object'?S.play:{};   /* session key, or R for runs -> playlist link */
+S.hideVid=S.hideVid&&typeof S.hideVid==='object'?S.hideVid:{};   /* group -> video buttons hidden */
+function vidOn(g){return !S.hideVid[g]}
 S.protein=S.protein&&typeof S.protein==='object'?S.protein:{};   /* date -> protein target hit */
 S.meet=S.meet||'';                             /* maps link for the run club meeting point */
 S.units=S.units&&typeof S.units==='object'?S.units:{};   /* exercise id -> 'kg'; absent means lb */
@@ -1809,7 +1811,7 @@ function exNode(ex,num){
   btn.onclick=function(){openVideo(ex)};
   /* the unit toggle sits opposite the video button and sets both display and entry */
   const foot=document.createElement('div');foot.className='ex-foot';
-  foot.appendChild(btn);
+  if(vidOn(sessionOf(ex)))foot.appendChild(btn);
   const ub=document.createElement('button');
   ub.className='watch unit';ub.textContent=unitOf(ex.id).toUpperCase();
   ub.setAttribute('aria-label','Weight unit for '+ex.n);
@@ -2173,7 +2175,7 @@ function endRest(fire){
 document.getElementById('skipRest').onclick=function(){endRest(false)};
 
 /* ── checklists ── */
-function checklist(host,items,store,after,onDelete){
+function checklist(host,items,store,after,onDelete,group){
   host.innerHTML='';
   if(!items.length){
     host.innerHTML='<p class="ex-cue" style="margin-left:0">Nothing here yet. Whatever you add stays on this device.</p>';return;
@@ -2184,7 +2186,7 @@ function checklist(host,items,store,after,onDelete){
       '<span class="chk-s">'+esc(it.s||'')+'</span>'+
       (it.c?'<p class="ex-cue" style="margin:6px 0 0">'+it.c+'</p>':'')+'</span>';
     if(!it.off)row.querySelector('.box').onclick=function(e){e.stopPropagation();store[it.id]=!store[it.id];save();after()};
-    if(it.q){
+    if(it.q&&vidOn(group)){
       const b=document.createElement('button');
       b.className='watch'+(S.vid[it.id]?' set':'');b.style.margin='8px 0 0';
       b.textContent=S.vid[it.id]?'▶ WATCH':'＋ SET VIDEO';
@@ -2202,7 +2204,7 @@ function checklist(host,items,store,after,onDelete){
 
 function renderDrills(){
   const t=todayKey();S.week.posture[t]=S.week.posture[t]||{};
-  checklist(document.getElementById('drills'),DRILLS,S.week.posture[t],renderDrills);
+  checklist(document.getElementById('drills'),DRILLS,S.week.posture[t],renderDrills,null,'drills');
   const days=Object.keys(S.week.posture).filter(function(k){
     return k>=S.week.start&&Object.values(S.week.posture[k]).some(Boolean)}).length;
   document.getElementById('postureCount').textContent=
@@ -2249,7 +2251,7 @@ function renderStretches(){
       S.week.posture[t].p2=!!view.p2;S.week.posture[t].p4=!!view.p4;
       Object.keys(view).forEach(function(id){if(id!=='p2'&&id!=='p4')S.stretch[t][id]=view[id]});
       save();renderDrills();
-    });
+    },null,'stretch');
   });
 }
 renderDrills();
@@ -2631,6 +2633,10 @@ function openSettings(){
     '<div class="sheet-foot">'+opt('lb','ALL LB')+opt('kg','ALL KG')+opt('each','PER EXERCISE')+'</div>'+
     '<p class="set-note">'+(m==='each'?'Each exercise keeps its own unit, switched on its card.':'Every exercise shows and takes '+m+'. The cards hide their own switch.')+
     ' Weights are kept in pounds; this changes what you see and type, never what is saved.</p>'+
+    '<div class="set-hd">VIDEOS</div>'+
+    '<div class="sheet-foot">'+VID_GROUPS.map(function(g){
+      return '<button type="button" data-vg="'+g[0]+'"'+(S.hideVid[g[0]]?'':' class="on"')+'>'+g[1]+'</button>'}).join('')+'</div>'+
+    '<p class="set-note">Filled means the video buttons show. Turn a group off once its videos are set and the space comes back.</p>'+
     '<div class="set-hd">PLAYLISTS</div>'+
     '<div class="sheet-foot">'+Object.keys(PLAY_FOR).map(function(k){return '<button type="button" data-pl="'+k+'"'+(S.play[k]?' class="on"':'')+'>'+PLAY_FOR[k].toUpperCase()+'</button>'}).join('')+'</div>'+
     '<p class="set-note">Tap one to set or change its Spotify link. Filled means set.</p>'+
@@ -2643,6 +2649,11 @@ function openSettings(){
   document.getElementById('sExport').onclick=exportBackup;
   document.getElementById('sRestore').onclick=restoreBackup;
   document.querySelectorAll('#vBody [data-pl]').forEach(function(b){b.onclick=function(){setPlaylist(b.dataset.pl,openSettings)}});
+  document.querySelectorAll('#vBody [data-vg]').forEach(function(b){b.onclick=function(){
+    const g=b.dataset.vg;
+    if(S.hideVid[g])delete S.hideVid[g];else S.hideVid[g]=true;
+    save();renderSessions();renderDrills();openSettings();
+  }});
   document.getElementById('vClose').onclick=closeVideo;
   scrim.classList.add('up');
 }
@@ -2796,6 +2807,7 @@ document.getElementById('addBday').onclick=function(){
 renderBdays();
 /* ── playlists: a Spotify link per session and one for runs, opened in the app ── */
 const PLAY_FOR={A:'Push',B:'Pull',C:'Legs',D:'Width',R:'Runs'};
+const VID_GROUPS=[['A','PUSH'],['B','PULL'],['C','LEGS'],['D','WIDTH'],['stretch','STRETCHES'],['drills','DRILLS'],['desk','DESK']];
 function playlistBtn(k){
   return S.play[k]
     ?'<a class="watch set" href="'+esc(S.play[k])+'" target="_blank" rel="noopener noreferrer">PLAYLIST</a>'
@@ -2821,6 +2833,7 @@ function renderVidSlots(){
   VIDSLOTS.forEach(function(it){
     const host=document.getElementById('vs-'+it.id);if(!host)return;
     host.innerHTML='';
+    if(!vidOn('desk'))return;
     const b=document.createElement('button');b.type='button';
     b.className='watch'+(S.vid[it.id]?' set':'');b.style.margin='6px 0 0';
     b.textContent=S.vid[it.id]?'▶ WATCH':'＋ SET VIDEO';
