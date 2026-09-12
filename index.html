@@ -2198,7 +2198,7 @@ function checklist(host,items,store,after,onDelete,group){
     if(!it.off)row.querySelector('.box').onclick=function(e){e.stopPropagation();store[it.id]=!store[it.id];save();after()};
     if(it.q&&vidOn(group)){
       const b=document.createElement('button');
-      b.className='watch'+(S.vid[it.id]?' set':'');b.style.margin='8px 0 0';
+      b.className='watch'+(S.vid[it.id]?' set':'');b.style.margin=it.c?'8px 0 0':'8px 0 0 12px';
       b.textContent=S.vid[it.id]?'▶ WATCH':'＋ SET VIDEO';
       b.onclick=function(e){e.stopPropagation();openVideo(it)};
       row.querySelector('.chk-body').appendChild(b);
