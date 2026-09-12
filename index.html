@@ -421,7 +421,11 @@ textarea.three:focus{outline:none;border-color:var(--rust)}
 .face-n{display:block;font-size:23px;font-weight:700;color:var(--text);line-height:1.1}
 .face-opt.on .face-n{color:var(--rust)}
 .face-d{display:block;font-family:var(--face-body);font-style:italic;font-size:14px;color:var(--text-soft);margin-top:2px}
-.face-s{display:block;font-size:10px;letter-spacing:.16em;color:var(--text-dim);margin-top:7px}
+.face-s{display:block;font-size:11px;letter-spacing:.12em;color:var(--text-soft);margin-top:6px}
+.face-k{display:block;font-family:var(--face-mono);font-size:9.5px;letter-spacing:.14em;line-height:1.7;
+  color:var(--text-dim);margin-top:9px;padding-top:7px;border-top:1px solid var(--edge)}
+.face-k b{font-weight:700;letter-spacing:.02em;color:var(--text-soft)}
+.face-k span{white-space:nowrap}
 /* the buttons that read as sentences; the Courier caps are a different job */
 :root[data-case="lower"] .cta,:root[data-case="lower"] .log-row button,
 :root[data-case="lower-all"] .cta,:root[data-case="lower-all"] .log-row button{text-transform:lowercase}
@@ -3159,6 +3163,7 @@ function restoreBackup(){
 }
 /* ── settings: units and backup, in the video sheet ── */
 function openSettings(){
+  loadFacePreviews();
   const m=S.unitMode;
   const opt=function(v,l){return '<button type="button" data-u="'+v+'"'+(m===v?' class="on"':'')+' aria-pressed="'+(m===v)+'">'+l+'</button>'};
   document.getElementById('vTitle').textContent='Settings';
@@ -3177,8 +3182,9 @@ function openSettings(){
       const on=S.fontTheme===t.id;
       return '<button type="button" class="face-opt'+(on?' on':'')+'" data-ft="'+t.id+'">'+
         '<span class="face-n" style="font-family:'+t.display.replace(/"/g,'&quot;')+'">'+t.n+'</span>'+
-        '<span class="face-d">'+t.d+'</span>'+
-        '<span class="face-s" style="font-family:'+t.mono.replace(/"/g,'&quot;')+'">HEADINGS · PROSE · DATA</span></button>';
+        '<span class="face-d" style="font-family:'+t.body.replace(/"/g,'&quot;')+'">'+t.d+'</span>'+
+        '<span class="face-s" style="font-family:'+t.mono.replace(/"/g,'&quot;')+'">06:10 · 3 × 8 · 135 LB</span>'+
+        '<span class="face-k"><span>HEADINGS <b>'+faceName(t.display)+'</b></span> · <span>PROSE <b>'+faceName(t.body)+'</b></span> · <span>DATA <b>'+faceName(t.mono)+'</b></span></span></button>';
     }).join('')+
     '<p class="set-note">Headings and large numbers take the first face, prose the second, labels and timings the third. The Protocol is how it was built, and is always here to come back to.</p>'+
     '<div class="set-hd">CASE</div>'+
@@ -3417,6 +3423,19 @@ const FONT_THEMES=[
   q:'family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&family=IBM+Plex+Mono:wght@400;700'}
 ];
 function themeOf(id){return FONT_THEMES.filter(function(t){return t.id===id})[0]||FONT_THEMES[0]}
+function faceName(stack){const m=String(stack).match(/'([^']+)'/);return m?m[1]:stack}
+/* Settings shows every theme in its own faces, so opening it fetches all of them once */
+function loadFacePreviews(){
+  if(document.getElementById('facePreview'))return;
+  const fam={};
+  FONT_THEMES.forEach(function(t){t.q.split('&').forEach(function(f){
+    const k=f.split(':')[0];if(!fam[k]||f.length>fam[k].length)fam[k]=f;
+  })});
+  const l=document.createElement('link');
+  l.id='facePreview';l.rel='stylesheet';
+  l.href='https://fonts.googleapis.com/css2?'+Object.keys(fam).map(function(k){return fam[k]}).join('&')+'&display=swap';
+  document.head.appendChild(l);
+}
 /* the faces arrive with the theme, so nothing is fetched for a theme never chosen */
 function applyFontTheme(id){
   const t=themeOf(id),r=document.documentElement;
