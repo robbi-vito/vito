@@ -3592,7 +3592,7 @@ addEventListener('resize',measureReach);
 function paintLeakScroll(){
   const el=document.querySelector('.leak');
   if(!el)return;
-  el.style.setProperty('--leak-scroll',Math.round(window.scrollY/innerHeight*100)+'%');
+  el.style.setProperty('--leak-scroll',(window.scrollY/innerHeight*100).toFixed(2)+'%');
 }
 addEventListener('scroll',function(){
   if(leakTick)return;
