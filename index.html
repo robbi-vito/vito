@@ -300,6 +300,9 @@ details.pl-fold>summary{display:flex;align-items:center;gap:10px;cursor:pointer;
 details.pl-fold>summary::-webkit-details-marker{display:none}
 details.pl-fold>summary .pl-type{flex:1}
 .pl-count{font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.12em;color:var(--text-dim)}
+.rc-head{display:flex;align-items:baseline;gap:12px;margin-top:18px}
+.rc-head h3{flex:1;margin:0}
+.rc-head .watch{margin:0;flex-shrink:0}
 .cell-edit{background:none;border:none;border-bottom:1px dashed var(--rust-lo);color:var(--text);
   font:inherit;padding:0 1px;cursor:pointer}
 .pl-type{font-family:'Courier Prime',monospace;font-size:10px;font-weight:700;letter-spacing:.2em;
@@ -694,27 +697,27 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
         <div class="det-body prose">
           <p>Five that cover a week, each built on a palm or two of protein. The numbers are close, not exact. The grams matter more than the maths.</p>
 
-          <h3>Overnight oats</h3>
+          <div class="rc-head"><h3>Overnight oats</h3><span id="vs-rc1"></span></div>
           <p class="rc">≈ 600 kcal · 59 g protein · breakfast</p>
           <p>60 g rolled oats · 250 g 0% Greek yoghurt · 30 g whey · 100 g berries, frozen is fine · 10 g almonds.</p>
           <p>Stir the oats, yoghurt and whey with a splash of milk until thick. Berries on top, lid on, fridge overnight. Almonds in the morning so they stay crisp. Make three jars on Sunday.</p>
 
-          <h3>Chicken, rice and greens</h3>
+          <div class="rc-head"><h3>Chicken, rice and greens</h3><span id="vs-rc2"></span></div>
           <p class="rc">≈ 580 kcal · 56 g protein · lunch</p>
           <p>200 g chicken breast · 75 g jasmine or basmati rice, dry · 150 g tenderstem or broccoli · 1 tsp olive oil · soy, garlic, a lime.</p>
           <p>Oven at 200°. Chicken on a tray with the oil and salt, 22 minutes. Rice as the packet says. Steam the greens for the last four. Slice, pile, soy and lime over the top. Cook three at once and the week's lunches are done.</p>
 
-          <h3>Chicken thigh and black bean chilli</h3>
+          <div class="rc-head"><h3>Chicken thigh and black bean chilli</h3><span id="vs-rc3"></span></div>
           <p class="rc">≈ 600 kcal · 41 g protein · per bowl, makes four</p>
           <p>600 g skinless chicken thighs · 2 tins black beans, drained · 1 tin chopped tomatoes · 2 peppers and an onion, diced · 2 tsp cumin, 1 tsp smoked paprika, chilli to taste · 1 tbsp olive oil · 240 g rice, dry, for the four.</p>
           <p>Soften the onion and peppers in the oil, ten minutes. Add the thighs whole with the spices and brown them, then the tomatoes and beans. Lid half on, thirty-five minutes. Shred the chicken with two forks. It freezes well.</p>
 
-          <h3>Salmon, sourdough and greens</h3>
+          <div class="rc-head"><h3>Salmon, sourdough and greens</h3><span id="vs-rc4"></span></div>
           <p class="rc">≈ 540 kcal · 38 g protein · dinner</p>
           <p>150 g salmon fillet · 80 g sourdough, two slices · two handfuls of spinach and rocket · a lemon.</p>
           <p>Salmon skin down in a hot dry pan for six minutes, then turn it for one. Toast the sourdough. Greens on the plate, lemon over everything. Ten minutes start to finish; move a frozen fillet to the fridge that morning.</p>
 
-          <h3>Steak, potatoes and salad</h3>
+          <div class="rc-head"><h3>Steak, potatoes and salad</h3><span id="vs-rc5"></span></div>
           <p class="rc">≈ 570 kcal · 46 g protein · dinner</p>
           <p>180 g sirloin or flank · 250 g potatoes · bagged salad and a pepper · 1 tsp olive oil.</p>
           <p>Potatoes halved, oven at 220° for thirty-five minutes with the oil. Steak out of the fridge twenty minutes before, hot pan, two to three minutes a side, rest five. Slice across the grain.</p>
@@ -1149,7 +1152,12 @@ const VIDSLOTS=[
  {id:'dk1',n:'Monitor height',q:'monitor height eye level desk setup'},
  {id:'dk2',n:'Break the position',q:'two minute desk posture reset routine'},
  {id:'dk3',n:'Phone height',q:'text neck phone posture fix'},
- {id:'dk4',n:'Seat depth',q:'office chair setup seat depth hips above knees'}];
+ {id:'dk4',n:'Seat depth',q:'office chair setup seat depth hips above knees'},
+ {id:'rc1',n:'Overnight oats',q:'high protein overnight oats recipe',g:'recipes'},
+ {id:'rc2',n:'Chicken, rice and greens',q:'meal prep chicken rice broccoli',g:'recipes'},
+ {id:'rc3',n:'Chicken thigh and black bean chilli',q:'chicken thigh black bean chilli recipe',g:'recipes'},
+ {id:'rc4',n:'Salmon, sourdough and greens',q:'pan seared salmon fillet crispy skin',g:'recipes'},
+ {id:'rc5',n:'Steak, potatoes and salad',q:'pan seared sirloin steak rest slice',g:'recipes'}];
 
 /* places to be among people; seeded once, then the list is the user's own */
 const PLACES=[
@@ -3072,7 +3080,7 @@ document.getElementById('addBday').onclick=function(){
 renderBdays();
 /* ── playlists: a Spotify link per session and one for runs, opened in the app ── */
 const PLAY_FOR={A:'Push',B:'Pull',C:'Legs',D:'Width',R:'Runs'};
-const VID_GROUPS=[['A','PUSH'],['B','PULL'],['C','LEGS'],['D','WIDTH'],['stretch','STRETCHES'],['drills','DRILLS'],['desk','DESK']];
+const VID_GROUPS=[['A','PUSH'],['B','PULL'],['C','LEGS'],['D','WIDTH'],['stretch','STRETCHES'],['drills','DRILLS'],['desk','DESK'],['recipes','RECIPES']];
 function playlistBtn(k){
   return S.play[k]
     ?'<a class="watch set" href="'+esc(S.play[k])+'" target="_blank" rel="noopener noreferrer">PLAYLIST</a>'
@@ -3098,7 +3106,7 @@ function renderVidSlots(){
   VIDSLOTS.forEach(function(it){
     const host=document.getElementById('vs-'+it.id);if(!host)return;
     host.innerHTML='';
-    if(!vidOn('desk'))return;
+    if(!vidOn(it.g||'desk'))return;
     const b=document.createElement('button');b.type='button';
     b.className='watch'+(S.vid[it.id]?' set':'');b.style.margin='6px 0 0';
     b.textContent=S.vid[it.id]?'▶ WATCH':'＋ SET VIDEO';
