@@ -300,6 +300,8 @@ details.pl-fold>summary{display:flex;align-items:center;gap:10px;cursor:pointer;
 details.pl-fold>summary::-webkit-details-marker{display:none}
 details.pl-fold>summary .pl-type{flex:1}
 .pl-count{font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.12em;color:var(--text-dim)}
+.cell-edit{background:none;border:none;border-bottom:1px dashed var(--rust-lo);color:var(--text);
+  font:inherit;padding:0 1px;cursor:pointer}
 .pl-type{font-family:'Courier Prime',monospace;font-size:10px;font-weight:700;letter-spacing:.2em;
   color:var(--ember);margin:18px 0 4px;padding:1px 0 1px 11px;border-left:2px solid var(--rust-lo)}
 .pl-k a,.pl-sub a{color:var(--ember);text-decoration:underline;text-underline-offset:3px}
@@ -484,6 +486,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
             <button id="addMorning">Add</button>
           </div>
           <table class="data" id="sleepLog" style="margin-top:18px"></table>
+          <div class="strip-note" id="sleepAvg" style="text-align:left;margin:8px 0 0" hidden></div>
         </div>
       </details>
 
@@ -2441,19 +2444,51 @@ document.getElementById('addEvening').onclick=function(){
 function nightKey(){return todayKey()}
 function clockOf(ms){const d=new Date(ms);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
 /* averaged as minutes after noon, so 23:50 and 00:10 give midnight rather than midday */
+function hhmmOf(mins){return String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0')}
 function stopAverage(){
-  const ks=Object.keys(S.stopped).filter(function(k){return typeof S.stopped[k]==='number'}).sort().slice(-7);
-  if(ks.length<7)return '';
+  const ks=Object.keys(S.stopped).filter(function(k){return typeof S.stopped[k]==='number'}).sort();
+  if(ks.length<2)return '';
   const m=ks.map(function(k){const d=new Date(S.stopped[k]);return (d.getHours()*60+d.getMinutes()+720)%1440});
   const t=(Math.round(m.reduce(function(a,b){return a+b},0)/m.length)+720)%1440;
-  return 'Seven-night average '+String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')+'.';
+  return 'Down at '+hhmmOf(t)+' across '+ks.length+' nights.';
 }
 function upAverage(){
-  const ks=Object.keys(S.woke).filter(function(k){return typeof S.woke[k]==='number'}).sort().slice(-7);
-  if(ks.length<7)return '';
+  const ks=Object.keys(S.woke).filter(function(k){return typeof S.woke[k]==='number'}).sort();
+  if(ks.length<2)return '';
   const m=ks.map(function(k){const d=new Date(S.woke[k]);return d.getHours()*60+d.getMinutes()});
   const t=Math.round(m.reduce(function(a,b){return a+b},0)/m.length);
-  return 'Up at '+String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')+' on average.';
+  return 'Up at '+hhmmOf(t)+' across '+ks.length+' mornings.';
+}
+/* slept time averaged over every night that has both halves */
+function sleptAverage(){
+  const ks=Object.keys(S.stopped).filter(function(k){return typeof S.stopped[k]==='number'}).sort();
+  const spans=[];
+  ks.forEach(function(k){
+    const p=sleepPair(k);
+    if(typeof p.off==='number'&&typeof p.up==='number'&&p.up>p.off)spans.push(p.up-p.off);
+  });
+  if(spans.length<2)return '';
+  const avg=Math.round(spans.reduce(function(a,b){return a+b},0)/spans.length/60000);
+  return 'Slept '+Math.floor(avg/60)+' h '+String(avg%60).padStart(2,'0')+' on average.';
+}
+/* a correction: the night half and the morning half belong to different dates */
+function editSleep(nightK,which){
+  const p=sleepPair(nightK);
+  const cur=which==='off'?p.off:p.up;
+  const label=which==='off'?'Lights out on '+fmt(nightK):'Up on the morning after '+fmt(nightK);
+  const v=prompt(label+'\nTime as 23:40, or leave it empty to clear it.',typeof cur==='number'?clockOf(cur):'');
+  if(v===null)return;
+  const key=which==='off'?nightK:dkey(new Date(new Date(nightK+'T12:00:00').getTime()+864e5));
+  const store=which==='off'?S.stopped:S.woke;
+  const txt=String(v).trim();
+  if(!txt){delete store[key];save();paintStop();paintUp();renderMorning();return}
+  const m=txt.match(/^(\d{1,2})[:.]?(\d{2})$/);
+  if(!m||+m[1]>23||+m[2]>59){alert('That is not a time. Use 23:40.');return}
+  const base=which==='off'?nightK:key;
+  const d=new Date(base+'T12:00:00');
+  d.setHours(+m[1],+m[2],0,0);
+  store[key]=d.getTime();
+  save();paintStop();paintUp();renderMorning();
 }
 function paintStop(){
   const at=S.stopped[nightKey()],on=typeof at==='number',b=document.getElementById('stopBtn');
@@ -2516,12 +2551,23 @@ function renderMorning(){
     const d=new Date(todayKey()+'T12:00:00');d.setDate(d.getDate()-i);
     const k=dkey(d),p=sleepPair(k);
     if(!p.off&&!p.up)continue;
-    rows.push('<tr><td>'+WEEK[(d.getDay()+6)%7].l+'</td><td>'+(p.off?clockOf(p.off):'—')+'</td>'+
-      '<td>'+(p.up?clockOf(p.up):'—')+'</td><td class="hl">'+(p.off&&p.up?hoursBetween(p.off,p.up):'—')+'</td></tr>');
+    rows.push('<tr><td>'+WEEK[(d.getDay()+6)%7].l+'</td>'+
+      '<td><button class="cell-edit" data-sk="'+k+'" data-half="off">'+(p.off?clockOf(p.off):'—')+'</button></td>'+
+      '<td><button class="cell-edit" data-sk="'+k+'" data-half="up">'+(p.up?clockOf(p.up):'—')+'</button></td>'+
+      '<td class="hl">'+(p.off&&p.up?hoursBetween(p.off,p.up):'—')+'</td></tr>');
   }
-  document.getElementById('sleepLog').innerHTML=rows.length
-    ?'<tr><th>Night</th><th>Stopped</th><th>Up</th><th>Slept</th></tr>'+rows.join('')
-    :'<tr><td class="soft" style="border:none;padding-left:0">Two taps a day and this fills itself in.</td></tr>';
+  const log=document.getElementById('sleepLog');
+  log.innerHTML=rows.length
+    ?'<tr><th>Night</th><th>Lights out</th><th>Up</th><th>Slept</th></tr>'+rows.join('')
+    :'<tr><td class="soft" style="border:none;padding-left:0">Two taps a day and this fills itself in. Any time here can be corrected.</td></tr>';
+  log.querySelectorAll('.cell-edit').forEach(function(b){
+    b.onclick=function(){editSleep(b.dataset.sk,b.dataset.half)};
+  });
+  const avg=document.getElementById('sleepAvg');
+  if(avg){
+    const line=[sleptAverage(),stopAverage(),upAverage()].filter(Boolean).join(' ');
+    avg.textContent=line;avg.hidden=!line;
+  }
 }
 document.getElementById('addMorning').onclick=function(){
   const el=document.getElementById('mTitle'),v=el.value.trim();if(!v)return;
