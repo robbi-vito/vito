@@ -117,7 +117,7 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 .hero .sub{font-style:italic;color:var(--text-soft);font-size:18px}
 .hero .insight{font-family:var(--face-mono);font-size:13px;color:var(--text-soft);margin-top:8px}
 /* one panel per weekday, swiped sideways; the week strip shows which is in view */
-.brief{display:flex;align-items:flex-start;overflow-x:auto;gap:14px;margin-top:17px;
+.brief{display:flex;align-items:stretch;overflow-x:auto;gap:14px;margin-top:17px;
   scroll-snap-type:x mandatory;transition:height .2s ease;
   -webkit-mask-image:linear-gradient(to right,#000 0,#000 86%,transparent 99%);
   mask-image:linear-gradient(to right,#000 0,#000 86%,transparent 99%);
@@ -1563,21 +1563,40 @@ function renderBrief(){
    whitespace. Mid-swipe two panels overlap the viewport, so take the taller of them
    and nothing is clipped on the way past. At rest the peeked neighbour is still in
    view, so settled measures only the panel you landed on and the heights match. */
+/* the natural height of a panel. The panel stretches to the track, so its own
+   offsetHeight is the track's and tells us nothing; and adding up the children drops
+   the margins between them, which is a line of text per paragraph. The distance from
+   the first child's top to the last child's bottom carries both. */
+function panelHeightAt(i){
+  const ps=document.getElementById('brief').children;
+  const p=ps[i];
+  if(!p||!p.firstElementChild)return 0;
+  const first=p.firstElementChild.getBoundingClientRect().top;
+  const last=p.lastElementChild.getBoundingClientRect().bottom;
+  const cs=getComputedStyle(p);
+  const lastM=parseFloat(getComputedStyle(p.lastElementChild).marginBottom||0);
+  return Math.round((last-first)+lastM+
+    parseFloat(cs.paddingTop||0)+parseFloat(cs.paddingBottom||0));
+}
+/* the track walks from the panel it is leaving to the one it is arriving at, in one
+   direction. Taking the taller of the two instead made it grow then shrink. */
 function fitTrack(settled){
   const track=document.getElementById('brief'),ps=track.children;
   if(!ps.length)return;
-  const base=ps[0].offsetLeft,sl=track.scrollLeft,w=track.clientWidth;
-  let h=0;
-  if(settled){
-    const p=ps[viewedSlot()];
-    if(p)h=p.offsetHeight;
+  const base=ps[0].offsetLeft,sl=track.scrollLeft;
+  const step=ps[1]?(ps[1].offsetLeft-ps[0].offsetLeft):track.clientWidth;
+  if(settled||!step){
+    const h=panelHeightAt(viewedSlot());
+    if(h)track.style.height=h+'px';
+    return;
   }
-  if(!h){
-    for(let i=0;i<ps.length;i++){
-      const x=ps[i].offsetLeft-base;
-      if(x+ps[i].offsetWidth>sl+1&&x<sl+w-1)h=Math.max(h,ps[i].offsetHeight);
-    }
-  }
+  const exact=(sl-0)/step;
+  const from=Math.max(0,Math.min(ps.length-1,Math.floor(exact)));
+  const to=Math.max(0,Math.min(ps.length-1,Math.ceil(exact)));
+  const t=exact-from;
+  const a=panelHeightAt(from),b=panelHeightAt(to);
+  if(!a&&!b)return;
+  const h=Math.round(a+(b-a)*(from===to?0:t));
   if(h)track.style.height=h+'px';
 }
 function slotLeft(s){
