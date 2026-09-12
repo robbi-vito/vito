@@ -1828,6 +1828,69 @@ function openSession(k){
     if(d){closeOthers(d);d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'})}
   },90);
 }
+/* the shared entries of one checklist, honouring where each tick is really stored */
+function tickedIn(store,id){
+  if(id==='p1'||id==='p2'||id==='p4')return !!(S.week.posture[todayKey()]||{})[id];
+  return !!store[id];
+}
+/* a run owes the moving set and the one after it; a lift owes its own letter only */
+function stretchSetsForToday(){
+  if(slot.s==='cardio1'||slot.s==='cardio2')return ['P','R'];
+  return STRETCH[slot.s]?[slot.s]:[];
+}
+/* p2 and p4 appear in several sets on purpose, so an id is only counted once */
+function stretchOwed(){
+  const t=todayKey(),st=S.stretch[t]||{};
+  const seen={};
+  let open=0,total=0;
+  stretchSetsForToday().forEach(function(k){
+    (STRETCH[k]||[]).forEach(function(it){
+      if(seen[it.id])return;
+      seen[it.id]=1;total++;
+      if(!tickedIn(st,it.id))open++;
+    });
+  });
+  return {open:open,total:total};
+}
+function warmupOwed(){
+  const t=todayKey(),wu=S.warmup[t]||{},legs=legDay(),push=pushDay();
+  let open=0;
+  WARMUP.forEach(function(it){
+    if(it.from&&t<it.from)return;
+    if((it.leg&&!legs)||(it.push&&!push))return;
+    if(!tickedIn(wu,it.id))open++;
+  });
+  return open;
+}
+function morningOwed(){
+  const m=S.morning[calKey()]||{};
+  return (S.mornList||[]).filter(function(it){return !m[it.id]}).length;
+}
+function drillsOwed(){
+  const p=S.week.posture[todayKey()]||{};
+  return DRILLS.filter(function(it){return !p[it.id]}).length;
+}
+function eveningOwed(){
+  const e=S.evening[todayKey()]||{};
+  return (S.tonight||[]).filter(function(it){return !e[it.id]}).length;
+}
+/* in the order they are actually done, so the first one is the thing to do next */
+function owedToday(){
+  const h=hourNow(),run=slot.s==='cardio1'||slot.s==='cardio2';
+  const out=[];
+  if(h<11)  {const n=morningOwed();if(n)out.push({k:'morning',n:n,go:'today',
+    label:n===1?'One thing left this morning':n+' things left this morning'});}
+  if(sess&&!sessionComplete(sess.key))out.push({k:'session',n:1,go:'session',label:'Open today\u2019s session'});
+  if(!run){const n=warmupOwed();if(n&&sess&&!sessionComplete(sess.key))out.push({k:'warmup',n:n,go:'train',label:'Warm up first'});}
+  const st=stretchOwed();
+  if(st.total&&st.open)out.push({k:'stretch',n:st.open,go:'train',
+    label:run?'Stretch after the run':'Stretches still owed'});
+  {const n=drillsOwed();if(n)out.push({k:'drills',n:n,go:'frame',
+    label:n===DRILLS.length?'The drills, five minutes':n+' drills left'});}
+  if(h>=18.5){const n=eveningOwed();if(n)out.push({k:'evening',n:n,go:'today',
+    label:n===1?'One thing left tonight':n+' things left tonight'});}
+  return out;
+}
 function paintGo(){
   const b=document.getElementById('goSession'),o=document.getElementById('owedBtn');
   if(b){
