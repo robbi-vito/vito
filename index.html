@@ -187,8 +187,12 @@ details.nest>summary{padding:13px 0}
 details.nest>summary h3{font-family:var(--face-display);font-weight:700;font-size:21px;line-height:1.15;margin:0;flex:1}
 details.nest[open]>summary h3{color:var(--rust)}
 details.nest>.det-body{padding:2px 0 18px}
-.shop-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 6px}
+.shop-tools{display:flex;align-items:center;gap:10px;margin:2px 0 26px;position:relative}
 .shop-tools .watch{margin:0}
+/* centred on the gap: half of the tools row's own bottom margin */
+.shop-tools #clearShop{position:absolute;right:0;top:calc(100% + 13px);transform:translateY(-50%)}
+/* the row's controls sit on its centre line rather than riding up to the text top */
+.chk>.watch,.chk .del{align-self:center}
 .group-label{font-family:var(--face-mono);font-size:10.5px;font-weight:700;letter-spacing:.2em;
   color:var(--ember);display:table;clear:both;margin:28px 0 10px;padding:5px 10px;
   border:1px solid var(--rust-lo);line-height:1.3}
@@ -2674,7 +2678,7 @@ function shopRow(it,withStore){
   };
   const n=document.createElement('button');
   n.type='button';n.className='watch'+(S.shopNeed[it.id]?' set':'');n.style.margin='0';
-  n.textContent=S.shopNeed[it.id]?'NEEDED':'NEED';
+  n.textContent=S.shopNeed[it.id]?'SHORT':'\uFF0B SHORT';
   n.setAttribute('aria-pressed',S.shopNeed[it.id]?'true':'false');
   n.onclick=function(e){
     e.stopPropagation();
@@ -2719,8 +2723,8 @@ function renderShop(){
     need.forEach(function(it){host.appendChild(shopRow(it,true))});
     return;
   }
-  Object.keys(SHOP).forEach(function(store){
-    const lab=document.createElement('div');lab.className='group-label';lab.style.marginTop='22px';
+  Object.keys(SHOP).forEach(function(store,si){
+    const lab=document.createElement('div');lab.className='group-label';lab.style.marginTop=si?'22px':'0';
     lab.textContent=store;host.appendChild(lab);
     const items=shopItems().filter(function(it){return it.store===store});
     items.sort(function(a,b){
