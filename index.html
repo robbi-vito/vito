@@ -84,10 +84,12 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 .icon-btn{background:none;border:1px solid var(--text-dim);border-radius:50%;width:34px;height:34px;
   color:var(--text-soft);cursor:pointer;font-size:14px;line-height:1;display:grid;place-items:center;
   position:relative;transition:border-color .2s,color .2s,background .2s}
-.icon-btn:hover,.icon-btn:focus-visible{border-color:var(--rust);color:var(--rust);outline:none}
+.icon-btn:focus-visible{border-color:var(--rust);color:var(--rust);outline:none}
+@media (hover:hover){.icon-btn:hover{border-color:var(--rust);color:var(--rust);outline:none}}
 /* a state toggle reads filled when on, struck through when off; plain buttons are actions */
 .icon-btn.on{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
-.icon-btn.on:hover,.icon-btn.on:focus-visible{background:var(--rust);border-color:var(--rust);color:var(--on-rust)}
+.icon-btn.on:focus-visible{background:var(--rust);border-color:var(--rust);color:var(--on-rust)}
+@media (hover:hover){.icon-btn.on:hover{background:var(--rust);border-color:var(--rust);color:var(--on-rust)}}
 .icon-btn.off{color:var(--text-dim);border-color:var(--text-dim)}
 .icon-btn.off::after{content:'';position:absolute;left:50%;top:50%;width:19px;height:1px;
   background:currentColor;transform:translate(-50%,-50%) rotate(-45deg)}
@@ -150,9 +152,9 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
   border:none;border-radius:var(--round);font-family:'Cormorant Garamond',serif;font-weight:700;font-size:21px;
   letter-spacing:.02em;cursor:pointer;transition:filter .2s,transform .1s}
 .cta:active{transform:scale(.985)}
-.cta:hover{filter:brightness(1.12)}
+@media (hover:hover){.cta:hover{filter:brightness(1.12)}}
 .cta.ghost{background:none;border:1px solid var(--edge);color:var(--text-soft);font-size:17px}
-.cta.ghost:hover{border-color:var(--rust);color:var(--rust);filter:none}
+@media (hover:hover){.cta.ghost:hover{border-color:var(--rust);color:var(--rust);filter:none}}
 .owed{display:block;margin:-18px auto 18px;background:none;border:none;cursor:pointer;
   font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:.14em;color:var(--ember);
   text-decoration:underline;text-underline-offset:4px;padding:6px 4px}
@@ -181,7 +183,7 @@ details.nest>.det-body{padding:2px 0 18px}
   border:1px solid var(--rust-lo);line-height:1.3}
 table.data td.w-palette{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--text);padding-top:6px;padding-bottom:6px}
 table.data .rm{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:17px;padding:0 4px;line-height:1}
-table.data .rm:hover{color:var(--rust)}
+@media (hover:hover){table.data .rm:hover{color:var(--rust)}}
 
 .ex{padding:16px 0;border-top:1px dashed var(--edge)}
 .ex.off{opacity:.4}
@@ -199,20 +201,20 @@ table.data .rm:hover{color:var(--rust)}
 .dot{width:44px;height:44px;border-radius:50%;border:1px solid var(--edge);background:var(--bg-raise);
   cursor:pointer;display:grid;place-items:center;font-family:'Courier Prime',monospace;font-size:11px;
   color:var(--text-dim);transition:all .2s ease;padding:0;line-height:1}
-.dot:hover{border-color:var(--rust)}
+@media (hover:hover){.dot:hover{border-color:var(--rust)}}
 .dot.filled{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust);font-weight:700}
 .last{font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim);margin-left:2px}
 .watch{margin:10px 0 0 26px;background:none;border:1px solid var(--edge);border-radius:2px;
   color:var(--text-soft);font-family:'Courier Prime',monospace;font-size:10.5px;letter-spacing:.12em;
   padding:6px 12px;cursor:pointer;transition:all .2s}
-.watch:hover{border-color:var(--rust);color:var(--rust)}
+@media (hover:hover){.watch:hover{border-color:var(--rust);color:var(--rust)}}
 .watch.set{border-color:var(--rust-lo);color:var(--ember)}
 .ex-foot{display:flex;justify-content:space-between;align-items:center;margin:10px 0 0 26px}
 .ex-foot .watch{margin:0}
 .plates{display:block;margin:7px 0 0 26px;background:none;border:none;padding:0;cursor:pointer;text-align:left;
   font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-dim)}
 .plates[hidden]{display:none}
-.plates:hover{color:var(--rust)}
+@media (hover:hover){.plates:hover{color:var(--rust)}}
 .advice{margin:6px 0 0 26px;font-family:'Courier Prime',monospace;font-size:11px;color:var(--text-soft);line-height:1.7}
 .advice .flag{margin:0 3px 0 0}
 .flag.go{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
@@ -236,7 +238,7 @@ a.watch{text-decoration:none;display:inline-block}
 .info{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;
   border:1px solid var(--rust-lo);color:var(--rust);background:none;cursor:pointer;
   font-family:'Courier Prime',monospace;font-size:10px;line-height:1;padding:0;margin-left:6px;vertical-align:1px}
-.info:hover{border-color:var(--rust)}
+@media (hover:hover){.info:hover{border-color:var(--rust)}}
 .bubble{display:none;margin:10px 0 0;padding:13px 15px;background:var(--bg-raise);
   border:1px solid var(--rust-lo);border-radius:var(--round);font-size:15px;color:var(--text-soft);line-height:1.5}
 .bubble.open{display:block;animation:rise .2s ease}
@@ -321,7 +323,8 @@ a.pl-n{text-decoration:underline;text-decoration-color:var(--rust-lo);text-under
   padding:11px 10px;color:var(--text);font-family:'Courier Prime',monospace;font-size:14px}
 .log-row input:focus{outline:none;border-color:var(--rust)}
 .log-row .watch{background:none;border:1px solid var(--edge);color:var(--text-soft);padding:6px 12px}
-.log-row .watch:hover,.log-row .watch:focus-visible{background:none;border-color:var(--rust);color:var(--rust)}
+.log-row .watch:focus-visible{background:none;border-color:var(--rust);color:var(--rust)}
+@media (hover:hover){.log-row .watch:hover{background:none;border-color:var(--rust);color:var(--rust)}}
 .log-row button{background:var(--rust-fill);border:none;border-radius:var(--round);color:var(--on-rust);padding:0 18px;
   font-family:'Courier Prime',monospace;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 textarea.three{width:100%;background:var(--bg-raise);border:1px solid var(--edge);border-radius:var(--round);
@@ -367,7 +370,7 @@ textarea.three:focus{outline:none;border-color:var(--rust)}
 .sheet-foot a,.sheet-foot button{font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:.1em;
   color:var(--text-soft);text-decoration:none;background:none;border:1px solid var(--edge);
   border-radius:2px;padding:9px 14px;cursor:pointer;transition:all .2s}
-.sheet-foot a:hover,.sheet-foot button:hover{border-color:var(--rust);color:var(--rust)}
+@media (hover:hover){.sheet-foot a:hover,.sheet-foot button:hover{border-color:var(--rust);color:var(--rust)}}
 .sheet-foot .close{margin-left:auto;border-color:var(--rust-lo);color:var(--ember)}
 .sheet-foot button.on,.sheet-foot button.on:hover{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
 .set-hd{font-family:'Courier Prime',monospace;font-size:10.5px;letter-spacing:.2em;color:var(--text-dim);margin:6px 0 8px}
