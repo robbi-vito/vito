@@ -3484,25 +3484,77 @@ function greeting(){
   lastHello=pick;
   return pick;
 }
+function splashSlot(){
+  const h=hourNow();
+  return h<11?'morning':h>=18.5?'evening':'day';
+}
+/* the sleep line the greeting leans on, graded by the same thresholds as the table */
+function sleepNote(){
+  const ks=Object.keys(S.stopped).filter(function(k){return typeof S.stopped[k]==='number'}).sort().slice(-7);
+  const spans=[];
+  ks.forEach(function(k){
+    const p=sleepPair(k);
+    if(typeof p.off==='number'&&typeof p.up==='number'&&p.up>p.off)spans.push(p.up-p.off);
+  });
+  if(spans.length<3)return '';
+  const avg=spans.reduce(function(a,b){return a+b},0)/spans.length;
+  if(avg>=7.5*36e5)return '';
+  const h=Math.floor(avg/36e5),m=Math.round((avg%36e5)/6e4);
+  return avg<7*36e5
+    ? 'You are averaging '+h+' h '+String(m).padStart(2,'0')+' across the last '+spans.length+' nights. That is under seven. The deficit, the lifts and the mood all run on this one.'
+    : 'Averaging '+h+' h '+String(m).padStart(2,'0')+' across the last '+spans.length+' nights. Half an hour short of the mark.';
+}
 function openMorningSheet(){
-  const k=calKey();
-  S.morning[k]=S.morning[k]||{};
+  const k=calKey(),t=todayKey(),when=splashSlot();
+  S.morning[k]=S.morning[k]||{};S.evening[t]=S.evening[t]||{};
+  const evening=when==='evening';
+  const store=evening?S.evening[t]:S.morning[k];
+  const list=evening?(S.tonight||[]):(S.mornList||[]);
+  const openItems=list.filter(function(it){return !store[it.id]});
   document.getElementById('vTitle').textContent=greeting();
   document.getElementById('vSub').textContent=fmt(todayKey()).toUpperCase()+' · '+(slot.k||'REST');
-  const body=document.getElementById('vBody');
-  body.innerHTML='<p class="ex-cue" style="margin:0 0 12px">Log the time you got up, then the first hour.</p>'+
-    '<button class="watch stop" id="spUp" type="button"></button>'+
-    '<div id="spMorning" style="margin-top:14px"></div>'+
-    '<div class="sheet-foot" style="margin-top:16px"><button class="close" id="spDone">START</button></div>';
+  const owed=owedToday().filter(function(o){return o.k!=='morning'&&o.k!=='evening'});
+  const loops=(S.loops||[]).filter(function(l){return l&&l.id&&!S.loopsDone[l.id]});
+  const note=evening?sleepNote():'';
+  let lead;
+  if(evening)lead='Wind down at 21:00, asleep by 22:00.';
+  else if(when==='morning')lead='Log the time you got up, then the first hour.';
+  else lead=openItems.length?'Still open today.':'The list is clear.';
+  let html='<p class="ex-cue" style="margin:0 0 12px">'+lead+'</p>';
+  if(note)html+='<div class="note" style="margin:0 0 14px"><div class="hd">SLEEP</div><p>'+note+'</p></div>';
+  if(when==='morning')html+='<button class="watch stop" id="spUp" type="button"></button>';
+  html+='<div id="spMorning" style="margin-top:14px"></div>';
+  if(!openItems.length&&owed.length){
+    html+='<div class="group-label" style="margin-top:20px">STILL OWED</div>'+
+      owed.map(function(o){return '<p class="ex-cue" style="margin:6px 0 0">'+esc(o.label)+'</p>'}).join('');
+  }
+  if(!openItems.length&&!owed.length&&loops.length){
+    html+='<div class="group-label" style="margin-top:20px">NEXT IN THE QUEUE</div>'+
+      loops.slice(0,3).map(function(l){return '<p class="ex-cue" style="margin:6px 0 0">'+esc(l.t)+'</p>'}).join('');
+  }
+  html+='<div class="sheet-foot" style="margin-top:18px"><button class="close" id="spDone">DONE</button></div>';
+  document.getElementById('vBody').innerHTML=html;
   const paint=function(){
-    const at=S.woke[k],on=typeof at==='number',b=document.getElementById('spUp');
-    if(!b)return;
-    b.textContent=on?'UP '+clockOf(at):'UP THIS MORNING';
-    b.classList.toggle('set',on);b.setAttribute('aria-pressed',on?'true':'false');
-    checklist(document.getElementById('spMorning'),S.mornList,S.morning[k],
-      function(){renderMorning();paint()},null,'morning');
+    const b=document.getElementById('spUp');
+    if(b){
+      const at=S.woke[k],on=typeof at==='number';
+      b.textContent=on?'UP '+clockOf(at):'UP THIS MORNING';
+      b.classList.toggle('set',on);b.setAttribute('aria-pressed',on?'true':'false');
+    }
+    const host=document.getElementById('spMorning');
+    const still=list.filter(function(it){return !store[it.id]});
+    if(!host)return;
+    if(!still.length){
+      host.innerHTML='<p class="ex-cue" style="margin:0">'+
+        (evening?'Everything for tonight is ticked.':'Everything for this morning is ticked.')+'</p>';
+      return;
+    }
+    checklist(host,still,store,function(){
+      save();if(evening)renderEvening();else renderMorning();paint();
+    },null,evening?'evening':'morning');
   };
-  document.getElementById('spUp').onclick=function(){
+  const up=document.getElementById('spUp');
+  if(up)up.onclick=function(){
     window.__mornDirty=1;
     if(typeof S.woke[k]==='number')delete S.woke[k];else S.woke[k]=Date.now();
     save();paintUp();paintStop();renderMorning();paint();
@@ -3511,11 +3563,13 @@ function openMorningSheet(){
   document.getElementById('spDone').onclick=closeVideo;
   scrim.classList.add('up');
 }
+/* the date alone could not say which part of the day had been seen */
 (function(){
-  const h=hourNow();
-  if(h<5||h>=11)return;
-  if(S.splash===calKey())return;
-  S.splash=calKey();save();
+  const when=splashSlot();
+  if(when==='day')return;
+  const stamp=calKey()+'|'+when;
+  if(S.splash===stamp)return;
+  S.splash=stamp;save();
   openMorningSheet();
 })();
 
