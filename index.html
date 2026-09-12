@@ -373,6 +373,13 @@ textarea.three:focus{outline:none;border-color:var(--rust)}
 .set-hd{font-family:'Courier Prime',monospace;font-size:10.5px;letter-spacing:.2em;color:var(--text-dim);margin:6px 0 8px}
 .set-note{font-style:italic;font-size:14px;line-height:1.5;color:var(--text-soft);margin:10px 0 18px}
 
+.collapse-all{position:fixed;top:calc(12px + env(safe-area-inset-top));
+  right:max(20px,calc((100vw - 620px)/2 + 20px));z-index:50;
+  font-family:'Courier Prime',monospace;font-size:10px;font-weight:700;letter-spacing:.16em;
+  color:var(--ember);background:var(--bg-raise);border:1px solid var(--rust-lo);
+  border-radius:var(--round);padding:7px 11px;cursor:pointer;line-height:1;
+  opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}
+.collapse-all.show{opacity:1;pointer-events:auto}
 nav{position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--bg-sink);border-top:1px solid var(--edge);
   display:grid;grid-template-columns:repeat(6,1fr);padding-bottom:env(safe-area-inset-bottom)}
 nav button{background:none;border:none;padding:17px 2px 16px;cursor:pointer;font-family:'Courier Prime',monospace;
@@ -389,6 +396,8 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
 @media (min-width:900px){
   body{padding-bottom:60px;padding-top:47px;font-size:18px}
   .wrap{max-width:880px;padding:0 40px}
+  .collapse-all{right:max(40px,calc((100vw - 880px)/2 + 40px));
+    top:calc(58px + env(safe-area-inset-top))}
   nav{top:0;bottom:auto;border-top:none;border-bottom:1px solid var(--edge);
     display:flex;justify-content:center;gap:2px;padding:0}
   nav button{padding:15px 22px 14px;font-size:11px;letter-spacing:.16em}
@@ -956,6 +965,8 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     <div id="vBody"></div>
   </div>
 </div>
+
+<button class="collapse-all" id="collapseAll" type="button">CLOSE ALL</button>
 
 <nav>
   <button class="on" data-v="today">TODAY</button>
@@ -2749,6 +2760,7 @@ paintSound();
 function switchView(v){
   document.body.dataset.view=v;
   paintLeak();
+  setTimeout(paintCollapse,0);
   document.querySelectorAll('.view').forEach(function(s){s.classList.toggle('on',s.id==='v-'+v)});
   document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('on',b.dataset.v===v)});
   window.scrollTo(0,0);
@@ -3016,6 +3028,29 @@ function openMorningSheet(){
   S.splash=calKey();save();
   openMorningSheet();
 })();
+
+/* a way back out of a long page: it appears only once something is open and the
+   masthead has scrolled away, and it shuts everything on the view you are on */
+function paintCollapse(){
+  const b=document.getElementById('collapseAll');if(!b)return;
+  const view=document.querySelector('.view.on');
+  const anyOpen=!!(view&&view.querySelector('details[open]'));
+  b.classList.toggle('show',anyOpen&&window.scrollY>140);
+}
+let collapseTick=false;
+addEventListener('scroll',function(){
+  if(collapseTick)return;
+  collapseTick=true;
+  requestAnimationFrame(function(){collapseTick=false;paintCollapse()});
+},{passive:true});
+document.addEventListener('toggle',paintCollapse,true);
+document.getElementById('collapseAll').onclick=function(){
+  const view=document.querySelector('.view.on');if(!view)return;
+  view.querySelectorAll('details[open]').forEach(function(d){d.open=false});
+  window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+  paintCollapse();
+};
+paintCollapse();
 /* the date, the half-hour and the view together seed the leak, so the light
    moves through the day and no two views hold the same frame at once */
 var leakFrame='';
