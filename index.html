@@ -1193,6 +1193,7 @@ S.hideVid=S.hideVid&&typeof S.hideVid==='object'?S.hideVid:{};   /* group -> vid
 function vidOn(g){return !S.hideVid[g]}
 S.protein=S.protein&&typeof S.protein==='object'?S.protein:{};   /* date -> protein target hit */
 S.meet=S.meet||'';                             /* maps link for the run club meeting point */
+S.splash=typeof S.splash==='string'?S.splash:'';   /* the morning the greeting was last shown */
 S.units=S.units&&typeof S.units==='object'?S.units:{};   /* exercise id -> 'kg'; absent means lb */
 S.unitMode=S.unitMode==='lb'||S.unitMode==='kg'?S.unitMode:'each';   /* 'lb' or 'kg' for all, 'each' per exercise */
 const LB_PER_KG=2.20462;
@@ -2968,6 +2969,43 @@ function paintTrainDefaults(){
   const m=document.getElementById('morningBox'),n=document.getElementById('tonightBox');
   if(m)m.open=h>=5.5&&h<10.5;
   if(n)n.open=h>=18.5||h<5;
+})();
+
+/* the first open of a morning: the day, the time you got up, and the list.
+   It writes to the same stores the Morning section reads, so nothing drifts. */
+function openMorningSheet(){
+  const k=calKey();
+  S.morning[k]=S.morning[k]||{};
+  document.getElementById('vTitle').textContent='Good morning.';
+  document.getElementById('vSub').textContent=fmt(todayKey()).toUpperCase()+' · '+(slot.k||'REST');
+  const body=document.getElementById('vBody');
+  body.innerHTML='<p class="ex-cue" style="margin:0 0 12px">Log the time you got up, then the first hour.</p>'+
+    '<button class="watch stop" id="spUp" type="button"></button>'+
+    '<div id="spMorning" style="margin-top:14px"></div>'+
+    '<div class="sheet-foot" style="margin-top:16px"><button class="close" id="spDone">START</button></div>';
+  const paint=function(){
+    const at=S.woke[k],on=typeof at==='number',b=document.getElementById('spUp');
+    if(!b)return;
+    b.textContent=on?'UP '+clockOf(at):'UP THIS MORNING';
+    b.classList.toggle('set',on);b.setAttribute('aria-pressed',on?'true':'false');
+    checklist(document.getElementById('spMorning'),S.mornList,S.morning[k],
+      function(){renderMorning();paint()},null,'morning');
+  };
+  document.getElementById('spUp').onclick=function(){
+    window.__mornDirty=1;
+    if(typeof S.woke[k]==='number')delete S.woke[k];else S.woke[k]=Date.now();
+    save();paintUp();paintStop();renderMorning();paint();
+  };
+  paint();
+  document.getElementById('spDone').onclick=closeVideo;
+  scrim.classList.add('up');
+}
+(function(){
+  const h=hourNow();
+  if(h<5||h>=11)return;
+  if(S.splash===calKey())return;
+  S.splash=calKey();save();
+  openMorningSheet();
 })();
 /* the date, the half-hour and the view together seed the leak, so the light
    moves through the day and no two views hold the same frame at once */
