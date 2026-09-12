@@ -63,18 +63,26 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   --leak4-x:50%;--leak4-y:50%;--leak4-w:0%;--leak4-h:0%;
   --spk-w:0%;--spk1-x:50%;--spk1-y:50%;--spk2-x:50%;--spk2-y:50%;--spk3-x:50%;--spk3-y:50%;
   --spk4-x:50%;--spk4-y:50%;--spk5-x:50%;--spk5-y:50%;--spk6-x:50%;--spk6-y:50%;
+  --spk7-x:50%;--spk7-y:50%;--spk8-x:50%;--spk8-y:50%;--spk9-x:50%;--spk9-y:50%;
+  --spk10-x:50%;--spk10-y:50%;--spk11-x:50%;--spk11-y:50%;--spk12-x:50%;--spk12-y:50%;
   transition:opacity .6s var(--ease);
   background:
     radial-gradient(ellipse var(--leak-w) var(--leak-h) at calc(var(--leak-x) + var(--leak-drift-x,0%)) calc(var(--leak-y) + var(--leak-drift-y,0%) - var(--leak-scroll)),var(--leak-a),transparent 60%),
     radial-gradient(ellipse 28% 58% at calc(var(--leak2-x) - var(--leak-drift-x,0%)) calc(var(--leak2-y) + var(--leak-drift-y,0%) - var(--leak-scroll)),var(--leak-b),transparent 68%),
     radial-gradient(ellipse 74% 24% at calc(var(--leak3-x) + var(--leak-drift-y,0%)) calc(var(--leak3-y) - var(--leak-drift-x,0%) - var(--leak-scroll)),var(--leak-c),transparent 64%),
     radial-gradient(ellipse var(--leak4-w) var(--leak4-h) at var(--leak4-x) calc(var(--leak4-y) - var(--leak-scroll)),var(--leak-c),transparent 62%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk1-x) calc(var(--spk1-y) - var(--leak-scroll)),var(--leak-c),transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk2-x) calc(var(--spk2-y) - var(--leak-scroll)),var(--leak-b),transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk3-x) calc(var(--spk3-y) - var(--leak-scroll)),var(--leak-c),transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk4-x) calc(var(--spk4-y) - var(--leak-scroll)),var(--leak-b),transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk5-x) calc(var(--spk5-y) - var(--leak-scroll)),var(--leak-c),transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk6-x) calc(var(--spk6-y) - var(--leak-scroll)),var(--leak-b),transparent 74%)}
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk1-x) calc(var(--spk1-y) - var(--leak-scroll)),var(--leak-c) 30%,transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk2-x) calc(var(--spk2-y) - var(--leak-scroll)),var(--leak-b) 30%,transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk3-x) calc(var(--spk3-y) - var(--leak-scroll)),var(--leak-c) 30%,transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk4-x) calc(var(--spk4-y) - var(--leak-scroll)),var(--leak-b) 30%,transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk5-x) calc(var(--spk5-y) - var(--leak-scroll)),var(--leak-c) 30%,transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk6-x) calc(var(--spk6-y) - var(--leak-scroll)),var(--leak-b) 30%,transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk7-x) calc(var(--spk7-y) - var(--leak-scroll)),var(--leak-c) 30%,transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk8-x) calc(var(--spk8-y) - var(--leak-scroll)),var(--leak-b) 30%,transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk9-x) calc(var(--spk9-y) - var(--leak-scroll)),var(--leak-c) 30%,transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk10-x) calc(var(--spk10-y) - var(--leak-scroll)),var(--leak-b) 30%,transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk11-x) calc(var(--spk11-y) - var(--leak-scroll)),var(--leak-c) 30%,transparent 74%),
+    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk12-x) calc(var(--spk12-y) - var(--leak-scroll)),var(--leak-b) 30%,transparent 74%)}
 /* each view catches the light from somewhere else */
 body[data-view="train"] .leak{--leak-x:-6%;--leak-y:-10%;--leak-w:52%;--leak-h:46%;--leak2-x:-8%;--leak2-y:26%;--leak3-x:108%;--leak3-y:102%}
 body[data-view="fuel"] .leak{--leak-x:50%;--leak-y:-14%;--leak-w:78%;--leak-h:30%;--leak2-x:104%;--leak2-y:64%;--leak3-x:-6%;--leak3-y:104%}
@@ -3792,9 +3800,12 @@ function paintLeak(){
      The register decides how coarse: ink sits on a sheet, light only glints on glass. */
   const paper=getComputedStyle(document.documentElement).getPropertyValue('--stain').trim()==='multiply';
   set('--spk-w',((paper?0.7:0.4)+rnd()*(paper?0.8:0.5)).toFixed(2)+'vmin');
-  for(let n=1;n<=6;n++){
+  /* about three to a screen, dealt down the page in bands so no stretch of it goes bare */
+  const spk=Math.min(12,Math.max(3,Math.round(reach/100*3)));
+  for(let n=1;n<=12;n++){
+    const lo=2+(n-1)*(reach-2)/spk,hi=2+n*(reach-2)/spk;
     set('--spk'+n+'-x',rint(4,96)+'%');
-    set('--spk'+n+'-y',rint(2,reach)+'%');
+    set('--spk'+n+'-y',(n<=spk?rint(Math.floor(lo),Math.ceil(hi)):-300)+'%');
   }
 }
 (function(){
