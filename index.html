@@ -259,6 +259,8 @@ a.watch{text-decoration:none;display:inline-block}
 .cell.key{border-color:var(--rust)}
 .cell .l{font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.11em;color:var(--text-dim);display:block}
 .cell .v{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:25px;display:block;margin-top:2px}
+.cell .v[data-unit]::after{content:attr(data-unit);font-family:'Courier Prime',monospace;font-size:11px;
+  font-weight:400;letter-spacing:.04em;color:var(--text-dim);margin-left:2px}
 .cell.key .v{color:var(--rust)}
 table.data{width:100%;border-collapse:collapse;font-family:'Courier Prime',monospace;font-size:13px}
 table.data th{font-size:10px;letter-spacing:.13em;font-weight:400;color:var(--text-dim);text-align:left;
@@ -470,9 +472,9 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
         <summary><h2>The numbers</h2><span class="meta">BASELINE 14 AUG</span></summary>
         <div class="det-body">
           <div class="grid4">
-            <div class="cell key"><span class="l">Weight</span><span class="v" id="cWeight">167</span></div>
-            <div class="cell key"><span class="l">Body fat</span><span class="v" id="cBf">15.0</span></div>
-            <div class="cell"><span class="l">Muscle</span><span class="v">80.9</span></div>
+            <div class="cell key"><span class="l">Weight</span><span class="v" id="cWeight" data-unit="lb">167</span></div>
+            <div class="cell key"><span class="l">Body fat</span><span class="v" id="cBf" data-unit="%">15.0</span></div>
+            <div class="cell"><span class="l">Muscle</span><span class="v" data-unit="lb">80.9</span></div>
             <div class="cell"><span class="l">FFMI</span><span class="v">21.0</span></div>
           </div>
           <div class="strip-note" style="margin-bottom:20px">Target 12% sustained, 10% floor · retest early November</div>
@@ -2642,6 +2644,8 @@ function renderBody(){
   const last=S.body[S.body.length-1];
   document.getElementById('cWeight').textContent=last?last.w:'—';
   document.getElementById('cBf').textContent=!last||last.f==null?'—':last.f;
+  document.getElementById('cWeight').dataset.unit=last?'lb':'';
+  document.getElementById('cBf').dataset.unit=(!last||last.f==null)?'':'%';
   document.getElementById('bodyHistory').innerHTML='<tr><th>Date</th><th>Weight</th><th>Body fat</th><th>Waist</th></tr>'+
     S.body.slice(-8).reverse().map(function(r){
       return '<tr><td>'+r.d+'</td><td class="hl">'+r.w+' lb</td><td>'+(r.f?r.f+'%':'—')+'</td><td>'+(r.waist?r.waist+' in':'—')+'</td></tr>'}).join('');
