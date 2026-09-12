@@ -14,7 +14,7 @@
 <title>The Vito Protocol</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<link id="faceLink" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --face-display:'Cormorant Garamond',Georgia,serif;
@@ -395,6 +395,13 @@ textarea.three:focus{outline:none;border-color:var(--rust)}
 .sheet-foot .close{margin-left:auto;border-color:var(--rust-lo);color:var(--ember)}
 .sheet-foot button.on,.sheet-foot button.on:hover{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
 .set-hd{font-family:var(--face-mono);font-size:10.5px;letter-spacing:.2em;color:var(--text-dim);margin:6px 0 8px}
+.face-opt{display:block;width:100%;text-align:left;background:var(--bg-raise);cursor:pointer;
+  border:1px solid var(--edge);border-radius:var(--round);padding:11px 13px;margin-bottom:8px}
+.face-opt.on{border-color:var(--rust);background:var(--bg-sink)}
+.face-n{display:block;font-size:23px;font-weight:700;color:var(--text);line-height:1.1}
+.face-opt.on .face-n{color:var(--rust)}
+.face-d{display:block;font-family:var(--face-body);font-style:italic;font-size:14px;color:var(--text-soft);margin-top:2px}
+.face-s{display:block;font-size:10px;letter-spacing:.16em;color:var(--text-dim);margin-top:7px}
 .set-note{font-style:italic;font-size:14px;line-height:1.5;color:var(--text-soft);margin:10px 0 18px}
 
 .float-btn{position:fixed;z-index:50;width:44px;height:44px;border-radius:50%;
@@ -1273,6 +1280,7 @@ function vidOn(g){return !S.hideVid[g]}
 S.protein=S.protein&&typeof S.protein==='object'?S.protein:{};   /* date -> protein target hit */
 S.meet=S.meet||'';                             /* maps link for the run club meeting point */
 S.splash=typeof S.splash==='string'?S.splash:'';   /* the morning the greeting was last shown */
+S.fontTheme=typeof S.fontTheme==='string'?S.fontTheme:'protocol';   /* which typography theme is set */
 S.units=S.units&&typeof S.units==='object'?S.units:{};   /* exercise id -> 'kg'; absent means lb */
 S.unitMode=S.unitMode==='lb'||S.unitMode==='kg'?S.unitMode:'each';   /* 'lb' or 'kg' for all, 'each' per exercise */
 const LB_PER_KG=2.20462;
@@ -2952,6 +2960,15 @@ function openSettings(){
     '<div class="sheet-foot">'+opt('lb','ALL LB')+opt('kg','ALL KG')+opt('each','PER EXERCISE')+'</div>'+
     '<p class="set-note">'+(m==='each'?'Each exercise keeps its own unit, switched on its card.':'Every exercise shows and takes '+m+'. The cards hide their own switch.')+
     ' Weights are kept in pounds; this changes what you see and type, never what is saved.</p>'+
+    '<div class="set-hd">TYPOGRAPHY</div>'+
+    FONT_THEMES.map(function(t){
+      const on=S.fontTheme===t.id;
+      return '<button type="button" class="face-opt'+(on?' on':'')+'" data-ft="'+t.id+'">'+
+        '<span class="face-n" style="font-family:'+t.display.replace(/"/g,'&quot;')+'">'+t.n+'</span>'+
+        '<span class="face-d">'+t.d+'</span>'+
+        '<span class="face-s" style="font-family:'+t.mono.replace(/"/g,'&quot;')+'">HEADINGS · PROSE · DATA</span></button>';
+    }).join('')+
+    '<p class="set-note">Headings and large numbers take the first face, prose the second, labels and timings the third. The Protocol is how it was built, and is always here to come back to.</p>'+
     '<div class="set-hd">VIDEOS</div>'+
     '<div class="sheet-foot">'+VID_GROUPS.map(function(g){
       return '<button type="button" data-vg="'+g[0]+'"'+(S.hideVid[g[0]]?'':' class="on"')+'>'+g[1]+'</button>'}).join('')+'</div>'+
@@ -2962,6 +2979,11 @@ function openSettings(){
     '<div class="set-hd">BACKUP</div>'+
     '<div class="sheet-foot"><button type="button" id="sExport">EXPORT BACKUP</button><button type="button" id="sRestore">RESTORE FROM BACKUP</button></div>'+
     '<div class="sheet-foot" style="margin-top:18px"><button class="close" id="vClose">DONE</button></div>';
+  document.querySelectorAll('#vBody [data-ft]').forEach(function(b){
+    b.onclick=function(){
+      S.fontTheme=b.dataset.ft;save();applyFontTheme(S.fontTheme);openSettings();
+    };
+  });
   document.querySelectorAll('#vBody [data-u]').forEach(function(b){
     b.onclick=function(){S.unitMode=b.dataset.u;save();renderSessions();renderInsight();renderBrief();openSettings()};
   });
@@ -3143,6 +3165,34 @@ document.getElementById('addBday').onclick=function(){
 renderBdays();
 /* ── playlists: a Spotify link per session and one for runs, opened in the app ── */
 const PLAY_FOR={A:'Push',B:'Pull',C:'Legs',D:'Width',R:'Runs'};
+const FONT_THEMES=[
+ {id:'protocol',n:'The Protocol',d:'As it was built',
+  display:"'Cormorant Garamond',Georgia,serif",body:"'Crimson Pro',Georgia,serif",mono:"'Courier Prime',ui-monospace,monospace",
+  q:'family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Courier+Prime:wght@400;700'},
+ {id:'press',n:'The Press',d:'Warmer, bookish, engineered',
+  display:"'Fraunces',Georgia,serif",body:"'Literata',Georgia,serif",mono:"'IBM Plex Mono',ui-monospace,monospace",
+  q:'family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,500;0,9..144,700;1,9..144,500&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=IBM+Plex+Mono:wght@400;700'},
+ {id:'transmission',n:'The Transmission',d:'Retro-futurist, odd curves',
+  display:"'Fraunces',Georgia,serif",body:"'Crimson Pro',Georgia,serif",mono:"'Space Mono',ui-monospace,monospace",
+  q:'family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,500;0,9..144,700;1,9..144,500&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Space+Mono:wght@400;700'},
+ {id:'ledger',n:'The Ledger',d:'Quieter serif, plainer data',
+  display:"'Literata',Georgia,serif",body:"'Literata',Georgia,serif",mono:"'IBM Plex Mono',ui-monospace,monospace",
+  q:'family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&family=IBM+Plex+Mono:wght@400;700'}
+];
+function themeOf(id){return FONT_THEMES.filter(function(t){return t.id===id})[0]||FONT_THEMES[0]}
+/* the faces arrive with the theme, so nothing is fetched for a theme never chosen */
+function applyFontTheme(id){
+  const t=themeOf(id),r=document.documentElement;
+  const link=document.getElementById('faceLink');
+  if(link){
+    const href='https://fonts.googleapis.com/css2?'+t.q+'&display=swap';
+    if(link.getAttribute('href')!==href)link.setAttribute('href',href);
+  }
+  r.style.setProperty('--face-display',t.display);
+  r.style.setProperty('--face-body',t.body);
+  r.style.setProperty('--face-mono',t.mono);
+}
+applyFontTheme(S.fontTheme);
 const VID_GROUPS=[['A','PUSH'],['B','PULL'],['C','LEGS'],['D','WIDTH'],['stretch','STRETCHES'],['drills','DRILLS'],['desk','DESK'],['recipes','RECIPES']];
 function playlistBtn(k){
   return S.play[k]
