@@ -178,7 +178,7 @@ summary .meta{font-family:var(--face-mono);font-size:11px;font-weight:700;letter
   color:var(--text-dim);white-space:nowrap;flex-shrink:0;margin-left:auto}
 summary::after{content:'+';font-family:var(--face-mono);color:var(--rust);font-size:18px;flex-shrink:0}
 details[open]>summary::after{content:'–'}
-details>.det-body.flowing{overflow:hidden;will-change:height}
+details>.det-body.flowing{overflow:hidden;will-change:height;contain:layout paint}
 details[open]>summary h2{color:var(--rust)}
 .det-body{padding:0 0 22px}
 details.nest{border-top:1px dashed var(--edge)}
@@ -3277,24 +3277,28 @@ function flowDetails(e){
   e.preventDefault();
   const open=d.open;
   d.dataset.anim='1';
-  body.classList.add('flowing');
   let settled=false;
   const done=function(){
     if(settled)return;
     settled=true;delete d.dataset.anim;body.classList.remove('flowing');body.style.height='';
   };
+  const ease='cubic-bezier(.22,.61,.36,1)';
   if(!open){
     d.open=true;
-    const h=body.scrollHeight;
+    /* measured before the class, so the height matches what is on screen */
+    const h=Math.round(body.getBoundingClientRect().height);
+    body.classList.add('flowing');
     const a=body.animate([{height:'0px',opacity:0},{height:h+'px',opacity:1}],
-      {duration:300,easing:'cubic-bezier(.22,.61,.36,1)'});
+      {duration:300,easing:ease});
     a.onfinish=done;a.oncancel=done;
   }else{
-    const h=body.scrollHeight;
+    /* measured before the class, so the height matches what is on screen */
+    const h=Math.round(body.getBoundingClientRect().height);
+    body.classList.add('flowing');
     /* the fill holds the collapsed height until the panel is actually shut. without
        it the height returns to auto for a frame and the panel flicks back open */
     const a=body.animate([{height:h+'px',opacity:1},{height:'0px',opacity:0}],
-      {duration:240,easing:'cubic-bezier(.22,.61,.36,1)',fill:'forwards'});
+      {duration:260,easing:ease,fill:'forwards'});
     a.onfinish=function(){d.open=false;a.cancel();done()};
     a.oncancel=done;
   }
