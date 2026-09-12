@@ -136,8 +136,10 @@ body:not([data-view="train"]) #soundBtn{display:none}
 /* one panel per weekday, swiped sideways; the week strip shows which is in view */
 .brief{display:flex;align-items:stretch;overflow-x:auto;gap:14px;margin-top:17px;
   scroll-snap-type:x mandatory;transition:height .2s ease;
-  -webkit-mask-image:linear-gradient(to right,#000 0,#000 86%,transparent 99%);
-  mask-image:linear-gradient(to right,#000 0,#000 86%,transparent 99%);
+  /* the fade starts where a panel ends and is gone before the next one's text begins,
+     so the neighbour shows only as its rule */
+  -webkit-mask-image:linear-gradient(to right,#000 0,#000 91%,transparent calc(91% + 26px));
+  mask-image:linear-gradient(to right,#000 0,#000 91%,transparent calc(91% + 26px));
   scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior-x:contain}
 .brief::-webkit-scrollbar{display:none}
 /* room after the last panel, so the Monday clone can come to rest where a real Monday would */
