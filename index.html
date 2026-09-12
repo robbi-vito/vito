@@ -878,7 +878,12 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     </div>
     <div class="track"><i id="phaseBar"></i></div>
     <div class="strip-note" id="phaseNote" style="text-align:left"></div>
-    <div id="phaseLoops"></div>
+    <details class="solo" id="phaseLoopsBox" open>
+      <summary><h2>The phase</h2><span class="meta" id="phaseLoopsMeta">WHAT IS OPEN</span></summary>
+      <div class="det-body">
+        <div id="phaseLoops"></div>
+      </div>
+    </details>
 
     <div class="note">
       <div class="hd">THE HARD RULE</div>
@@ -888,17 +893,21 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     <div class="group-label">THIS WEEK</div>
     <div id="cadence"></div>
 
-    <div class="group-label">THE QUEUE</div>
-    <div id="loops"></div>
-    <div class="log-row">
-      <input type="text" id="lTitle" placeholder="Add a loop, in arrival order">
-      <button id="addLoop">Add</button>
-    </div>
-    <button class="watch" id="lManyBtn" type="button" style="margin:10px 0 0">＋ PASTE A LIST</button>
-    <div id="lMany" hidden style="margin-bottom:6px">
-      <textarea class="three" id="lManyBox" placeholder="One loop per line"></textarea>
-      <div class="log-row"><button id="addMany">Add all</button></div>
-    </div>
+    <details class="solo" id="queueBox" open style="margin-top:22px">
+      <summary><h2>The queue</h2><span class="meta" id="queueMeta">IN ARRIVAL ORDER</span></summary>
+      <div class="det-body">
+        <div id="loops"></div>
+        <div class="log-row">
+          <input type="text" id="lTitle" placeholder="Add a loop, in arrival order">
+          <button id="addLoop">Add</button>
+        </div>
+        <button class="watch" id="lManyBtn" type="button" style="margin:10px 0 0">＋ PASTE A LIST</button>
+        <div id="lMany" hidden style="margin-bottom:6px">
+          <textarea class="three" id="lManyBox" placeholder="One loop per line"></textarea>
+          <div class="log-row"><button id="addMany">Add all</button></div>
+        </div>
+      </div>
+    </details>
 
     <div class="group-label" style="margin-top:38px">THE THREE</div>
     <p class="ex-cue" style="margin:4px 0 6px">Future tense, on Sunday, fifteen minutes. Three priorities for the week ahead, what you said you would do and did not, and what you are deliberately dropping. If it reads like a long journal entry, it has drifted.</p>
@@ -2643,6 +2652,10 @@ function renderPhaseLoops(){
         return '<div class="loop'+(S.loopsDone[l.id]?' done':'')+'">'+esc(l.t)+'</div>'}).join('')+
       '<div class="strip-note" style="text-align:left;margin:10px 0 22px">'+done+' of '+S.loops.length+' closed</div>'
     :'<p class="ex-cue" style="margin:0 0 20px">Nothing listed yet. The phase is whatever is in this list.</p>';
+  const pm=document.getElementById('phaseLoopsMeta');
+  if(pm)pm.textContent=S.loops.length?done+' OF '+S.loops.length+' CLOSED':'NOTHING LISTED';
+  const qm=document.getElementById('queueMeta');
+  if(qm)qm.textContent=S.loops.length?(S.loops.length-done)+' STILL OPEN':'IN ARRIVAL ORDER';
 }
 document.getElementById('lManyBtn').onclick=function(){
   const w=document.getElementById('lMany');w.hidden=!w.hidden;
