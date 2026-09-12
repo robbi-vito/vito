@@ -20,7 +20,7 @@
   --bg:#14100E;--bg-raise:#1D1815;--bg-sink:#0C0A09;--edge:#2E2622;
   --text:#E8DFCF;--text-soft:#9A8F7E;--text-dim:#7B7062;
   --rust:#B4552B;--rust-fill:#95431F;--rust-lo:#6E3419;--ember:#D07C3E;
-  --glow:rgba(180,85,43,.11);--grain:.15;--grain-hero:.32;--leak:.58;--vig:.94;--on-rust:#F2E7D6;
+  --glow:rgba(180,85,43,.11);--grain:.15;--grain-hero:.19;--leak:.58;--vig:.94;--on-rust:#F2E7D6;
   --ease:cubic-bezier(.22,.61,.36,1);--spring:cubic-bezier(.2,1.5,.4,1);
   --leak-a:#F57A30;--leak-b:#B8401A;--leak-c:#7E3016;
 }
@@ -28,7 +28,7 @@
   --bg:#EDE5D3;--bg-raise:#F6F0E3;--bg-sink:#E2D7C0;--edge:#C9BCA1;
   --text:#241C18;--text-soft:#5A4E43;--text-dim:#7C6E5C;
   --rust:#96401D;--rust-fill:#96401D;--rust-lo:#C08A63;--ember:#B4552A;
-  --glow:rgba(150,64,29,.06);--grain:.09;--grain-hero:.20;--leak:.34;--vig:.46;--on-rust:#F6F0E3;
+  --glow:rgba(150,64,29,.06);--grain:.09;--grain-hero:.12;--leak:.34;--vig:.46;--on-rust:#F6F0E3;
   --ease:cubic-bezier(.22,.61,.36,1);--spring:cubic-bezier(.2,1.5,.4,1);
   --leak-a:#E06A2C;--leak-b:#933012;--leak-c:#6E2A12;
 }
@@ -82,7 +82,9 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 .hero::after{content:'';position:absolute;inset:-14px -20px;pointer-events:none;z-index:0;
   opacity:var(--grain-hero);
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='2' seed='11' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='128' height='128' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size:128px 128px}
+  background-size:128px 128px;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 18%,#000 54%,transparent 100%);
+  mask-image:linear-gradient(to bottom,transparent 0,#000 18%,#000 54%,transparent 100%)}
 .hero>*{position:relative;z-index:1}
 .hero .date{font-family:'Courier Prime',monospace;font-size:12px;letter-spacing:.22em;color:var(--text-dim);
   margin-bottom:6px;text-wrap:balance;line-height:1.5}
