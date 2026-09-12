@@ -52,10 +52,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   --leak2-x:110%;--leak2-y:20%;--leak3-x:-10%;--leak3-y:106%;
   transition:opacity .6s var(--ease);
   background:
-    radial-gradient(ellipse var(--leak-w) var(--leak-h) at var(--leak-x) var(--leak-y),var(--leak-a),transparent 60%),
-    radial-gradient(ellipse 28% 58% at var(--leak2-x) var(--leak2-y),var(--leak-b),transparent 68%),
-    radial-gradient(ellipse 74% 24% at var(--leak3-x) var(--leak3-y),var(--leak-c),transparent 64%);
-  translate:var(--leak-drift-x,0) var(--leak-drift-y,0)}
+    radial-gradient(ellipse var(--leak-w) var(--leak-h) at calc(var(--leak-x) + var(--leak-drift-x,0%)) calc(var(--leak-y) + var(--leak-drift-y,0%)),var(--leak-a),transparent 60%),
+    radial-gradient(ellipse 28% 58% at calc(var(--leak2-x) - var(--leak-drift-x,0%)) calc(var(--leak2-y) + var(--leak-drift-y,0%)),var(--leak-b),transparent 68%),
+    radial-gradient(ellipse 74% 24% at calc(var(--leak3-x) + var(--leak-drift-y,0%)) calc(var(--leak3-y) - var(--leak-drift-x,0%)),var(--leak-c),transparent 64%)}
 /* each view catches the light from somewhere else */
 body[data-view="train"] .leak{--leak-x:-6%;--leak-y:-10%;--leak-w:52%;--leak-h:46%;--leak2-x:-8%;--leak2-y:26%;--leak3-x:108%;--leak3-y:102%}
 body[data-view="fuel"] .leak{--leak-x:50%;--leak-y:-14%;--leak-w:78%;--leak-h:30%;--leak2-x:104%;--leak2-y:64%;--leak3-x:-6%;--leak3-y:104%}
