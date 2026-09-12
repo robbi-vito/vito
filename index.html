@@ -144,6 +144,7 @@ body:not([data-view="train"]) #soundBtn{display:none}
 .brief::-webkit-scrollbar{display:none}
 /* room after the last panel, so the Monday clone can come to rest where a real Monday would */
 .brief::after{content:'';flex:0 0 calc(9% - 13px)}
+.brief.moving{transition:none}
 .brief .day{flex:0 0 91%;scroll-snap-align:start;border-left:2px solid var(--rust-lo);padding-left:13px}
 .brief .day.past{border-left-color:var(--edge)}
 .brief .hd{font-family:var(--face-mono);font-size:10.5px;letter-spacing:.16em;
@@ -1641,9 +1642,12 @@ function fitTrack(settled){
   const from=Math.max(0,Math.min(ps.length-1,Math.floor(exact)));
   const to=Math.max(0,Math.min(ps.length-1,Math.ceil(exact)));
   const t=exact-from;
+  if(from===to)return;                           /* resting on a panel: the settle sizes it */
   const a=panelHeightAt(from),b=panelHeightAt(to);
   if(!a&&!b)return;
-  const h=Math.round(a+(b-a)*(from===to?0:t));
+  /* between panels the height is set every frame, so an eased transition would only chase it */
+  track.classList.add('moving');
+  const h=Math.round(a+(b-a)*t);
   if(h)track.style.height=h+'px';
 }
 function slotLeft(s){
@@ -1725,6 +1729,7 @@ renderBrief();loadWeather();
     const d=s-1;
     if(d!==viewDay){viewDay=d}
     renderWeek();   /* settle: full repaint of the strip */
+    track.classList.remove('moving');
     fitTrack(true);
   }
   addEventListener('resize',fitTrack);            /* text rewraps, so heights change */
