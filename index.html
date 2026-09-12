@@ -550,6 +550,14 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
     <div class="group-label">THE FOUR SESSIONS</div>
     <div class="det-group" id="sessions"></div>
 
+    <details class="solo" id="preRunBox" style="margin-top:22px">
+      <summary><h2>Before a run</h2><span class="meta">MOVING, NOT HELD</span></summary>
+      <div class="det-body">
+        <p class="ex-cue" style="margin:0 0 8px">Five minutes, all of it moving. A held stretch on cold legs costs you force and buys nothing.</p>
+        <div id="stretch-P"></div>
+      </div>
+    </details>
+
     <details class="solo" id="runStretchBox" style="margin-top:22px">
       <summary><h2>After a run</h2><span class="meta">TUE · SAT</span></summary>
       <div class="det-body">
@@ -1058,6 +1066,13 @@ const STRETCH={
   {id:'st8',t:'Standing hamstring stretch',s:'45s per side',q:'standing hamstring stretch proper form'},
   {id:'st9',t:'Calf stretch on a step',s:'45s per side',q:'calf stretch on a step'}]),
  D:STRETCH_ALL.concat(STRETCH_UPPER),
+ P:[
+  {id:'pr1',t:'Easy walk',s:'3 minutes, building to brisk',q:'walking warm up before running'},
+  {id:'pr2',t:'Leg swings, front to back',s:'×10 per side',q:'leg swings front to back running warm up'},
+  {id:'pr3',t:'Leg swings, side to side',s:'×10 per side',q:'lateral leg swings warm up'},
+  {id:'pr4',t:'Walking lunges',s:'×8 per side',q:'walking lunge warm up form'},
+  {id:'pr5',t:'Ankle bounces',s:'×20, knees soft',q:'ankle bounces pogo warm up running'},
+  {id:'pr6',t:'Build to pace',s:'2 minutes easy jog, then lift it',q:'progressive jog warm up before run'}],
  R:[
   {id:'st10',t:'Wall calf stretch',s:'45s per side, knee straight then bent',q:'wall calf stretch for runners'},
   {id:'st8',t:'Standing hamstring stretch',s:'45s per side',q:'standing hamstring stretch proper form'},
@@ -2900,7 +2915,9 @@ function warmupDone(){
 function paintTrainDefaults(){
   const w=document.getElementById('warmupBox'),r=document.getElementById('runStretchBox');
   if(w)w.open=!viaShortcut&&trainingWindow()&&!warmupDone();
-  if(r)r.open=!viaShortcut&&(slot.s==='cardio1'||slot.s==='cardio2');
+  const p=document.getElementById('preRunBox'),run=slot.s==='cardio1'||slot.s==='cardio2';
+  if(p)p.open=!viaShortcut&&run;
+  if(r)r.open=!viaShortcut&&run;
 }
 (function(){
   const h=hourNow();
