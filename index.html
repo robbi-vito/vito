@@ -292,8 +292,12 @@ table.data .soft{font-family:'Crimson Pro',serif;font-style:italic;font-size:14p
 .chk.off{opacity:.4}
 .chk.off .box{cursor:default}
 .place{padding:12px 0;border-top:1px dashed var(--edge)}
-.pl-group{font-family:'Courier Prime',monospace;font-size:11px;font-weight:700;letter-spacing:.18em;
-  color:var(--rust);margin:26px 0 8px;padding:13px 0 0;border-top:1px solid var(--rust-lo)}
+.pl-group{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:21px;letter-spacing:0;
+  color:var(--rust);margin:26px 0 8px;padding:14px 0 0;border-top:1px solid var(--rust-lo)}
+details.pl-fold>summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none}
+details.pl-fold>summary::-webkit-details-marker{display:none}
+details.pl-fold>summary .pl-type{flex:1}
+.pl-count{font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.12em;color:var(--text-dim)}
 .pl-type{font-family:'Courier Prime',monospace;font-size:10px;font-weight:700;letter-spacing:.2em;
   color:var(--ember);margin:18px 0 4px;padding:1px 0 1px 11px;border-left:2px solid var(--rust-lo)}
 .pl-k a,.pl-sub a{color:var(--ember);text-decoration:underline;text-underline-offset:3px}
@@ -1287,6 +1291,7 @@ S.loops.forEach(function(l){
 });
 S.shots=Array.isArray(S.shots)?S.shots.filter(function(r){return r&&typeof r==='object'&&r.d}):[];   /* {d, w, c, i, u} per shoot */
 const save=()=>DB.set('vito.v3',S);
+S.outOpen=S.outOpen&&typeof S.outOpen==='object'?S.outOpen:{};   /* list|type -> category left open */
 S.shopNeed=S.shopNeed&&typeof S.shopNeed==='object'?S.shopNeed:{};   /* store|index -> still short of it */
 S.shopMerged=!!S.shopMerged;                        /* the needed-only view, a lens rather than a setting */
 S.shopDay=typeof S.shopDay==='string'?S.shopDay:'';
@@ -2917,18 +2922,31 @@ function renderOut(){
       '<button class="watch'+(today?' set':'')+'" type="button" data-went="'+i+'">'+(today?'WENT TODAY':'WENT')+'</button>'+
       '<button class="watch'+(p.st==='fav'?' set':'')+'" type="button" data-fav="'+i+'">'+(p.st==='fav'?'FAVOURITE':'WANT TO GO')+'</button></div></div>'};
   const fav=S.places.filter(function(p){return p.st==='fav'}),want=S.places.filter(function(p){return p.st!=='fav'});
-  const byType=function(list){
+  const fold=function(key,label,items){
+    if(!items.length)return '';
+    return '<details class="pl-fold" data-ty="'+esc(key)+'"'+(S.outOpen[key]?' open':'')+'>'+
+      '<summary><span class="pl-type">'+label+'</span>'+
+      '<span class="pl-count">'+items.length+'</span></summary>'+
+      '<div class="det-body">'+items.map(row).join('')+'</div></details>';
+  };
+  const byType=function(list,which){
     const known=PLACE_TYPES.map(function(ty){
       const inTy=list.filter(function(p){return (p.k||'')===ty[0]});
-      return inTy.length?'<div class="pl-type">'+ty[1]+'</div>'+inTy.map(row).join(''):'';
+      return fold(which+'|'+ty[0],ty[1],inTy);
     }).join('');
     const rest=list.filter(function(p){return !PLACE_TYPES.some(function(ty){return (p.k||'')===ty[0]})});
-    return known+(rest.length?'<div class="pl-type">ELSEWHERE</div>'+rest.map(row).join(''):'');
+    return known+fold(which+'|other','ELSEWHERE',rest);
   };
   const host=document.getElementById('places');
-  host.innerHTML=(want.length?'<div class="pl-group">WANT TO GO</div>'+byType(want):'')+
-    (fav.length?'<div class="pl-group">FAVOURITES</div>'+byType(fav):'')+
+  host.innerHTML=(want.length?'<div class="pl-group">Want to go</div>'+byType(want,'want'):'')+
+    (fav.length?'<div class="pl-group">Favourites</div>'+byType(fav,'fav'):'')+
     (S.places.length?'':'<p class="ex-cue" style="margin-left:0">Nothing listed. Add somewhere you would go alone and still talk to someone.</p>');
+  host.querySelectorAll('details.pl-fold').forEach(function(d){
+    d.addEventListener('toggle',function(){
+      if(d.open)S.outOpen[d.dataset.ty]=1;else delete S.outOpen[d.dataset.ty];
+      save();
+    });
+  });
   const on=function(root,sel,fn){root.querySelectorAll(sel).forEach(function(b){b.onclick=function(){fn(b)}})};
   on(sh,'[data-sd]',function(b){S.standing.splice(+b.dataset.sd,1);save();renderOut();renderBrief()});
   on(sh,'[data-st]',function(b){
