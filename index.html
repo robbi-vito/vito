@@ -318,6 +318,12 @@ details.pl-fold>summary .pl-type{flex:1}
 .rc-head .watch{margin:0;flex-shrink:0}
 .cell-edit{background:none;border:none;border-bottom:1px dashed var(--rust-lo);color:var(--text);
   font:inherit;padding:0 1px;cursor:pointer}
+/* a night reads at a glance: on the mark, close to it, or short */
+table.data .g-good{color:var(--text)}
+table.data .g-fair{color:var(--ember)}
+table.data .g-poor{color:var(--rust);font-weight:700}
+table.data td.g-poor::after{content:' \u00B7 short';font-family:var(--face-mono);font-size:9.5px;
+  letter-spacing:.1em;font-weight:400;color:var(--rust-lo)}
 .pl-type{font-family:var(--face-mono);font-size:10px;font-weight:700;letter-spacing:.2em;
   color:var(--ember);margin:18px 0 4px;padding:1px 0 1px 11px;border-left:2px solid var(--rust-lo)}
 .pl-k a,.pl-sub a{color:var(--ember);text-decoration:underline;text-underline-offset:3px}
@@ -2605,6 +2611,26 @@ function nightKey(){return todayKey()}
 function clockOf(ms){const d=new Date(ms);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
 /* averaged as minutes after noon, so 23:50 and 00:10 give midnight rather than midday */
 function hhmmOf(mins){return String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0')}
+/* seven and a half hours is the mark; under seven is the one worth saying out loud */
+function sleptGrade(ms){
+  if(typeof ms!=='number'||ms<=0)return '';
+  const h=ms/36e5;
+  return h>=7.5?'good':h>=7?'fair':'poor';
+}
+/* a night key ending Friday or Saturday gets an hour's grace, but the small hours
+   are still the small hours */
+function lightsOutGrade(ms,nightKey){
+  if(typeof ms!=='number')return '';
+  const d=new Date(ms);
+  let m=d.getHours()*60+d.getMinutes();
+  if(m<300)m+=1440;                              /* after midnight belongs to the night before */
+  const wd=new Date(nightKey+'T12:00:00').getDay();
+  const late=(wd===5||wd===6)?60:0;              /* Friday and Saturday nights run later */
+  if(m<=22*60+30+late)return 'good';
+  if(m<=23*60+30+late)return 'fair';
+  if(m>=25*60)return 'poor';                     /* past one in the morning, any night */
+  return 'poor';
+}
 function stopAverage(){
   const ks=Object.keys(S.stopped).filter(function(k){return typeof S.stopped[k]==='number'}).sort();
   if(ks.length<2)return '';
@@ -2712,10 +2738,12 @@ function renderMorning(){
     const d=new Date(todayKey()+'T12:00:00');d.setDate(d.getDate()-i);
     const k=dkey(d),p=sleepPair(k);
     if(!p.off&&!p.up)continue;
+    const slept=(p.off&&p.up)?p.up-p.off:0;
+    const sg=sleptGrade(slept),og=lightsOutGrade(p.off,k);
     rows.push('<tr><td>'+WEEK[(d.getDay()+6)%7].l+'</td>'+
-      '<td><button class="cell-edit" data-sk="'+k+'" data-half="off">'+(p.off?clockOf(p.off):'—')+'</button></td>'+
+      '<td><button class="cell-edit'+(og?' g-'+og:'')+'" data-sk="'+k+'" data-half="off">'+(p.off?clockOf(p.off):'—')+'</button></td>'+
       '<td><button class="cell-edit" data-sk="'+k+'" data-half="up">'+(p.up?clockOf(p.up):'—')+'</button></td>'+
-      '<td class="hl">'+(p.off&&p.up?hoursBetween(p.off,p.up):'—')+'</td></tr>');
+      '<td class="hl'+(sg?' g-'+sg:'')+'">'+(p.off&&p.up?hoursBetween(p.off,p.up):'—')+'</td></tr>');
   }
   const log=document.getElementById('sleepLog');
   log.innerHTML=rows.length
