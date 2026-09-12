@@ -531,7 +531,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
       </details>
 
       <details id="tonightBox">
-        <summary><h2>Tonight</h2><span class="meta">21:00 WIND-DOWN</span></summary>
+        <summary><h2>Tonight</h2><span class="meta" id="windMeta">21:00 WIND-DOWN</span></summary>
         <div class="det-body">
           <div id="evening"></div>
           <div class="log-row">
@@ -777,7 +777,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
           <table class="data">
             <tr><td class="hl">01</td><td class="soft">Hit protein every day. Everything else can move.</td></tr>
             <tr><td class="hl">02</td><td class="soft">Eat roughly 2100. Don't go lower — a steeper cut costs muscle, not time.</td></tr>
-            <tr><td class="hl">03</td><td class="soft">Sleep by 22:00. A deficit on five hours fails and you'll blame yourself instead of the sequencing.</td></tr>
+            <tr><td class="hl">03</td><td class="soft">Sleep by <span id="sleepBy">22:00</span>. A deficit on five hours fails and you'll blame yourself instead of the sequencing.</td></tr>
             <tr><td class="hl">04</td><td class="soft">Weigh in three mornings a week. Judge the weekly average, never one day.</td></tr>
           </table>
           <p style="margin-top:16px">About a pound a week. Twelve to fourteen weeks from 15% to 12%. If the four-week average hasn't moved, take 150 off the daily number — not 500.</p>
@@ -1305,6 +1305,9 @@ S.meet=S.meet||'';                             /* maps link for the run club mee
 S.splash=typeof S.splash==='string'?S.splash:'';   /* the morning the greeting was last shown */
 S.fontTheme=typeof S.fontTheme==='string'?S.fontTheme:'protocol';   /* which typography theme is set */
 S.caseStyle=typeof S.caseStyle==='string'?S.caseStyle:'sentence';   /* how the interface text is cased */
+S.sleepAt=S.sleepAt&&typeof S.sleepAt==='object'?S.sleepAt:{};   /* the marks a night is graded against, HH:MM */
+if(!/^\d{2}:\d{2}$/.test(S.sleepAt.bed))S.sleepAt.bed='22:00';
+if(!/^\d{2}:\d{2}$/.test(S.sleepAt.up))S.sleepAt.up='06:00';
 S.units=S.units&&typeof S.units==='object'?S.units:{};   /* exercise id -> 'kg'; absent means lb */
 S.unitMode=S.unitMode==='lb'||S.unitMode==='kg'?S.unitMode:'each';   /* 'lb' or 'kg' for all, 'each' per exercise */
 const LB_PER_KG=2.20462;
@@ -2603,7 +2606,7 @@ renderWardrobe();
 function renderEvening(){
   const t=todayKey();S.evening[t]=S.evening[t]||{};
   setTimeout(paintGo,0);
-  checklist(document.getElementById('evening'),S.tonight,S.evening[t],renderEvening,
+  checklist(document.getElementById('evening'),tonightShown(),S.evening[t],renderEvening,
     function(i){S.tonight.splice(i,1);save();renderEvening()});
 }
 renderEvening();
@@ -2618,6 +2621,17 @@ function clockOf(ms){const d=new Date(ms);return String(d.getHours()).padStart(2
 function hhmmOf(mins){return String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0')}
 /* a span of sleep as 6h30m; every duration on the page goes through this */
 function durOf(mins){return Math.floor(mins/60)+'h'+String(mins%60).padStart(2,'0')+'m'}
+function minsOf(hhmm){const p=String(hhmm).split(':');return (+p[0])*60+(+p[1])}
+function windMins(){return (minsOf(S.sleepAt.bed)+1380)%1440}   /* an hour before lights out */
+function paintSleepMarks(){
+  const w=document.getElementById('windMeta');if(w)w.textContent=hhmmOf(windMins())+' WIND-DOWN';
+  const b=document.getElementById('sleepBy');if(b)b.textContent=S.sleepAt.bed;
+}
+/* the alarm item carries the wake time from the settings rather than its own */
+function tonightShown(){
+  return (S.tonight||[]).map(function(it){return it.id==='e2'?Object.assign({},it,{s:S.sleepAt.up}):it});
+}
+paintSleepMarks();
 /* seven and a half hours is the mark; under seven is the one worth saying out loud */
 function sleptGrade(ms){
   if(typeof ms!=='number'||ms<=0)return '';
@@ -3123,6 +3137,10 @@ function openSettings(){
     '<div class="sheet-foot">'+opt('lb','ALL LB')+opt('kg','ALL KG')+opt('each','PER EXERCISE')+'</div>'+
     '<p class="set-note">'+(m==='each'?'Each exercise keeps its own unit, switched on its card.':'Every exercise shows and takes '+m+'. The cards hide their own switch.')+
     ' Weights are kept in pounds; this changes what you see and type, never what is saved.</p>'+
+    '<div class="set-hd">SLEEP</div>'+
+    '<div class="sheet-foot"><button type="button" data-sm="bed">LIGHTS OUT '+S.sleepAt.bed+'</button>'+
+    '<button type="button" data-sm="up">UP '+S.sleepAt.up+'</button></div>'+
+    '<p class="set-note">Wind-down is the hour before lights out, and every night is graded against these two. Friday or Saturday may run later. Both in a row may not.</p>'+
     '<div class="set-hd">TYPOGRAPHY</div>'+
     FONT_THEMES.map(function(t){
       const on=S.fontTheme===t.id;
@@ -3165,6 +3183,17 @@ function openSettings(){
     b.onclick=function(){S.unitMode=b.dataset.u;save();renderSessions();renderInsight();renderBrief();openSettings()};
   });
   document.getElementById('sExport').onclick=exportBackup;
+  document.querySelectorAll('#vBody [data-sm]').forEach(function(b){
+    b.onclick=function(){
+      const w=b.dataset.sm;
+      const v=prompt((w==='bed'?'Lights out':'Up')+'\nTime as '+S.sleepAt[w]+'.',S.sleepAt[w]);
+      if(v===null)return;
+      const m=String(v).trim().match(/^(\d{1,2})[:.]?(\d{2})$/);
+      if(!m||+m[1]>23||+m[2]>59){alert('That is not a time. Use 22:00.');return}
+      S.sleepAt[w]=String(+m[1]).padStart(2,'0')+':'+m[2];
+      save();paintSleepMarks();renderEvening();renderMorning();paintStop();openSettings();
+    };
+  });
   document.getElementById('sRestore').onclick=restoreBackup;
   document.querySelectorAll('#vBody [data-pl]').forEach(function(b){b.onclick=function(){setPlaylist(b.dataset.pl,openSettings)}});
   document.querySelectorAll('#vBody [data-vg]').forEach(function(b){b.onclick=function(){
@@ -3516,7 +3545,7 @@ function openMorningSheet(){
   S.morning[k]=S.morning[k]||{};S.evening[t]=S.evening[t]||{};
   const evening=when==='evening';
   const store=evening?S.evening[t]:S.morning[k];
-  const list=evening?(S.tonight||[]):(S.mornList||[]);
+  const list=evening?tonightShown():(S.mornList||[]);
   const openItems=list.filter(function(it){return !store[it.id]});
   document.getElementById('vTitle').textContent=greeting();
   document.getElementById('vSub').textContent=fmt(todayKey()).toUpperCase()+' · '+(slot.k||'REST');
@@ -3524,7 +3553,7 @@ function openMorningSheet(){
   const loops=(S.loops||[]).filter(function(l){return l&&l.id&&!S.loopsDone[l.id]});
   const note=evening?sleepNote():'';
   let lead;
-  if(evening)lead='Wind down at 21:00, asleep by 22:00.';
+  if(evening)lead='Wind down at '+hhmmOf(windMins())+', asleep by '+S.sleepAt.bed+'.';
   else if(when==='morning')lead='Log the time you got up, then the first hour.';
   else lead=openItems.length?'Still open today.':'The list is clear.';
   let html='<p class="ex-cue" style="margin:0 0 12px">'+lead+'</p>';
