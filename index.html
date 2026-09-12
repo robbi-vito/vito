@@ -140,6 +140,8 @@ body:not([data-view="train"]) #soundBtn{display:none}
   mask-image:linear-gradient(to right,#000 0,#000 86%,transparent 99%);
   scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior-x:contain}
 .brief::-webkit-scrollbar{display:none}
+/* room after the last panel, so the Monday clone can come to rest where a real Monday would */
+.brief::after{content:'';flex:0 0 calc(9% - 13px)}
 .brief .day{flex:0 0 91%;scroll-snap-align:start;border-left:2px solid var(--rust-lo);padding-left:13px}
 .brief .day.past{border-left-color:var(--edge)}
 .brief .hd{font-family:var(--face-mono);font-size:10.5px;letter-spacing:.16em;
@@ -1698,7 +1700,7 @@ function loadWeather(){
 renderBrief();loadWeather();
 (function(){
   const track=document.getElementById('brief');
-  let t=null;
+  let t=null,tries=0;
   let queued=false;
   track.addEventListener('scroll',function(){
     /* the strip tracks the finger, so the underline moves during the swipe */
@@ -1708,17 +1710,21 @@ renderBrief();loadWeather();
       if(d!==viewDay){viewDay=d;paintViewing(d)}
     })}
     clearTimeout(t);
-    t=setTimeout(function(){
-      let s=viewedSlot();
-      /* stepped onto a clone: snap silently to the real panel it copies */
-      if(s===0){track.scrollLeft=slotLeft(7);s=7}
-      else if(s===8){track.scrollLeft=slotLeft(1);s=1}
-      const d=s-1;
-      if(d!==viewDay){viewDay=d}
-      renderWeek();                              /* settle: full repaint of the strip */
-      fitTrack(true);
-    },90);
+    t=setTimeout(settle,90);
   },{passive:true});
+  function settle(){
+    let s=viewedSlot();
+    /* stepped onto a clone: once it has come fully to rest, snap silently to the real
+       panel it copies. A snap still on its way is given time to land first. */
+    if((s===0||s===8)&&Math.abs(track.scrollLeft-slotLeft(s))>1&&tries++<20){t=setTimeout(settle,90);return}
+    tries=0;
+    if(s===0){track.scrollLeft=slotLeft(7);s=7}
+    else if(s===8){track.scrollLeft=slotLeft(1);s=1}
+    const d=s-1;
+    if(d!==viewDay){viewDay=d}
+    renderWeek();   /* settle: full repaint of the strip */
+    fitTrack(true);
+  }
   addEventListener('resize',fitTrack);            /* text rewraps, so heights change */
 })();
 if('serviceWorker' in navigator)addEventListener('load',function(){
