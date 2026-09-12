@@ -689,6 +689,14 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
             <button class="watch" id="clearShop" type="button">CLEAR</button>
           </div>
           <div id="shopping"></div>
+          <div class="log-row" style="margin-top:16px">
+            <input type="text" id="shopNew" placeholder="Something else you buy">
+          </div>
+          <div class="log-row">
+            <button class="watch" id="shopStore" type="button" style="flex:1;margin:0"></button>
+            <button id="addShopItem">Add</button>
+          </div>
+          <button class="watch" id="shopRestore" type="button" style="margin:10px 0 0" hidden></button>
         </div>
       </details>
 
@@ -1307,6 +1315,8 @@ S.loops.forEach(function(l){
 S.shots=Array.isArray(S.shots)?S.shots.filter(function(r){return r&&typeof r==='object'&&r.d}):[];   /* {d, w, c, i, u} per shoot */
 const save=()=>DB.set('vito.v3',S);
 S.outOpen=S.outOpen&&typeof S.outOpen==='object'?S.outOpen:{};   /* list|type -> category left open */
+S.shopAdd=Array.isArray(S.shopAdd)?S.shopAdd.filter(function(x){return x&&x.id&&x.t}):[];   /* {id, t, store} */
+S.shopHide=S.shopHide&&typeof S.shopHide==='object'?S.shopHide:{};   /* store|index -> built-in put away */
 S.shopNeed=S.shopNeed&&typeof S.shopNeed==='object'?S.shopNeed:{};   /* store|index -> still short of it */
 S.shopMerged=!!S.shopMerged;                        /* the needed-only view, a lens rather than a setting */
 S.shopDay=typeof S.shopDay==='string'?S.shopDay:'';
@@ -2622,7 +2632,13 @@ renderPrevEntry();
 function shopItems(){
   const out=[];
   Object.keys(SHOP).forEach(function(store){
-    SHOP[store].forEach(function(t,i){out.push({id:store+'|'+i,t:t,store:store})});
+    SHOP[store].forEach(function(t,i){
+      const id=store+'|'+i;
+      if(!S.shopHide[id])out.push({id:id,t:t,store:store});
+    });
+  });
+  S.shopAdd.forEach(function(x){
+    if(SHOP[x.store])out.push({id:x.id,t:x.t,store:x.store,own:true});
   });
   return out;
 }
@@ -2644,12 +2660,31 @@ function shopRow(it,withStore){
     save();renderShop();
   };
   d.appendChild(n);
+  const x=document.createElement('button');
+  x.type='button';x.className='del';x.textContent='×';
+  x.setAttribute('aria-label',it.own?'Remove '+it.t:'Put '+it.t+' away');
+  x.onclick=function(e){
+    e.stopPropagation();
+    if(it.own){
+      const k=S.shopAdd.findIndex(function(y){return y.id===it.id});
+      if(k>-1)S.shopAdd.splice(k,1);
+    }else S.shopHide[it.id]=1;
+    delete S.shop[it.id];delete S.shopNeed[it.id];
+    save();renderShop();
+  };
+  d.appendChild(x);
   return d;
 }
 function renderShop(){
   const host=document.getElementById('shopping');host.innerHTML='';
   const mb=document.getElementById('shopMerge');
   if(mb){mb.textContent=S.shopMerged?'BY STORE':'WHAT I AM SHORT OF';mb.classList.toggle('set',S.shopMerged)}
+  const rb=document.getElementById('shopRestore');
+  if(rb){
+    const n=Object.keys(S.shopHide).length;
+    rb.hidden=!n;
+    rb.textContent='BRING BACK '+n+' PUT AWAY';
+  }
   if(S.shopMerged){
     const lab=document.createElement('div');lab.className='group-label';lab.style.marginTop='6px';
     lab.textContent='SHORT OF \u2014 EVERY STORE';host.appendChild(lab);
@@ -2675,6 +2710,26 @@ function renderShop(){
 }
 document.getElementById('shopMerge').onclick=function(){
   S.shopMerged=!S.shopMerged;save();renderShop();
+};
+let newStore=Object.keys(SHOP)[0];
+function paintStoreBtn(){
+  const b=document.getElementById('shopStore');
+  if(b)b.textContent=newStore.split('\u2014')[0].trim();
+}
+document.getElementById('shopStore').onclick=function(){
+  const ks=Object.keys(SHOP);
+  newStore=ks[(ks.indexOf(newStore)+1)%ks.length];
+  paintStoreBtn();
+};
+paintStoreBtn();
+document.getElementById('addShopItem').onclick=function(){
+  const el=document.getElementById('shopNew'),v=el.value.trim();
+  if(!v)return;
+  S.shopAdd.push({id:newStore+'|own'+Date.now(),t:v,store:newStore});
+  save();el.value='';renderShop();
+};
+document.getElementById('shopRestore').onclick=function(){
+  S.shopHide={};save();renderShop();
 };
 renderShop();
 document.getElementById('clearShop').onclick=function(){
