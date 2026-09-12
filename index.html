@@ -3552,17 +3552,22 @@ function flowDetails(e){
     d.open=true;
     /* measured before the class, so the height matches what is on screen */
     const h=Math.round(body.getBoundingClientRect().height);
+    const pad=getComputedStyle(body),pt=pad.paddingTop,pb=pad.paddingBottom;
     body.classList.add('flowing');
-    const a=body.animate([{height:'0px',opacity:0},{height:h+'px',opacity:1}],
+    /* the padding travels with the height; a border-box cannot be shorter than its padding */
+    const a=body.animate([{height:'0px',paddingTop:'0px',paddingBottom:'0px',opacity:0},
+      {height:h+'px',paddingTop:pt,paddingBottom:pb,opacity:1}],
       {duration:300,easing:ease});
     a.onfinish=done;a.oncancel=done;
   }else{
     /* measured before the class, so the height matches what is on screen */
     const h=Math.round(body.getBoundingClientRect().height);
+    const pad=getComputedStyle(body),pt=pad.paddingTop,pb=pad.paddingBottom;
     body.classList.add('flowing');
     /* the fill holds the collapsed height until the panel is actually shut. without
        it the height returns to auto for a frame and the panel flicks back open */
-    const a=body.animate([{height:h+'px',opacity:1},{height:'0px',opacity:0}],
+    const a=body.animate([{height:h+'px',paddingTop:pt,paddingBottom:pb,opacity:1},
+      {height:'0px',paddingTop:'0px',paddingBottom:'0px',opacity:0}],
       {duration:260,easing:ease,fill:'forwards'});
     a.onfinish=function(){d.open=false;a.cancel();done()};
     a.oncancel=done;
