@@ -181,7 +181,7 @@ details.nest>summary h3{font-family:'Cormorant Garamond',serif;font-weight:700;f
 details.nest[open]>summary h3{color:var(--rust)}
 details.nest>.det-body{padding:2px 0 18px}
 .group-label{font-family:'Courier Prime',monospace;font-size:10.5px;font-weight:700;letter-spacing:.2em;
-  color:var(--ember);display:inline-block;margin:28px 0 10px;padding:5px 10px;
+  color:var(--ember);display:table;clear:both;margin:28px 0 10px;padding:5px 10px;
   border:1px solid var(--rust-lo);line-height:1.3}
 table.data td.w-palette{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--text);padding-top:6px;padding-bottom:6px}
 table.data .rm{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:17px;padding:0 4px;line-height:1}
@@ -895,12 +895,12 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
       <button id="addLoop">Add</button>
     </div>
     <button class="watch" id="lManyBtn" type="button" style="margin:10px 0 0">＋ PASTE A LIST</button>
-    <div id="lMany" hidden>
+    <div id="lMany" hidden style="margin-bottom:6px">
       <textarea class="three" id="lManyBox" placeholder="One loop per line"></textarea>
       <div class="log-row"><button id="addMany">Add all</button></div>
     </div>
 
-    <div class="group-label">THE THREE</div>
+    <div class="group-label" style="margin-top:38px">THE THREE</div>
     <p class="ex-cue" style="margin:4px 0 6px">Future tense, on Sunday, fifteen minutes. Three priorities for the week ahead, what you said you would do and did not, and what you are deliberately dropping. If it reads like a long journal entry, it has drifted.</p>
     <p class="prev-entry" id="lastReview" hidden></p>
     <div id="reviewSetBox" hidden>
