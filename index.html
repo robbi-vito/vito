@@ -3018,7 +3018,11 @@ function flowDetails(e){
   const open=d.open;
   d.dataset.anim='1';
   body.classList.add('flowing');
-  const done=function(){delete d.dataset.anim;body.classList.remove('flowing');body.style.height=''};
+  let settled=false;
+  const done=function(){
+    if(settled)return;
+    settled=true;delete d.dataset.anim;body.classList.remove('flowing');body.style.height='';
+  };
   if(!open){
     d.open=true;
     const h=body.scrollHeight;
@@ -3027,9 +3031,12 @@ function flowDetails(e){
     a.onfinish=done;a.oncancel=done;
   }else{
     const h=body.scrollHeight;
+    /* the fill holds the collapsed height until the panel is actually shut. without
+       it the height returns to auto for a frame and the panel flicks back open */
     const a=body.animate([{height:h+'px',opacity:1},{height:'0px',opacity:0}],
-      {duration:240,easing:'cubic-bezier(.22,.61,.36,1)'});
-    a.onfinish=function(){d.open=false;done()};a.oncancel=done;
+      {duration:240,easing:'cubic-bezier(.22,.61,.36,1)',fill:'forwards'});
+    a.onfinish=function(){d.open=false;a.cancel();done()};
+    a.oncancel=done;
   }
 }
 document.addEventListener('click',flowDetails);
