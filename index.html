@@ -48,10 +48,20 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     radial-gradient(circle 35vw at 32% 88%,rgba(140,88,48,.07),transparent 70%),
     radial-gradient(circle 48vw at 68% 12%,rgba(70,44,26,.11),transparent 68%)}
 .leak{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:var(--leak);mix-blend-mode:screen;
+  --leak-x:104%;--leak-y:-8%;--leak-w:58%;--leak-h:40%;
+  --leak2-x:110%;--leak2-y:20%;--leak3-x:-10%;--leak3-y:106%;
+  transition:opacity .6s var(--ease);
   background:
-    radial-gradient(ellipse 58% 40% at 104% -8%,var(--leak-a),transparent 60%),
-    radial-gradient(ellipse 28% 58% at 110% 20%,var(--leak-b),transparent 68%),
-    radial-gradient(ellipse 74% 24% at -10% 106%,var(--leak-c),transparent 64%)}
+    radial-gradient(ellipse var(--leak-w) var(--leak-h) at var(--leak-x) var(--leak-y),var(--leak-a),transparent 60%),
+    radial-gradient(ellipse 28% 58% at var(--leak2-x) var(--leak2-y),var(--leak-b),transparent 68%),
+    radial-gradient(ellipse 74% 24% at var(--leak3-x) var(--leak3-y),var(--leak-c),transparent 64%);
+  translate:var(--leak-drift-x,0) var(--leak-drift-y,0)}
+/* each view catches the light from somewhere else */
+body[data-view="train"] .leak{--leak-x:-6%;--leak-y:-10%;--leak-w:52%;--leak-h:46%;--leak2-x:-8%;--leak2-y:26%;--leak3-x:108%;--leak3-y:102%}
+body[data-view="fuel"] .leak{--leak-x:50%;--leak-y:-14%;--leak-w:78%;--leak-h:30%;--leak2-x:104%;--leak2-y:64%;--leak3-x:-6%;--leak3-y:104%}
+body[data-view="frame"] .leak{--leak-x:110%;--leak-y:44%;--leak-w:44%;--leak-h:62%;--leak2-x:-6%;--leak2-y:-6%;--leak3-x:40%;--leak3-y:110%}
+body[data-view="build"] .leak{--leak-x:-10%;--leak-y:70%;--leak-w:64%;--leak-h:40%;--leak2-x:96%;--leak2-y:-10%;--leak3-x:104%;--leak3-y:96%}
+body[data-view="out"] .leak{--leak-x:96%;--leak-y:104%;--leak-w:70%;--leak-h:36%;--leak2-x:-4%;--leak2-y:52%;--leak3-x:20%;--leak3-y:-8%}
 .vig{position:fixed;inset:0;pointer-events:none;z-index:1;
   background:radial-gradient(ellipse 76% 60% at 50% 46%,transparent 40%,rgba(0,0,0,var(--vig)) 100%)}
 :root[data-theme="light"] .vig{
@@ -2702,6 +2712,7 @@ function paintSound(){
 document.getElementById('soundBtn').onclick=function(){S.sound=!S.sound;save();paintSound()};
 paintSound();
 function switchView(v){
+  document.body.dataset.view=v;
   document.querySelectorAll('.view').forEach(function(s){s.classList.toggle('on',s.id==='v-'+v)});
   document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('on',b.dataset.v===v)});
   window.scrollTo(0,0);
@@ -2896,6 +2907,17 @@ function paintTrainDefaults(){
   const m=document.getElementById('morningBox'),n=document.getElementById('tonightBox');
   if(m)m.open=h>=5.5&&h<10.5;
   if(n)n.open=h>=18.5||h<5;
+})();
+/* a day's own drift on the leak: the same date always lands the same way */
+(function(){
+  document.body.dataset.view='today';
+  const el=document.querySelector('.leak');
+  if(!el)return;
+  const k=todayKey();
+  let h=0;for(let i=0;i<k.length;i++)h=(h*31+k.charCodeAt(i))>>>0;
+  const pick=function(n,spread){return ((h>>>(n*5))%spread)-spread/2};
+  el.style.setProperty('--leak-drift-x',pick(0,16)+'%');
+  el.style.setProperty('--leak-drift-y',pick(1,14)+'%');
 })();
 /* the page is built for one date; coming back to it on a later date rebuilds it */
 const LOADED_ON=todayKey();
