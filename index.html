@@ -21,6 +21,7 @@
   --text:#DFD3BA;--text-soft:#9A8F7E;--text-dim:#7B7062;
   --rust:#B4552B;--rust-fill:#95431F;--rust-lo:#6E3419;--ember:#D07C3E;
   --glow:rgba(180,85,43,.11);--grain:.15;--grain-hero:.19;--leak:.58;--vig:.94;--on-rust:#EFE2CC;
+  --stain:screen;--spk-boost:1;
   --ease:cubic-bezier(.22,.61,.36,1);--spring:cubic-bezier(.2,1.5,.4,1);--round:5px;
   --leak-a:#F57A30;--leak-b:#B8401A;--leak-c:#7E3016;
 }
@@ -28,9 +29,10 @@
   --bg:#EDE5D3;--bg-raise:#F6F0E3;--bg-sink:#E2D7C0;--edge:#C9BCA1;
   --text:#35302B;--text-soft:#5A4E43;--text-dim:#7C6E5C;
   --rust:#96401D;--rust-fill:#96401D;--rust-lo:#C08A63;--ember:#B4552A;
-  --glow:rgba(150,64,29,.06);--grain:.09;--grain-hero:.12;--leak:.34;--vig:.46;--on-rust:#F6F0E3;
+  --glow:rgba(150,64,29,.06);--grain:.09;--grain-hero:.12;--leak:.30;--vig:.46;--on-rust:#F6F0E3;
+  --stain:multiply;--spk-boost:1.6;
   --ease:cubic-bezier(.22,.61,.36,1);--spring:cubic-bezier(.2,1.5,.4,1);--round:5px;
-  --leak-a:#E06A2C;--leak-b:#933012;--leak-c:#6E2A12;
+  --leak-a:#C9A268;--leak-b:#9C7A4E;--leak-c:#6E5B3E;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{background:var(--bg)}
@@ -47,7 +49,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     radial-gradient(circle 55vw at 88% 58%,rgba(90,52,28,.10),transparent 72%),
     radial-gradient(circle 35vw at 32% 88%,rgba(140,88,48,.07),transparent 70%),
     radial-gradient(circle 48vw at 68% 12%,rgba(70,44,26,.11),transparent 68%)}
-.leak{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:var(--leak);mix-blend-mode:screen;
+.leak{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:var(--leak);mix-blend-mode:var(--stain,screen);
   --leak-x:104%;--leak-y:-8%;--leak-w:58%;--leak-h:40%;
   --leak2-x:110%;--leak2-y:20%;--leak3-x:-10%;--leak3-y:106%;
   --leak4-x:50%;--leak4-y:50%;--leak4-w:0%;--leak4-h:0%;
@@ -2997,6 +2999,7 @@ document.getElementById('themeBtn').onclick=function(){
   S.theme=S.theme==='dark'?'light':'dark';
   document.documentElement.dataset.theme=S.theme;
   document.querySelector('meta[name=theme-color]').content=S.theme==='dark'?'#14100E':'#EDE5D3';
+  leakFrame='';paintLeak();
   save();
 };
 /* ── out: standing plans and places ── */
@@ -3345,8 +3348,9 @@ function paintLeak(){
   }else{set('--leak4-w','0%');set('--leak4-h','0%')}
   /* wear, not decoration: small enough to read straight through.
      vmin because a percentage resolves per axis and stretches the spot */
+  const boost=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spk-boost'))||1;
   if(rnd()<.45){
-    set('--spk-w',(0.35+rnd()*0.7).toFixed(2)+'vmin');
+    set('--spk-w',((0.35+rnd()*0.7)*boost).toFixed(2)+'vmin');
     for(let n=1;n<=3;n++){set('--spk'+n+'-x',rint(6,94)+'%');set('--spk'+n+'-y',rint(6,94)+'%')}
   }else{set('--spk-w','0vmin')}
 }
