@@ -29,6 +29,7 @@
   --stain:screen;--spk-boost:1;
   --ease:cubic-bezier(.22,.61,.36,1);--spring:cubic-bezier(.2,1.5,.4,1);--round:5px;
   --leak-a:#F57A30;--leak-b:#B8401A;--leak-c:#7E3016;
+  --rag-good:#8C9B62;--rag-fair:#C9A55A;--rag-poor:#C25E6E;
 }
 :root[data-theme="light"]{
   --bg:#EDE5D3;--bg-raise:#F6F0E3;--bg-sink:#E2D7C0;--edge:#C9BCA1;
@@ -38,6 +39,7 @@
   --stain:multiply;--spk-boost:1.6;
   --ease:cubic-bezier(.22,.61,.36,1);--spring:cubic-bezier(.2,1.5,.4,1);--round:5px;
   --leak-a:#C9A268;--leak-b:#9C7A4E;--leak-c:#6E5B3E;
+  --rag-good:#4B5A2A;--rag-fair:#80620F;--rag-poor:#7E2838;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{background:var(--bg)}
@@ -323,12 +325,13 @@ details.pl-fold>summary .pl-type{flex:1}
 .rc-head .watch{margin:0;flex-shrink:0}
 .cell-edit{background:none;border:none;border-bottom:1px dashed var(--rust-lo);color:var(--text);
   font:inherit;padding:0 1px;cursor:pointer}
-/* a night reads at a glance: on the mark, close to it, or short */
-table.data .g-good{color:var(--text)}
-table.data .g-fair{color:var(--ember)}
-table.data .g-poor{color:var(--rust);font-weight:700}
+/* a night reads at a glance: on the mark, close to it, or off it */
+table.data .g-good,table.data td.hl.g-good,.strip-note .g-good{color:var(--rag-good)}
+table.data .g-fair,table.data td.hl.g-fair,.strip-note .g-fair{color:var(--rag-fair)}
+table.data .g-poor,table.data td.hl.g-poor,.strip-note .g-poor{color:var(--rag-poor);font-weight:700}
 table.data td.g-poor::after{content:' · short';font-family:var(--face-mono);font-size:9.5px;
-  letter-spacing:.1em;font-weight:400;color:var(--rust-lo)}
+  letter-spacing:.1em;font-weight:400;color:var(--rag-poor);opacity:.75}
+table.data td.g-poor.long::after{content:' · long'}
 .pl-type{font-family:var(--face-mono);font-size:10px;font-weight:700;letter-spacing:.2em;
   color:var(--ember);margin:18px 0 4px;padding:1px 0 1px 11px;border-left:2px solid var(--rust-lo)}
 .pl-k a,.pl-sub a{color:var(--ember);text-decoration:underline;text-underline-offset:3px}
@@ -2632,39 +2635,65 @@ function tonightShown(){
   return (S.tonight||[]).map(function(it){return it.id==='e2'?Object.assign({},it,{s:S.sleepAt.up}):it});
 }
 paintSleepMarks();
-/* seven and a half hours is the mark; under seven is the one worth saying out loud */
+/* graded against the two times in Settings. Hours slept first: 7h to 9h is the mark,
+   6h30 or just over 9h is close, anything further is off it */
+function sleptMins(ms){return typeof ms==='number'&&ms>0?Math.round(ms/6e4):0}
 function sleptGrade(ms){
-  if(typeof ms!=='number'||ms<=0)return '';
-  const h=ms/36e5;
-  return h>=7.5?'good':h>=7?'fair':'poor';
+  const m=sleptMins(ms);
+  if(!m)return '';
+  return m>=420&&m<=540?'good':m>=390&&m<600?'fair':'poor';
 }
-/* a night key ending Friday or Saturday gets an hour's grace, but the small hours
-   are still the small hours */
-function lightsOutGrade(ms,nightKey){
+function afterNoon(ms){const d=new Date(ms);return (d.getHours()*60+d.getMinutes()+720)%1440}
+function bedAfterNoon(){return (minsOf(S.sleepAt.bed)+720)%1440}
+function weekendNight(nightK){const wd=new Date(nightK+'T12:00:00').getDay();return wd===5||wd===6}
+function worse(a,b){const r={good:0,fair:1,poor:2};return r[b]>r[a]?b:a}
+/* Sunday to Thursday, lights out is the mark and half an hour past it is close. Friday or
+   Saturday has an hour, and half an hour more is close. A Saturday after a late Friday
+   loses the hour and keeps only an hour of close. */
+function lightsOutGrade(ms,nightK){
   if(typeof ms!=='number')return '';
-  const d=new Date(ms);
-  let m=d.getHours()*60+d.getMinutes();
-  if(m<300)m+=1440;                              /* after midnight belongs to the night before */
-  const wd=new Date(nightKey+'T12:00:00').getDay();
-  const late=(wd===5||wd===6)?60:0;              /* Friday and Saturday nights run later */
-  if(m<=22*60+30+late)return 'good';
-  if(m<=23*60+30+late)return 'fair';
-  if(m>=25*60)return 'poor';                     /* past one in the morning, any night */
-  return 'poor';
+  const late=afterNoon(ms)-bedAfterNoon();
+  let ok=0,near=30;
+  if(weekendNight(nightK)){
+    const d=new Date(nightK+'T12:00:00');
+    let second=false;
+    if(d.getDay()===6){
+      d.setDate(d.getDate()-1);
+      const fri=S.stopped[dkey(d)];
+      second=typeof fri==='number'&&afterNoon(fri)-bedAfterNoon()>30;
+    }
+    if(second){ok=0;near=60}else{ok=60;near=90}
+  }
+  return late<=ok?'good':late<=near?'fair':'poor';
+}
+/* up: an hour either side of the mark on a weekday, to two hours after it on a weekend
+   morning. An early start on a short night, or a late one on a long night, takes the
+   night's grade when that is worse. */
+function upGrade(ms,nightK,slept){
+  if(typeof ms!=='number')return '';
+  const d=new Date(ms),off=d.getHours()*60+d.getMinutes()-minsOf(S.sleepAt.up);
+  const wk=weekendNight(nightK);
+  let g=off<-60?'fair':off<=(wk?120:60)?'good':off<=(wk?180:90)?'fair':'poor';
+  const sg=sleptGrade(slept),m=sleptMins(slept);
+  if(sg&&((off<0&&m<420)||(off>0&&m>540)))g=worse(g,sg);
+  return g;
 }
 function stopAverage(){
   const ks=Object.keys(S.stopped).filter(function(k){return typeof S.stopped[k]==='number'}).sort();
   if(ks.length<2)return '';
   const m=ks.map(function(k){const d=new Date(S.stopped[k]);return (d.getHours()*60+d.getMinutes()+720)%1440});
   const t=(Math.round(m.reduce(function(a,b){return a+b},0)/m.length)+720)%1440;
-  return 'Down at '+hhmmOf(t)+' across '+ks.length+' nights.';
+  /* a week's one later night sits inside the average, so the average gets a quarter-hour for it */
+  const late=(t+720)%1440-bedAfterNoon(),g=late<=15?'good':late<=45?'fair':'poor';
+  return 'Down at <span class="g-'+g+'">'+hhmmOf(t)+'</span> across '+ks.length+' nights.';
 }
 function upAverage(){
   const ks=Object.keys(S.woke).filter(function(k){return typeof S.woke[k]==='number'}).sort();
   if(ks.length<2)return '';
   const m=ks.map(function(k){const d=new Date(S.woke[k]);return d.getHours()*60+d.getMinutes()});
   const t=Math.round(m.reduce(function(a,b){return a+b},0)/m.length);
-  return 'Up at '+hhmmOf(t)+' across '+ks.length+' mornings.';
+  const off=t-minsOf(S.sleepAt.up),g=off<-60?'fair':off<=75?'good':off<=105?'fair':'poor';
+  return 'Up at <span class="g-'+g+'">'+hhmmOf(t)+'</span> across '+ks.length+' mornings.';
 }
 /* slept time averaged over every night that has both halves */
 function sleptAverage(){
@@ -2676,7 +2705,7 @@ function sleptAverage(){
   });
   if(spans.length<2)return '';
   const avg=Math.round(spans.reduce(function(a,b){return a+b},0)/spans.length/60000);
-  return 'Slept '+durOf(avg)+' on average.';
+  return 'Slept <span class="g-'+sleptGrade(avg*6e4)+'">'+durOf(avg)+'</span> on average.';
 }
 /* a correction: the night half and the morning half belong to different dates */
 function editSleep(nightK,which){
@@ -2702,7 +2731,7 @@ function paintStop(){
   b.textContent=on?'STOPPED '+clockOf(at):'STOPPED FOR THE NIGHT';
   b.classList.toggle('set',on);b.setAttribute('aria-pressed',on?'true':'false');
   const a=document.getElementById('stopAvg'),line=[stopAverage(),upAverage()].filter(Boolean).join(' ');
-  a.textContent=line;a.hidden=!line;
+  a.innerHTML=line;a.hidden=!line;
 }
 document.getElementById('stopBtn').onclick=function(){
   const k=nightKey();
@@ -2760,11 +2789,11 @@ function renderMorning(){
     const k=dkey(d),p=sleepPair(k);
     if(!p.off&&!p.up)continue;
     const slept=(p.off&&p.up)?p.up-p.off:0;
-    const sg=sleptGrade(slept),og=lightsOutGrade(p.off,k);
+    const sg=sleptGrade(slept),og=lightsOutGrade(p.off,k),ug=upGrade(p.up,k,slept);
     rows.push('<tr><td>'+WEEK[(d.getDay()+6)%7].l+'</td>'+
       '<td><button class="cell-edit'+(og?' g-'+og:'')+'" data-sk="'+k+'" data-half="off">'+(p.off?clockOf(p.off):'—')+'</button></td>'+
-      '<td><button class="cell-edit" data-sk="'+k+'" data-half="up">'+(p.up?clockOf(p.up):'—')+'</button></td>'+
-      '<td class="hl'+(sg?' g-'+sg:'')+'">'+(p.off&&p.up?hoursBetween(p.off,p.up):'—')+'</td></tr>');
+      '<td><button class="cell-edit'+(ug?' g-'+ug:'')+'" data-sk="'+k+'" data-half="up">'+(p.up?clockOf(p.up):'—')+'</button></td>'+
+      '<td class="hl'+(sg?' g-'+sg:'')+(sleptMins(slept)>540?' long':'')+'">'+(p.off&&p.up?hoursBetween(p.off,p.up):'—')+'</td></tr>');
   }
   const log=document.getElementById('sleepLog');
   log.innerHTML=rows.length
@@ -2776,7 +2805,7 @@ function renderMorning(){
   const avg=document.getElementById('sleepAvg');
   if(avg){
     const line=[sleptAverage(),stopAverage(),upAverage()].filter(Boolean).join(' ');
-    avg.textContent=line;avg.hidden=!line;
+    avg.innerHTML=line;avg.hidden=!line;
   }
 }
 document.getElementById('addMorning').onclick=function(){
@@ -3534,11 +3563,13 @@ function sleepNote(){
   });
   if(spans.length<3)return '';
   const avg=spans.reduce(function(a,b){return a+b},0)/spans.length;
-  if(avg>=7.5*36e5)return '';
-  const t=durOf(Math.round(avg/6e4));
-  return avg<7*36e5
-    ? 'You are averaging '+t+' across the last '+spans.length+' nights. That is under seven. The deficit, the lifts and the mood all run on this one.'
-    : 'Averaging '+t+' across the last '+spans.length+' nights. Half an hour short of the mark.';
+  const g=sleptGrade(avg),m=sleptMins(avg),n=spans.length;
+  if(g==='good')return '';
+  const t=durOf(m);
+  if(m>540)return 'Averaging '+t+' across the last '+n+' nights. Sleep that long, that often, is usually repaying something.';
+  return g==='poor'
+    ? 'You are averaging '+t+' across the last '+n+' nights. That is under six and a half. The deficit, the lifts and the mood all run on this one.'
+    : 'Averaging '+t+' across the last '+n+' nights. Under seven, where the mark is '+durOf((minsOf(S.sleepAt.up)-minsOf(S.sleepAt.bed)+1440)%1440)+'.';
 }
 function openMorningSheet(){
   const k=calKey(),t=todayKey(),when=splashSlot();
