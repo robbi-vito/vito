@@ -2012,7 +2012,8 @@ function eveningOwed(){
 function owedToday(){
   const h=hourNow(),run=slot.s==='cardio1'||slot.s==='cardio2';
   const out=[];
-  if(h<11)  {const n=morningOwed();if(n)out.push({k:'morning',n:n,go:'today',
+  /* the morning is owed from 05:00, and tonight is still owed until then */
+  if(h>=DAY_START&&h<11){const n=morningOwed();if(n)out.push({k:'morning',n:n,go:'today',
     label:n===1?'One thing left this morning':n+' things left this morning'});}
   if(sess&&!sessionComplete(sess.key))out.push({k:'session',n:1,go:'session',label:'Open today\u2019s session'});
   if(!run){const n=warmupOwed();if(n&&sess&&!sessionComplete(sess.key))out.push({k:'warmup',n:n,go:'train',label:'Warm up first'});}
@@ -2021,7 +2022,7 @@ function owedToday(){
     label:run?'Stretch after the run':'Stretches still owed'});
   {const n=drillsOwed();if(n)out.push({k:'drills',n:n,go:'frame',
     label:n===DRILLS.length?'The drills, five minutes':n+' drills left'});}
-  if(h>=18.5){const n=eveningOwed();if(n)out.push({k:'evening',n:n,go:'today',
+  if(h>=18.5||h<DAY_START){const n=eveningOwed();if(n)out.push({k:'evening',n:n,go:'today',
     label:n===1?'One thing left tonight':n+' things left tonight'});}
   return out;
 }
