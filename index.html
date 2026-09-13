@@ -2804,26 +2804,31 @@ function upGrade(ms,nightK,slept){
   if(sg&&((off<0&&m<420)||(off>0&&m>540)))g=worse(g,sg);
   return g;
 }
+/* the averages run over the last fourteen nights, so a stretch of late ones fades as it ages */
+function sleepSince(key){const d=new Date(key+'T12:00:00');d.setDate(d.getDate()-13);return dkey(d)}
 function stopAverage(){
-  const ks=Object.keys(S.stopped).filter(function(k){return typeof S.stopped[k]==='number'}).sort();
+  const from=sleepSince(todayKey());
+  const ks=Object.keys(S.stopped).filter(function(k){return typeof S.stopped[k]==='number'&&k>=from}).sort();
   if(ks.length<2)return '';
   const m=ks.map(function(k){const d=new Date(S.stopped[k]);return (d.getHours()*60+d.getMinutes()+720)%1440});
   const t=(Math.round(m.reduce(function(a,b){return a+b},0)/m.length)+720)%1440;
   /* a week's one later night sits inside the average, so the average gets a quarter-hour for it */
   const late=(t+720)%1440-bedAfterNoon(),g=late<=15?'good':late<=45?'fair':'poor';
-  return 'Down at <span class="g-'+g+'">'+hhmmOf(t)+'</span> across '+ks.length+' nights.';
+  return 'Down at <span class="g-'+g+'">'+hhmmOf(t)+'</span> across the last '+ks.length+' nights.';
 }
 function upAverage(){
-  const ks=Object.keys(S.woke).filter(function(k){return typeof S.woke[k]==='number'}).sort();
+  const from=sleepSince(calKey());
+  const ks=Object.keys(S.woke).filter(function(k){return typeof S.woke[k]==='number'&&k>=from}).sort();
   if(ks.length<2)return '';
   const m=ks.map(function(k){const d=new Date(S.woke[k]);return d.getHours()*60+d.getMinutes()});
   const t=Math.round(m.reduce(function(a,b){return a+b},0)/m.length);
   const off=t-minsOf(S.sleepAt.up),g=off<-60?'fair':off<=75?'good':off<=105?'fair':'poor';
-  return 'Up at <span class="g-'+g+'">'+hhmmOf(t)+'</span> across '+ks.length+' mornings.';
+  return 'Up at <span class="g-'+g+'">'+hhmmOf(t)+'</span> across the last '+ks.length+' mornings.';
 }
-/* slept time averaged over every night that has both halves */
+/* slept time averaged over the last fourteen nights that have both halves */
 function sleptAverage(){
-  const ks=Object.keys(S.stopped).filter(function(k){return typeof S.stopped[k]==='number'}).sort();
+  const from=sleepSince(todayKey());
+  const ks=Object.keys(S.stopped).filter(function(k){return typeof S.stopped[k]==='number'&&k>=from}).sort();
   const spans=[];
   ks.forEach(function(k){
     const p=sleepPair(k);
@@ -2831,7 +2836,7 @@ function sleptAverage(){
   });
   if(spans.length<2)return '';
   const avg=Math.round(spans.reduce(function(a,b){return a+b},0)/spans.length/60000);
-  return 'Slept <span class="g-'+sleptGrade(avg*6e4)+'">'+durOf(avg)+'</span> on average.';
+  return 'Slept <span class="g-'+sleptGrade(avg*6e4)+'">'+durOf(avg)+'</span> on average over the last '+spans.length+' nights.';
 }
 /* a correction: the night half and the morning half belong to different dates */
 function editSleep(nightK,which){
