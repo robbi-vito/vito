@@ -129,7 +129,16 @@ body:not([data-view="train"]) #soundBtn{display:none}
 .hero h1{font-family:var(--face-display);font-weight:600;font-size:clamp(52px,17vw,88px);
   line-height:.92;letter-spacing:-.01em;margin-bottom:20px;text-shadow:0 0 38px var(--glow)}
 .hero .sub{font-style:italic;color:var(--text-soft);font-size:18px}
-.hero .insight{font-family:var(--face-mono);font-size:13px;color:var(--text-soft);margin-top:16px}
+/* the one sentence the saved state most wants said, set as a margin note rather than a
+   banner so the day's button stays the only filled thing on the page. A line that asks
+   for something today takes the rust rule and full-strength text. */
+.hero .insight{margin-top:24px;padding:3px 0 3px 15px;border-left:2px solid var(--rule)}
+.hero .insight .hd{display:block;font-family:var(--face-mono);font-size:10.5px;font-weight:700;
+  letter-spacing:.18em;color:var(--text-dim);margin-bottom:5px}
+.hero .insight p{font-size:17px;line-height:1.45;color:var(--text-soft);max-width:none;margin:0}
+.hero .insight.act{border-left-color:var(--rust)}
+.hero .insight.act .hd{color:var(--ember)}
+.hero .insight.act p{color:var(--text)}
 /* one panel per weekday, swiped sideways; the week strip shows which is in view */
 .brief{display:flex;align-items:stretch;overflow-x:auto;gap:14px;margin-top:32px;
   scroll-snap-type:x mandatory;transition:height .2s ease;
@@ -1837,20 +1846,28 @@ function iPhase(){
   return w.charAt(0).toUpperCase()+w.slice(1)+' day'+(days===1?'':'s')+' left in '+p.n.toLowerCase()+'.';
 }
 function insight(){
-  try{return iBday()||iStalled()||iTrend()||iPhase()||iNew()||''}
+  try{
+    /* each line names its kind, and says whether it asks for something today */
+    const order=[[iBday,'BIRTHDAY',true],[iStalled,'LIFT',true],[iTrend,'WEIGHT',null],[iPhase,'PHASE',false],[iNew,'OUT',false]];
+    for(let i=0;i<order.length;i++){
+      const t=order[i][0]();
+      if(t)return {t:t,k:order[i][1],act:order[i][2]===null?!/On schedule/.test(t):order[i][2]};
+    }
+    return '';
+  }
   catch(e){return ''}                          /* a bad read must never take the page down */
 }
 function capCount(n){const w=count(n);return w.charAt(0).toUpperCase()+w.slice(1)}
 /* Fuel: protein days this week, else how long since the scale was used */
 function iFuel(){
   const n=Object.keys(S.protein||{}).filter(function(d){return d>=S.week.start&&S.protein[d]}).length;
-  if(n)return capCount(n)+(n===1?' day':' days')+' on protein out of '+count(dayIdx()+1)+'.';
+  if(n)return {k:'PROTEIN',t:capCount(n)+(n===1?' day':' days')+' on protein out of '+count(dayIdx()+1)+'.'};
   const b=(S.body||[]).filter(function(e){return e&&e.d&&typeof e.w==='number'})
                       .slice().sort(function(x,y){return x.d<y.d?-1:1});
   if(!b.length)return '';
   const days=Math.round((new Date(todayKey()+'T12:00:00')-new Date(b[b.length-1].d+'T12:00:00'))/864e5);
   if(days<=4)return '';
-  return capCount(days)+' days since the last weigh-in. Step on the scale.';
+  return {k:'SCALE',act:true,t:capCount(days)+' days since the last weigh-in. Step on the scale.'};
 }
 /* Frame: consecutive days with at least one drill ticked, counted back from today */
 function iFrame(){
@@ -1863,16 +1880,16 @@ function iFrame(){
   while(did(dkey(cur))){n++;cur.setDate(cur.getDate()-1)}
   if(n<3)return '';
   return todayDone
-    ? capCount(n)+' days of drills unbroken.'
-    : capCount(n)+' days of drills unbroken. Today makes '+count(n+1)+'.';
+    ? {k:'DRILLS',t:capCount(n)+' days of drills unbroken.'}
+    : {k:'DRILLS',act:true,t:capCount(n)+' days of drills unbroken. Today makes '+count(n+1)+'.'};
 }
 /* Build: what is still open. Days left in the phase already print under the bar. */
 function iBuild(){
   const open=(S.loops||[]).filter(function(l){return l&&l.id&&!S.loopsDone[l.id]}).length;
   if(!open)return '';
-  return open===1
+  return {k:'LOOPS',t:open===1
     ? 'One loop still open. They close in the order they were opened.'
-    : capCount(open)+' loops still open. They close in the order they were opened.';
+    : capCount(open)+' loops still open. They close in the order they were opened.'};
 }
 const NOTES=[['todayNote',insight],['fuelNote',iFuel],['frameNote',iFrame],['buildNote',iBuild],['outNote',iOut]];
 function renderInsight(){
@@ -1881,7 +1898,10 @@ function renderInsight(){
     if(!el)return;
     let t='';
     try{t=pair[1]()||''}catch(e){t=''}         /* one bad view must not silence the rest */
-    el.textContent=t;el.hidden=!t;
+    const n=typeof t==='string'?{t:t}:t;
+    el.innerHTML=n.t?'<span class="hd">'+esc(n.k||'NOTE')+'</span><p>'+esc(n.t)+'</p>':'';
+    el.classList.toggle('act',!!n.act);
+    el.hidden=!n.t;
   });
 }
 renderInsight();
@@ -3402,7 +3422,7 @@ function nextPlace(){                             /* somewhere not yet been, els
   const lastOf=function(p){return (p.went||[]).slice(-1)[0]||''};
   return S.places.slice().sort(function(a,b){return lastOf(a)<lastOf(b)?-1:1})[0]||null;
 }
-function iOut(){const p=nextPlace();return p?'Next on the list: '+p.n+'.':''}
+function iOut(){const p=nextPlace();return p?{k:'NEXT',t:'Next on the list: '+p.n+'.'}:''}
 function iNew(){
   const m=lastOut();if(!m)return '';
   const days=Math.round((new Date(todayKey()+'T12:00:00')-new Date(m+'T12:00:00'))/864e5);
