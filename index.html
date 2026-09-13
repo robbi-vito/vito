@@ -29,7 +29,7 @@
   --stain:screen;--spk-boost:1;
   --ease:cubic-bezier(.22,.61,.36,1);--spring:cubic-bezier(.2,1.5,.4,1);--round:5px;
   --leak-a:#F57A30;--leak-b:#B8401A;--leak-c:#7E3016;
-  --rag-good:#669A3E;--rag-fair:var(--flame);--rag-poor:#C24440;--flame:#EEC93C;
+  --rag-good:#669A3E;--rag-fair:var(--flame);--rag-poor:#C24440;--flame:#EEC53B;
   --wear-a:#B4521F;--wear-b:#7A3414;--wear-c:#D2AE84;
 }
 :root[data-theme="light"]{
@@ -342,8 +342,8 @@ details.pl-fold>summary .pl-type{flex:1}
 /* a night reads at a glance: on the mark, close to it, or off it */
 table.data .g-good,table.data td.hl.g-good,.strip-note .g-good{color:var(--rag-good)}
 table.data .g-fair,table.data td.hl.g-fair,.strip-note .g-fair{color:var(--rag-fair)}
-/* yellow on paper reads as colour only with some weight behind it */
-:root[data-theme="light"] .g-fair{font-weight:700}
+/* yellow reads as colour only with some weight behind it, and the registers match */
+.g-fair{font-weight:700}
 table.data .g-poor,table.data td.hl.g-poor,.strip-note .g-poor{color:var(--rag-poor);font-weight:700}
 #sleepLog td.g-poor::after{content:' · short';font-family:var(--face-mono);font-size:9.5px;
   letter-spacing:.1em;font-weight:400;color:var(--rag-poor);opacity:.75}
