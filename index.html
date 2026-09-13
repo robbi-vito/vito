@@ -1822,19 +1822,19 @@ function iStalled(){
   });
   return hit;
 }
-/* a completed week is announced by the strip note, not repeated here */
+/* a completed week is announced by the strip note, not repeated here. The weight line
+   reads the same fortnight trend the weight tile is graded on, so the two cannot disagree. */
 function iTrend(){
-  const b=(S.body||[]).filter(function(e){return e&&e.d&&typeof e.w==='number'})
-                      .slice().sort(function(x,y){return x.d<y.d?-1:1});
-  if(b.length<4)return null;
-  const ms=864e5,now=Date.now(),c1=dkey(new Date(now-14*ms)),c2=dkey(new Date(now-28*ms));
-  const recent=b.filter(function(e){return e.d>=c1}),prior=b.filter(function(e){return e.d>=c2&&e.d<c1});
-  if(!recent.length||!prior.length)return null;
-  const avg=function(a){return a.reduce(function(s,e){return s+e.w},0)/a.length};
-  const diff=avg(prior)-avg(recent);          /* positive means weight came off */
-  if(diff>=0.5)return 'Down '+diff.toFixed(1)+' lb over four weeks. On schedule.';
-  if(diff<=-0.5)return 'Up '+Math.abs(diff).toFixed(1)+' lb over four weeks. Take 150 off the daily number.';
-  return 'Flat for four weeks. Take 150 off the daily number.';
+  const w=weightTrend();
+  if(!w)return null;
+  const pc=Math.abs(w.rate).toFixed(1)+'% a week';
+  const scans=(S.body||[]).filter(function(e){return e&&Number(e.f)>0});
+  const hold=scans.length>0&&Number(scans[scans.length-1].f)<=12;
+  if(w.g==='good')return hold?'Holding within a quarter of a percent a week. On schedule.':'Down '+pc+' over the fortnight. On schedule.';
+  if(hold)return (w.rate>0?'Down ':'Up ')+pc+' while holding. '+(w.rate>0?'Add 150 back to the daily number.':'Take 150 off the daily number.');
+  if(w.rate>1)return 'Down '+pc+'. Fast enough to cost muscle: add 150 back to the daily number.';
+  if(w.rate>=.25)return 'Down '+pc+'. Slower than the plan: take 150 off the daily number.';
+  return (Math.abs(w.rate)<.05?'Level':'Up '+pc)+' over the fortnight. Take 150 off the daily number.';
 }
 function iPhase(){
   const p=currentPhase();
