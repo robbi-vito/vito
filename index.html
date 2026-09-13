@@ -595,6 +595,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
             <div class="cell"><span class="l">Muscle</span><span class="v" data-unit="lb">80.9</span></div>
             <div class="cell"><span class="l">FFMI</span><span class="v">21.0</span></div>
           </div>
+          <div class="strip-note" id="trendNote" style="margin-bottom:6px" hidden></div>
           <div class="strip-note" style="margin-bottom:20px">Target 12% sustained, 10% floor · retest early November</div>
 
           <details class="nest">
@@ -3166,12 +3167,57 @@ function bfGrade(f){
   if(!(f>0))return '';
   return f<9?'poor':f<10?'fair':f<=12?'good':f<=15?'fair':'poor';
 }
+/* weight is graded on its trend, never its number, since muscle weighs too: this week's
+   average against the week a fortnight earlier, as a share of bodyweight a week. Cutting,
+   0.5 to 1% is on the mark; slower, or fast enough to cost muscle, is close; level, rising
+   or faster still is off it. Once a scan reads 12% or under the aim is to hold, and within
+   0.25% a week is on the mark. Fewer than three weigh-ins in either week gives no grade. */
+function weightTrend(){
+  const now=new Date(todayKey()+'T12:00:00').getTime();
+  const avg=function(lo,hi){
+    const xs=(S.body||[]).filter(function(e){
+      if(!e||!e.d||!(Number(e.w)>0))return false;
+      const age=Math.round((now-new Date(e.d+'T12:00:00').getTime())/864e5);
+      return age>=lo&&age<hi;
+    }).map(function(e){return Number(e.w)});
+    return xs.length>=3?xs.reduce(function(a,b){return a+b},0)/xs.length:null;
+  };
+  const recent=avg(0,7),before=avg(14,21);
+  if(recent===null||before===null)return null;
+  const rate=(before-recent)/before*50;
+  const scans=(S.body||[]).filter(function(e){return e&&Number(e.f)>0});
+  const hold=scans.length>0&&Number(scans[scans.length-1].f)<=12;
+  const a=Math.abs(rate);
+  const g=hold?(a<=.25?'good':a<=.5?'fair':'poor')
+    :(rate>=.5&&rate<=1?'good':(rate>=.25&&rate<.5)||(rate>1&&rate<=1.5)?'fair':'poor');
+  return {g:g,rate:rate};
+}
 function renderBody(){
   const last=S.body[S.body.length-1];
   document.getElementById('cWeight').textContent=last?last.w:'—';
   document.getElementById('cBf').textContent=!last||last.f==null?'—':last.f;
   const bg=last?bfGrade(last.f):'';
   document.getElementById('cBf').className='v'+(bg?' g-'+bg:'');
+  const wt=weightTrend();
+  document.getElementById('cWeight').className='v'+(wt?' g-'+wt.g:'');
+  let note='';
+  if(wt){
+    const pc='<span class="g-'+wt.g+'">'+Math.abs(wt.rate).toFixed(1)+'% a week</span>';
+    note=Math.abs(wt.rate)<.05?'<span class="g-'+wt.g+'">Level</span> over the last fortnight.'
+      :(wt.rate>0?'Down ':'Up ')+pc+' over the last fortnight.';
+  }
+  /* composition only moves at a scan, so it is read between the last two */
+  const scans=(S.body||[]).filter(function(e){return e&&Number(e.f)>0&&Number(e.w)>0});
+  if(scans.length>=2){
+    const p=scans[scans.length-2],q=scans[scans.length-1];
+    const fp=p.w*p.f/100,fq=q.w*q.f/100,df=fq-fp,dl=(q.w-fq)-(p.w-fp);
+    const gf=df<=-.5?'good':df<.5?'fair':'poor',gl=dl>=-.5?'good':dl>=-1.5?'fair':'poor';
+    const sg=function(x){return (x>=.05?'+':x<=-.05?'−':'')+Math.abs(x).toFixed(1)+' lb'};
+    note+=(note?' ':'')+'Between the scans on '+fmt(p.d)+' and '+fmt(q.d)+': fat <span class="g-'+gf+'">'+sg(df)+
+      '</span>, lean <span class="g-'+gl+'">'+sg(dl)+'</span>.';
+  }
+  const tn=document.getElementById('trendNote');
+  tn.innerHTML=note;tn.hidden=!note;
   document.getElementById('cWeight').dataset.unit=last?'lb':'';
   document.getElementById('cBf').dataset.unit=(!last||last.f==null)?'':'%';
   document.getElementById('bodyHistory').innerHTML='<tr><th>Date</th><th>Weight</th><th>Body fat</th><th>Waist</th></tr>'+
