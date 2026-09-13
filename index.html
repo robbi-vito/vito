@@ -1068,9 +1068,23 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
         </div>
       </details>
       <details>
-        <summary><h2>The phases</h2><span class="meta">TO 21 DEC</span></summary>
+        <summary><h2>The phases</h2><span class="meta" id="phasesMeta">TO 21 DEC</span></summary>
         <div class="det-body">
-          <table class="data" id="phaseTable"></table>
+          <div id="phaseTable"></div>
+          <div class="group-label" id="phFormLabel" style="margin-top:18px">ADD A PHASE</div>
+          <div class="log-row">
+            <input type="text" id="phN" placeholder="Label, e.g. Phase 4" style="flex:1">
+            <input type="text" id="phT" placeholder="Title" style="flex:1.6">
+          </div>
+          <div class="log-row">
+            <input type="date" id="phF" aria-label="Starts" title="Starts" style="flex:1">
+            <input type="date" id="phTo" aria-label="Ends" title="Ends" style="flex:1">
+          </div>
+          <div class="log-row">
+            <input type="text" id="phD" placeholder="Done means" style="flex:2">
+            <button id="addPhase">Add</button>
+          </div>
+          <button class="watch" id="phCancel" type="button" style="margin:10px 0 0" hidden>CANCEL</button>
           <div class="prose" style="margin-top:16px">
             <p><strong>The lever is scope, never standard.</strong> Keep the bar high and make the piece small enough that the bar is reachable.</p>
           </div>
@@ -1363,6 +1377,9 @@ S.places=Array.isArray(S.places)                  /* places: seeded once, then t
 S.standing=Array.isArray(S.standing)              /* weekly standing plans, seeded once */
   ?S.standing.filter(function(p){return p&&typeof p==='object'&&p.id})
   :STANDING.map(function(p){return {id:p.id,day:p.day,t:p.t,n:p.n,w:p.w}});
+S.phases=Array.isArray(S.phases)                  /* build phases, seeded once, then the user's own */
+  ?S.phases.filter(function(p){return p&&typeof p==='object'&&p.id&&/^\d{4}-\d{2}-\d{2}$/.test(p.from)&&/^\d{4}-\d{2}-\d{2}$/.test(p.to)})
+  :PHASES.map(function(p,i){return {id:'ph'+(i+1),n:p.n,t:p.t,from:p.from,to:p.to,d:p.d}});
 S.bdays=Array.isArray(S.bdays)?S.bdays.filter(function(b){return b&&b.n&&/^\d{2}-\d{2}$/.test(b.d)}):[];   /* {n, d:'MM-DD'} */
 S.play=S.play&&typeof S.play==='object'?S.play:{};   /* session key, or R for runs -> playlist link */
 S.hideVid=S.hideVid&&typeof S.hideVid==='object'?S.hideVid:{};   /* group -> video buttons hidden */
@@ -1849,9 +1866,9 @@ function iPhase(){
   if(!p||!p.to)return null;
   const days=Math.round((new Date(p.to+'T12:00:00')-new Date(todayKey()+'T12:00:00'))/864e5);
   if(days<0||days>7)return null;
-  if(days===0)return 'Last day of '+p.n.toLowerCase()+'.';
+  if(days===0)return 'Last day of '+(p.n||p.t).toLowerCase()+'.';
   const w=count(days);
-  return w.charAt(0).toUpperCase()+w.slice(1)+' day'+(days===1?'':'s')+' left in '+p.n.toLowerCase()+'.';
+  return w.charAt(0).toUpperCase()+w.slice(1)+' day'+(days===1?'':'s')+' left in '+(p.n||p.t).toLowerCase()+'.';
 }
 function insight(){
   try{
@@ -3056,20 +3073,30 @@ document.getElementById('clearShop').onclick=function(){
 };
 
 /* ── build ── */
+function phasesSorted(){return S.phases.slice().sort(function(a,b){return a.from<b.from?-1:a.from>b.from?1:0})}
 function currentPhase(){
-  const t=todayKey();
-  return PHASES.filter(function(p){return t>=p.from&&t<=p.to})[0]||
-    PHASES.filter(function(p){return p.to<t}).pop()||PHASES[0];
+  const t=todayKey(),ps=phasesSorted();
+  return ps.filter(function(p){return t>=p.from&&t<=p.to})[0]||
+    ps.filter(function(p){return p.to<t}).pop()||ps[0]||null;
 }
 function renderBuild(){
   const p=currentPhase(),t=todayKey();
-  document.getElementById('phaseName').textContent=p.t;
-  document.getElementById('phaseWindow').textContent=p.n+' · '+fmt(p.from)+' – '+fmt(p.to);
-  document.getElementById('phaseSub').textContent=p.d;
-  const a=new Date(p.from+'T12:00:00'),b=new Date(p.to+'T12:00:00'),n=new Date(t+'T12:00:00');
-  document.getElementById('phaseBar').style.width=(b>a?Math.max(0,Math.min(100,(n-a)/(b-a)*100)):100)+'%';
-  const left=Math.max(0,Math.ceil((b-n)/864e5));
-  document.getElementById('phaseNote').textContent=left===0?'Last day of this phase.':left+' days left in '+p.n.toLowerCase();
+  if(p){
+    document.getElementById('phaseName').textContent=p.t;
+    document.getElementById('phaseWindow').textContent=p.n+' · '+fmt(p.from)+' – '+fmt(p.to);
+    document.getElementById('phaseSub').textContent=p.d;
+    const a=new Date(p.from+'T12:00:00'),b=new Date(p.to+'T12:00:00'),n=new Date(t+'T12:00:00');
+    document.getElementById('phaseBar').style.width=(b>a?Math.max(0,Math.min(100,(n-a)/(b-a)*100)):100)+'%';
+    const left=Math.max(0,Math.ceil((b-n)/864e5));
+    document.getElementById('phaseNote').textContent=t<p.from?'Starts '+fmt(p.from)+'.'
+      :left===0?'Last day of this phase.':left+' days left in '+(p.n||p.t).toLowerCase();
+  }else{
+    document.getElementById('phaseName').textContent='No phase set';
+    document.getElementById('phaseWindow').textContent='';
+    document.getElementById('phaseSub').textContent='Add one under The phases, below.';
+    document.getElementById('phaseBar').style.width='0%';
+    document.getElementById('phaseNote').textContent='';
+  }
   renderPhaseLoops();
 
   checklist(document.getElementById('cadence'),CADENCE,S.week.cadence,renderBuild);
@@ -3077,11 +3104,63 @@ function renderBuild(){
     function(i){S.loops.splice(i,1);save();renderBuild()});
   renderInsight();
 
-  document.getElementById('phaseTable').innerHTML='<tr><th>Phase</th><th>Window</th><th>Done means</th></tr>'+
-    PHASES.map(function(x){return '<tr'+(x===p?' style="color:var(--rust)"':'')+'><td>'+x.t+'</td><td>'+
-      fmt(x.from)+'–'+fmt(x.to)+'</td><td class="soft">'+x.d+'</td></tr>'}).join('');
+  renderPhases(p);
   renderCommit();
 }
+/* the phases are the user's own: each can be edited or removed, and new ones added */
+var phaseEditing=null;
+function renderPhases(cur){
+  const host=document.getElementById('phaseTable'),ps=phasesSorted();
+  host.innerHTML=ps.length?ps.map(function(x){
+    const on=cur&&x.id===cur.id;
+    return '<div class="place"><div class="pl-top"><span class="pl-n"'+(on?' style="color:var(--rust)"':'')+'>'+esc(x.t)+'</span>'+
+      '<button class="watch" type="button" data-pe="'+esc(x.id)+'">EDIT</button>'+
+      '<button class="del" type="button" data-pd="'+esc(x.id)+'" aria-label="Remove">×</button></div>'+
+      '<div class="pl-sub"><span class="pl-k">'+esc((x.n||'').toUpperCase())+' · '+fmt(x.from)+' – '+fmt(x.to)+(x.d?' · '+esc(x.d):'')+'</span></div></div>';
+  }).join(''):'<p class="ex-cue" style="margin-left:0">No phases yet. Add the first below.</p>';
+  const meta=document.getElementById('phasesMeta');
+  if(meta)meta.textContent=ps.length?'TO '+fmt(ps[ps.length-1].to).toUpperCase():'NONE SET';
+  const find=function(id){return S.phases.filter(function(y){return y.id===id})[0]};
+  host.querySelectorAll('[data-pe]').forEach(function(b){
+    b.onclick=function(){const x=find(b.dataset.pe);if(x){phaseForm(x);document.getElementById('phT').focus()}};
+  });
+  host.querySelectorAll('[data-pd]').forEach(function(b){
+    b.onclick=function(){
+      const x=find(b.dataset.pd);
+      if(!x||!confirm('Remove '+x.t+'?'))return;
+      S.phases=S.phases.filter(function(y){return y!==x});
+      if(phaseEditing===x.id)phaseForm(null);
+      save();renderBuild();
+    };
+  });
+}
+function phaseForm(p){
+  phaseEditing=p?p.id:null;
+  document.getElementById('phN').value=p?p.n:'';
+  document.getElementById('phT').value=p?p.t:'';
+  document.getElementById('phF').value=p?p.from:'';
+  document.getElementById('phTo').value=p?p.to:'';
+  document.getElementById('phD').value=p?p.d:'';
+  document.getElementById('addPhase').textContent=p?'Save':'Add';
+  document.getElementById('phFormLabel').textContent=p?'EDIT '+String(p.t||'').toUpperCase():'ADD A PHASE';
+  document.getElementById('phCancel').hidden=!p;
+}
+document.getElementById('addPhase').onclick=function(){
+  const n=document.getElementById('phN').value.trim(),t=document.getElementById('phT').value.trim(),d=document.getElementById('phD').value.trim();
+  const from=document.getElementById('phF').value,to=document.getElementById('phTo').value;
+  if(!t||!from||!to){alert('A phase needs a title, a start and an end.');return}
+  if(to<from){alert('The end comes before the start.');return}
+  const clash=S.phases.filter(function(x){return x.id!==phaseEditing&&from<=x.to&&to>=x.from})[0];
+  if(clash){alert('That window overlaps '+clash.t+'. Move one of them first.');return}
+  if(phaseEditing){
+    const x=S.phases.filter(function(y){return y.id===phaseEditing})[0];
+    if(x){x.n=n||x.n;x.t=t;x.from=from;x.to=to;x.d=d}
+  }else{
+    S.phases.push({id:'ph'+Date.now(),n:n||'Phase '+(S.phases.length+1),t:t,from:from,to:to,d:d});
+  }
+  save();phaseForm(null);renderBuild();
+};
+document.getElementById('phCancel').onclick=function(){phaseForm(null)};
 /* the phase is its loops, so they sit under the phase bar rather than further down the page */
 function renderPhaseLoops(){
   const host=document.getElementById('phaseLoops');if(!host)return;
