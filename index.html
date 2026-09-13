@@ -87,13 +87,15 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 .wrap{max-width:620px;margin:0 auto;padding:0 20px;position:relative;z-index:3}
 /* wear: in the page and under the text, clipped to it so it never lengthens the page */
 .wear{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1}
-.wear svg{position:absolute;overflow:visible;transition:opacity .3s var(--ease)}
-.wear svg.under{opacity:0}
+.wear svg{position:absolute;overflow:visible;transition:opacity .25s var(--ease)}
+.wear svg.under,.wear svg.held{opacity:0}
+.wear svg.held{transition:none}
 .wear .fa{fill:var(--wear-a)}
 .wear .fb{fill:var(--wear-b)}
 .wear .sc{fill:none;stroke:var(--wear-c)}
 .wear .fc{fill:var(--wear-c)}
 .wear .sa{fill:none;stroke:var(--wear-a)}
+.wear .sb{fill:none;stroke:var(--wear-b)}
 
 .masthead{padding:calc(20px + env(safe-area-inset-top)) 0 14px;display:flex;align-items:center;justify-content:space-between}
 .mark{font-family:var(--face-mono);font-size:11px;letter-spacing:.3em;color:var(--text-dim)}
@@ -3614,6 +3616,7 @@ function flowDetails(e){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   if(d.dataset.anim)return;
   e.preventDefault();
+  wearHold(d);
   const open=d.open;
   d.dataset.anim='1';
   let settled=false;
@@ -3819,7 +3822,7 @@ addEventListener('scroll',function(){
   collapseTick=true;
   requestAnimationFrame(function(){collapseTick=false;paintCollapse()});
 },{passive:true});
-document.addEventListener('toggle',function(){paintCollapse();measureReach()},true);
+document.addEventListener('toggle',function(e){paintCollapse();measureReach();wearHold(e.target)},true);
 document.getElementById('splashBtn').onclick=function(){openMorningSheet()};
 document.getElementById('collapseAll').onclick=function(){
   const view=document.querySelector('.view.on');if(!view)return;
@@ -3888,20 +3891,18 @@ function paintLeak(){
   }else{set('--leak4-w','0%');set('--leak4-h','0%')}
 }
 /* wear on the sheet. The marks sit in the page, so they scroll with it instead of being
-   moved after it, and they sit under the text. Laid by the date and the view, so they hold
-   all day: rust and scuffs on the dark register, ink and tea on paper. Anything large keeps
-   to the margins. */
-var wearFrame='';
+   moved after it, and they sit under the text. A fresh set is dealt each time a view is
+   opened: rust and scuffs on the dark register, ink and tea on paper, with the odd large
+   scrape or cup ring. */
+var wearFrame='',wearId=0;
 function paintWear(){
   const host=document.querySelector('.wear');
   if(!host)return;
   const paper=document.documentElement.dataset.theme==='light';
-  const view=document.body.dataset.view||'today';
-  const key=todayKey()+'|'+view+'|'+(paper?'paper':'dark');
+  const key=(document.body.dataset.view||'today')+'|'+(paper?'paper':'dark');
   if(key===wearFrame)return;
   wearFrame=key;
-  const sk=todayKey()+'|'+view;
-  let seed=7;for(let i=0;i<sk.length;i++)seed=(seed*31+sk.charCodeAt(i))>>>0;
+  let seed=(Math.random()*4294967296)>>>0;
   const rnd=function(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
   const span=function(lo,hi){return lo+rnd()*(hi-lo)};
   const f=function(n){return n.toFixed(1)};
@@ -3923,6 +3924,14 @@ function paintWear(){
   };
   const svg=function(x,y,c,body){
     return '<svg width="'+c*2+'" height="'+c*2+'" viewBox="0 0 '+c*2+' '+c*2+'" style="left:'+f(x-c)+'px;top:'+f(y-c)+'px">'+body+'</svg>';
+  };
+  /* a large mark is cut around the words it crosses instead of being hidden whole */
+  const big=function(x,y,c,body){
+    const k=++wearId,id='wm'+k;
+    return '<svg class="big" width="'+c*2+'" height="'+c*2+'" viewBox="0 0 '+c*2+' '+c*2+'" style="left:'+f(x-c)+'px;top:'+f(y-c)+'px">'+
+      '<defs><filter id="wf'+k+'" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2"/></filter>'+
+      '<mask id="'+id+'" maskUnits="userSpaceOnUse" x="0" y="0" width="'+c*2+'" height="'+c*2+'"><rect width="'+c*2+'" height="'+c*2+'" fill="white"/></mask></defs>'+
+      '<g mask="url(#'+id+')">'+body+'</g></svg>';
   };
   const edgeX=function(){return rnd()<.5?span(-.02,.12)*W:span(.88,1.02)*W};
   const anyX=function(){return span(.05,.95)*W};
@@ -3965,6 +3974,20 @@ function paintWear(){
           '<path class="fb" opacity="'+o(.03,.07)+'" d="'+blob(c,c,r,.05,16)+'"/>'+
           '<path class="sc" stroke-width="'+f(span(.9,2))+'" opacity="'+o(.22,.36)+'" d="'+blob(c,c,r,.05,16)+'"/>'+
           '<path class="sc" stroke-width=".5" opacity="'+o(.08,.14)+'" d="'+blob(c,c,r*.93,.06,14)+'"/>'));
+      }
+      /* now and then the base of a mug: a wide ring, heavier where it sat, sometimes set down twice */
+      if(rnd()<.2){
+        const r=span(44,68),c=Math.ceil(r+22);
+        const arc=span(.3,.6)*6.2832*r,gap=6.2832*r;
+        let mug='<path class="fb" opacity="'+o(.03,.05)+'" d="'+blob(c,c,r,.03,22)+'"/>'+
+          '<path class="sc" stroke-width="'+f(span(2,3.4))+'" opacity="'+o(.16,.26)+'" d="'+blob(c,c,r,.03,22)+'"/>'+
+          '<path class="sc" stroke-width="'+f(span(1,1.6))+'" stroke-dasharray="'+f(arc)+' '+f(gap)+'" stroke-dashoffset="'+f(span(0,gap))+
+          '" opacity="'+o(.3,.45)+'" d="'+blob(c,c,r*1.01,.02,22)+'"/>';
+        if(rnd()<.4){
+          const dx=span(-14,14),dy=span(-14,14);
+          mug+='<path class="sc" stroke-width="'+f(span(1,2))+'" opacity="'+o(.1,.18)+'" d="'+blob(c+dx,c+dy,r*span(.97,1.02),.03,22)+'"/>';
+        }
+        out.push(big(span(-.08,1.08)*W,top+span(0,H),c,mug));
       }
     }else{
       /* rust flecks in loose clusters */
@@ -4019,14 +4042,32 @@ function paintWear(){
           '<path class="fb" opacity="'+o(.08,.15)+'" d="'+blob(c,c,rr,.08,14)+'"/>'+
           '<path class="sa" stroke-width="'+f(span(.8,1.6))+'" stroke-dasharray="'+f(span(6,18))+' '+f(span(2,8))+'" opacity="'+o(.25,.45)+'" d="'+blob(c,c,rr,.08,14)+'"/>'));
       }
+      /* now and then a long scrape across the metal: a bright gouge with its shadow and the
+         lesser lines dragged beside it, fading in and out at the ends */
+      if(rnd()<.2){
+        const len=span(90,200),c=Math.ceil(len/2+16),a=span(-35,35),bend=span(-10,10),gid='wg'+(++wearId);
+        const x0=c-len/2,x1=c+len/2;
+        let sp='<defs><linearGradient id="'+gid+'" gradientUnits="userSpaceOnUse" x1="'+f(x0)+'" y1="0" x2="'+f(x1)+'" y2="0">'+
+          '<stop offset="0" stop-opacity="0" style="stop-color:var(--wear-c)"/><stop offset=".25" stop-opacity="1" style="stop-color:var(--wear-c)"/>'+
+          '<stop offset=".7" stop-opacity="1" style="stop-color:var(--wear-c)"/><stop offset="1" stop-opacity="0" style="stop-color:var(--wear-c)"/></linearGradient></defs>'+
+          '<g transform="rotate('+f(a)+' '+c+' '+c+')" fill="none" stroke-linecap="round">';
+        const line=function(dy,w,op,cls){
+          return '<path '+(cls?'class="'+cls+'"':'stroke="url(#'+gid+')"')+' stroke-width="'+f(w)+'" opacity="'+op+
+            '" d="M'+f(x0+span(0,20))+' '+f(c+dy)+'Q'+f(c)+' '+f(c+dy+bend)+' '+f(x1-span(0,20))+' '+f(c+dy)+'"/>';
+        };
+        sp+=line(0,span(1.1,1.7),o(.6,.8))+line(1.2,span(.8,1.2),o(.55,.75),'sb');
+        const lesser=Math.floor(span(3,7));
+        for(let i=0;i<lesser;i++)sp+=line(span(-7,8),span(.4,.8),o(.22,.42));
+        out.push(big(span(.1,.9)*W,top+span(0,H),c,sp+'</g>'));
+      }
     }
   }
   host.innerHTML=out.join('');
   setTimeout(clearWear,0);
 }
-/* a mark that would sit under words is hidden rather than moved, so text never reads
-   through a stain and nothing shifts when a panel opens. Checked again whenever the
-   page changes size. */
+/* a mark that would sit under words is hidden, and a large one is cut around them, rather
+   than moved, so text never reads through a stain and nothing shifts when a panel opens.
+   Checked again whenever the page changes size. */
 function clearWear(){
   const host=document.querySelector('.wear');
   if(!host||!host.firstChild)return;
@@ -4041,15 +4082,31 @@ function clearWear(){
     const rs=range.getClientRects();
     for(let i=0;i<rs.length;i++){const r=rs[i];if(r.width&&r.height)rects.push([r.left-4,r.top-3,r.right+4,r.bottom+3])}
   }
-  const brief=document.querySelector('.view.on .brief');
-  if(brief){const r=brief.getBoundingClientRect();rects.push([r.left,r.top,r.right,r.bottom])}
+  /* the swiping brief, and rows whose marks are drawn by CSS rather than written, count whole */
+  host.parentElement.querySelectorAll('.brief,summary,td.g-poor').forEach(function(e){
+    const r=e.getBoundingClientRect();if(r.width&&r.height)rects.push([r.left,r.top,r.right,r.bottom]);
+  });
   const hit=function(l,t,r,b){
     for(let i=0;i<rects.length;i++){const q=rects[i];if(l<q[2]&&r>q[0]&&t<q[3]&&b>q[1])return true}
     return false;
   };
   host.querySelectorAll('svg').forEach(function(s){
+    s.classList.remove('held');
     if(s.dataset.grit){
       s.querySelectorAll('circle').forEach(function(c){const r=c.getBoundingClientRect();c.style.visibility=hit(r.left,r.top,r.right,r.bottom)?'hidden':''});
+      return;
+    }
+    if(s.classList.contains('big')){
+      const box=s.getBoundingClientRect(),m=s.querySelector('mask');
+      if(!m)return;
+      let cut='';
+      for(let i=0;i<rects.length;i++){
+        const q=rects[i];
+        if(q[0]<box.right&&q[2]>box.left&&q[1]<box.bottom&&q[3]>box.top)
+          cut+='<rect x="'+(q[0]-box.left).toFixed(1)+'" y="'+(q[1]-box.top).toFixed(1)+'" width="'+(q[2]-q[0]).toFixed(1)+'" height="'+(q[3]-q[1]).toFixed(1)+'" fill="black"/>';
+      }
+      /* the cut is feathered, so a stain fades out as it reaches a word instead of stopping square */
+      m.innerHTML='<rect width="'+box.width+'" height="'+box.height+'" fill="white"/><g filter="url(#'+m.id.replace('wm','wf')+')">'+cut+'</g>';
       return;
     }
     let l=Infinity,t=Infinity,r=-Infinity,b=-Infinity;
@@ -4057,9 +4114,17 @@ function clearWear(){
     s.classList.toggle('under',l<r&&hit(l,t,r,b));
   });
 }
+/* a panel opening or shutting moves everything below it, so those marks go the moment it
+   is tapped and the clear ones come back once the page has settled */
+function wearHold(el){
+  const host=document.querySelector('.wear');
+  if(!host||!el||!el.getBoundingClientRect)return;
+  const y=el.getBoundingClientRect().top;
+  host.querySelectorAll('svg').forEach(function(s){if(s.getBoundingClientRect().bottom>y)s.classList.add('held')});
+}
 let wearTick=null;
 if('ResizeObserver' in window){
-  new ResizeObserver(function(){clearTimeout(wearTick);wearTick=setTimeout(clearWear,220)}).observe(document.querySelector('.wrap'));
+  new ResizeObserver(function(){clearTimeout(wearTick);wearTick=setTimeout(clearWear,120)}).observe(document.querySelector('.wrap'));
 }
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){clearWear()});
 (function(){
