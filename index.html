@@ -129,16 +129,15 @@ body:not([data-view="train"]) #soundBtn{display:none}
 .hero h1{font-family:var(--face-display);font-weight:600;font-size:clamp(52px,17vw,88px);
   line-height:.92;letter-spacing:-.01em;margin-bottom:20px;text-shadow:0 0 38px var(--glow)}
 .hero .sub{font-style:italic;color:var(--text-soft);font-size:18px}
-/* the one sentence the saved state most wants said, set as a margin note rather than a
-   banner so the day's button stays the only filled thing on the page. A line that asks
-   for something today takes the rust rule and full-strength text. */
-.hero .insight{margin-top:24px;padding:3px 0 3px 15px;border-left:2px solid var(--rule)}
-.hero .insight .hd{display:block;font-family:var(--face-mono);font-size:10.5px;font-weight:700;
-  letter-spacing:.18em;color:var(--text-dim);margin-bottom:5px}
-.hero .insight p{font-size:17px;line-height:1.45;color:var(--text-soft);max-width:none;margin:0}
-.hero .insight.act{border-left-color:var(--rust)}
-.hero .insight.act .hd{color:var(--ember)}
-.hero .insight.act p{color:var(--text)}
+/* the one sentence the saved state most wants said, led by a flag naming its kind. A line
+   that asks for something today fills its flag and takes full-strength text. */
+.hero .insight{margin-top:18px;font-size:17px;line-height:1.55;color:var(--text-soft)}
+.hero .insight .hd{display:inline-block;vertical-align:.14em;font-family:var(--face-mono);font-size:10px;
+  font-weight:700;letter-spacing:.16em;line-height:1;padding:4px 7px 3px;margin-right:10px;
+  border:1px solid var(--rule);color:var(--text-dim)}
+.hero .insight p{display:inline;margin:0}
+.hero .insight.act{color:var(--text)}
+.hero .insight.act .hd{background:var(--rust-fill);border-color:var(--rust-fill);color:var(--on-rust)}
 /* one panel per weekday, swiped sideways; the week strip shows which is in view */
 .brief{display:flex;align-items:stretch;overflow-x:auto;gap:14px;margin-top:32px;
   scroll-snap-type:x mandatory;transition:height .2s ease;
