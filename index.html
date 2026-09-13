@@ -113,7 +113,7 @@ body:not([data-view="train"]) #soundBtn{display:none}
 .icon-btn.off::after{content:'';position:absolute;left:50%;top:50%;width:19px;height:1px;
   background:currentColor;transform:translate(-50%,-50%) rotate(-45deg)}
 
-.hero{padding:12px 0 26px;position:relative}
+.hero{padding:16px 0 32px;position:relative}
 /* the hero keeps the full emulsion; body text reads through a thinner layer */
 .hero::after{content:'';position:absolute;inset:-14px -20px;pointer-events:none;z-index:0;
   opacity:var(--grain-hero);
@@ -188,7 +188,7 @@ body:not([data-view="train"]) #soundBtn{display:none}
 
 details{border-top:1px solid var(--edge)}
 .det-group details:last-of-type,details.solo{border-bottom:1px solid var(--edge)}
-summary{list-style:none;cursor:pointer;padding:16px 0;display:flex;align-items:baseline;gap:12px}
+summary{list-style:none;cursor:pointer;padding:20px 0;display:flex;align-items:baseline;gap:12px}
 summary::-webkit-details-marker{display:none}
 summary h2{font-family:var(--face-display);font-weight:700;font-size:25px;line-height:1.15}
 summary .meta{font-family:var(--face-mono);font-size:11px;font-weight:700;letter-spacing:.14em;
@@ -197,13 +197,13 @@ summary::after{content:'+';font-family:var(--face-mono);color:var(--rust);font-s
 details[open]>summary::after{content:'–'}
 details>.det-body.flowing{overflow:hidden;will-change:height;contain:layout paint}
 details[open]>summary h2{color:var(--rust)}
-.det-body{padding:0 0 22px}
+.det-body{padding:6px 0 30px}
 details.nest{border-top:1px dashed var(--edge)}
 .det-group details.nest:last-of-type{border-bottom:1px dashed var(--edge)}
-details.nest>summary{padding:13px 0}
+details.nest>summary{padding:16px 0}
 details.nest>summary h3{font-family:var(--face-display);font-weight:700;font-size:21px;line-height:1.15;margin:0;flex:1}
 details.nest[open]>summary h3{color:var(--rust)}
-details.nest>.det-body{padding:2px 0 18px}
+details.nest>.det-body{padding:6px 0 22px}
 .shop-tools{display:flex;align-items:center;gap:10px;margin:2px 0 26px;position:relative}
 .shop-tools .watch{margin:0}
 /* centred on the gap: half of the tools row's own bottom margin */
@@ -217,7 +217,7 @@ table.data td.w-palette{font-family:var(--face-display);font-size:20px;color:var
 table.data .rm{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:17px;padding:0 4px;line-height:1}
 @media (hover:hover){table.data .rm:hover{color:var(--rust)}}
 
-.ex{padding:16px 0;border-top:1px dashed var(--edge-hi)}
+.ex{padding:20px 0;border-top:1px dashed var(--edge-hi)}
 .ex.off{opacity:.4}
 .ex:first-child{border-top:none}
 .ex-top{display:flex;align-items:baseline;gap:10px}
@@ -283,7 +283,7 @@ a.watch{text-decoration:none;display:inline-block}
 .prose h3{font-family:var(--face-display);font-weight:700;font-size:21px;margin:22px 0 9px;color:var(--text)}
 .journal-h{font-family:var(--face-display);font-weight:700;font-size:21px;margin:22px 0 4px}
 .prose .rc{font-family:var(--face-mono);font-size:11px;letter-spacing:.06em;color:var(--text-dim);margin:-6px 0 8px}
-.note{border-left:2px solid var(--rust);padding:13px 0 13px 16px;margin:18px 0;
+.note{border-left:2px solid var(--rust);padding:13px 0 13px 16px;margin:22px 0;
   background:linear-gradient(90deg,var(--glow),transparent 62%)}
 .note p{margin-bottom:8px;max-width:none;color:var(--text-soft)}
 .note p:last-child{margin-bottom:0}
@@ -305,11 +305,11 @@ table.data{width:100%;border-collapse:collapse;font-family:var(--face-mono);font
 table.data th{font-size:10px;letter-spacing:.16em;font-weight:700;text-align:left;
   text-transform:uppercase;color:var(--ember);
   padding:9px 6px 5px;border-bottom:1px solid var(--rust-lo)}
-table.data td{padding:8px 6px;border-bottom:1px dashed var(--edge);vertical-align:top}
+table.data td{padding:10px 6px;border-bottom:1px dashed var(--edge);vertical-align:top}
 table.data td.hl{color:var(--rust);font-weight:700}
 table.data .soft{font-family:var(--face-body);font-style:italic;font-size:14px;color:var(--text-soft)}
 
-.chk{display:flex;align-items:flex-start;gap:13px;padding:13px 0;border-top:1px dashed var(--edge)}
+.chk{display:flex;align-items:flex-start;gap:13px;padding:16px 0;border-top:1px dashed var(--edge)}
 .chk:first-child{border-top:none}
 .box{width:24px;height:24px;border:1px solid var(--rust-lo);border-radius:3px;flex-shrink:0;
   display:grid;place-items:center;background:var(--bg-raise);font-size:14px;position:relative;
@@ -325,7 +325,7 @@ table.data .soft{font-family:var(--face-body);font-style:italic;font-size:14px;c
 .chk .del{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:17px;padding:0 4px;line-height:1}
 .chk.off{opacity:.4}
 .chk.off .box{cursor:default}
-.place{padding:12px 0;border-top:1px dashed var(--edge)}
+.place{padding:15px 0;border-top:1px dashed var(--edge)}
 .pl-group{font-family:var(--face-display);font-weight:700;font-size:21px;letter-spacing:0;
   color:var(--rust);margin:26px 0 8px;padding:14px 0 0;border-top:1px solid var(--rust-lo)}
 details.pl-fold>summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none}
@@ -366,12 +366,12 @@ a.pl-n{text-decoration:underline;text-decoration-color:var(--rust-lo);text-under
 .stretch .chk .del{order:3}
 
 .track{height:3px;background:var(--edge);border-radius:2px;overflow:hidden;margin:14px 0 7px}
-.loop{padding:8px 0;border-top:1px dashed var(--edge);font-size:15px;color:var(--text-soft)}
+.loop{padding:10px 0;border-top:1px dashed var(--edge);font-size:15px;color:var(--text-soft)}
 .loop:first-child{border-top:none}
 .loop.done{color:var(--text-dim);text-decoration:line-through}
 .track i{display:block;height:100%;background:var(--rust-fill)}
 
-.log-row{display:flex;gap:8px;margin-top:12px}
+.log-row{display:flex;gap:8px;margin-top:16px}
 .log-row input{flex:1;min-width:0;background:var(--bg-raise);border:1px solid var(--edge);border-radius:var(--round);
   padding:11px 10px;color:var(--text);font-family:var(--face-mono);font-size:14px}
 .log-row input:focus{outline:none;border-color:var(--rust)}
