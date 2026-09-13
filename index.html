@@ -30,6 +30,7 @@
   --ease:cubic-bezier(.22,.61,.36,1);--spring:cubic-bezier(.2,1.5,.4,1);--round:5px;
   --leak-a:#F57A30;--leak-b:#B8401A;--leak-c:#7E3016;
   --rag-good:#669A3E;--rag-fair:var(--flame);--rag-poor:#C24440;--flame:#DCA83A;
+  --wear-a:#B4521F;--wear-b:#7A3414;--wear-c:#D2AE84;
 }
 :root[data-theme="light"]{
   --bg:#EDE5D3;--bg-raise:#F6F0E3;--bg-sink:#E2D7C0;--edge:#C9BCA1;--edge-hi:#AE9E80;
@@ -40,6 +41,7 @@
   --ease:cubic-bezier(.22,.61,.36,1);--spring:cubic-bezier(.2,1.5,.4,1);--round:5px;
   --leak-a:#C9A268;--leak-b:#9C7A4E;--leak-c:#6E5B3E;
   --rag-good:#437021;--rag-fair:var(--flame);--rag-poor:#A3302A;--flame:#7F6600;
+  --wear-a:#2B2420;--wear-b:#8A5A2C;--wear-c:#7A4E24;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{background:var(--bg)}
@@ -61,28 +63,12 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   --leak-x:104%;--leak-y:-8%;--leak-w:58%;--leak-h:40%;
   --leak2-x:110%;--leak2-y:20%;--leak3-x:-10%;--leak3-y:106%;
   --leak4-x:50%;--leak4-y:50%;--leak4-w:0%;--leak4-h:0%;
-  --spk-w:0%;--spk1-x:50%;--spk1-y:50%;--spk2-x:50%;--spk2-y:50%;--spk3-x:50%;--spk3-y:50%;
-  --spk4-x:50%;--spk4-y:50%;--spk5-x:50%;--spk5-y:50%;--spk6-x:50%;--spk6-y:50%;
-  --spk7-x:50%;--spk7-y:50%;--spk8-x:50%;--spk8-y:50%;--spk9-x:50%;--spk9-y:50%;
-  --spk10-x:50%;--spk10-y:50%;--spk11-x:50%;--spk11-y:50%;--spk12-x:50%;--spk12-y:50%;
   transition:opacity .6s var(--ease);
   background:
     radial-gradient(ellipse var(--leak-w) var(--leak-h) at calc(var(--leak-x) + var(--leak-drift-x,0%)) calc(var(--leak-y) + var(--leak-drift-y,0%) - var(--leak-scroll)),var(--leak-a),transparent 60%),
     radial-gradient(ellipse 28% 58% at calc(var(--leak2-x) - var(--leak-drift-x,0%)) calc(var(--leak2-y) + var(--leak-drift-y,0%) - var(--leak-scroll)),var(--leak-b),transparent 68%),
     radial-gradient(ellipse 74% 24% at calc(var(--leak3-x) + var(--leak-drift-y,0%)) calc(var(--leak3-y) - var(--leak-drift-x,0%) - var(--leak-scroll)),var(--leak-c),transparent 64%),
-    radial-gradient(ellipse var(--leak4-w) var(--leak4-h) at var(--leak4-x) calc(var(--leak4-y) - var(--leak-scroll)),var(--leak-c),transparent 62%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk1-x) calc(var(--spk1-y) - var(--leak-scroll)),var(--leak-c) 30%,transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk2-x) calc(var(--spk2-y) - var(--leak-scroll)),var(--leak-b) 30%,transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk3-x) calc(var(--spk3-y) - var(--leak-scroll)),var(--leak-c) 30%,transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk4-x) calc(var(--spk4-y) - var(--leak-scroll)),var(--leak-b) 30%,transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk5-x) calc(var(--spk5-y) - var(--leak-scroll)),var(--leak-c) 30%,transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk6-x) calc(var(--spk6-y) - var(--leak-scroll)),var(--leak-b) 30%,transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk7-x) calc(var(--spk7-y) - var(--leak-scroll)),var(--leak-c) 30%,transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk8-x) calc(var(--spk8-y) - var(--leak-scroll)),var(--leak-b) 30%,transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk9-x) calc(var(--spk9-y) - var(--leak-scroll)),var(--leak-c) 30%,transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk10-x) calc(var(--spk10-y) - var(--leak-scroll)),var(--leak-b) 30%,transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk11-x) calc(var(--spk11-y) - var(--leak-scroll)),var(--leak-c) 30%,transparent 74%),
-    radial-gradient(ellipse var(--spk-w) var(--spk-w) at var(--spk12-x) calc(var(--spk12-y) - var(--leak-scroll)),var(--leak-b) 30%,transparent 74%)}
+    radial-gradient(ellipse var(--leak4-w) var(--leak4-h) at var(--leak4-x) calc(var(--leak4-y) - var(--leak-scroll)),var(--leak-c),transparent 62%)}
 /* each view catches the light from somewhere else */
 body[data-view="train"] .leak{--leak-x:-6%;--leak-y:-10%;--leak-w:52%;--leak-h:46%;--leak2-x:-8%;--leak2-y:26%;--leak3-x:108%;--leak3-y:102%}
 body[data-view="fuel"] .leak{--leak-x:50%;--leak-y:-14%;--leak-w:78%;--leak-h:30%;--leak2-x:104%;--leak2-y:64%;--leak3-x:-6%;--leak3-y:104%}
@@ -99,6 +85,12 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
   background-size:128px 128px}
 
 .wrap{max-width:620px;margin:0 auto;padding:0 20px;position:relative;z-index:3}
+/* wear: in the page and under the text, clipped to it so it never lengthens the page */
+.wear{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1}
+.wear svg{position:absolute;overflow:visible}
+.wear .fa{fill:var(--wear-a)}
+.wear .fb{fill:var(--wear-b)}
+.wear .sc{fill:none;stroke:var(--wear-c)}
 
 .masthead{padding:calc(20px + env(safe-area-inset-top)) 0 14px;display:flex;align-items:center;justify-content:space-between}
 .mark{font-family:var(--face-mono);font-size:11px;letter-spacing:.3em;color:var(--text-dim)}
@@ -523,6 +515,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
 <body>
 <div class="leak"></div><div class="vig"></div>
 <div class="wrap">
+<div class="wear" aria-hidden="true"></div>
   <div class="masthead">
     <span class="mark">THE VITO PROTOCOL</span>
     <div class="head-btns">
@@ -3310,7 +3303,7 @@ document.getElementById('soundBtn').onclick=function(){S.sound=!S.sound;save();p
 paintSound();
 function switchView(v){
   document.body.dataset.view=v;
-  leakSettled=false;paintLeak();
+  leakSettled=false;paintLeak();paintWear();
   setTimeout(function(){measureReach();leakSettled=true;paintCollapse()},0);
   document.querySelectorAll('.view').forEach(function(s){s.classList.toggle('on',s.id==='v-'+v)});
   document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('on',b.dataset.v===v)});
@@ -3326,7 +3319,7 @@ document.getElementById('themeBtn').onclick=function(){
   S.theme=S.theme==='dark'?'light':'dark';
   document.documentElement.dataset.theme=S.theme;
   document.querySelector('meta[name=theme-color]').content=S.theme==='dark'?'#14100E':'#EDE5D3';
-  leakFrame='';paintLeak();
+  leakFrame='';paintLeak();wearFrame='';paintWear();
   save();
 };
 /* ── out: standing plans and places ── */
@@ -3828,21 +3821,103 @@ function paintLeak(){
     p=edge();set('--leak4-x',p[0]);set('--leak4-y',p[1]);
     set('--leak4-w',rint(24,44)+'%');set('--leak4-h',rint(16,32)+'%');
   }else{set('--leak4-w','0%');set('--leak4-h','0%')}
-  /* wear belongs to the paper rather than to the moment, so it is always there.
-     The register decides how coarse: ink sits on a sheet, light only glints on glass. */
-  const paper=getComputedStyle(document.documentElement).getPropertyValue('--stain').trim()==='multiply';
-  set('--spk-w',((paper?0.7:0.4)+rnd()*(paper?0.8:0.5)).toFixed(2)+'vmin');
-  /* about three to a screen, dealt down the page in bands so no stretch of it goes bare */
-  const spk=Math.min(12,Math.max(3,Math.round(reach/100*3)));
-  for(let n=1;n<=12;n++){
-    const lo=2+(n-1)*(reach-2)/spk,hi=2+n*(reach-2)/spk;
-    set('--spk'+n+'-x',rint(4,96)+'%');
-    set('--spk'+n+'-y',(n<=spk?rint(Math.floor(lo),Math.ceil(hi)):-300)+'%');
+}
+/* wear on the sheet. The marks sit in the page, so they scroll with it instead of being
+   moved after it, and they sit under the text. Laid by the date and the view, so they hold
+   all day: rust and scuffs on the dark register, ink and tea on paper. Anything large keeps
+   to the margins. */
+var wearFrame='';
+function paintWear(){
+  const host=document.querySelector('.wear');
+  if(!host)return;
+  const paper=document.documentElement.dataset.theme==='light';
+  const view=document.body.dataset.view||'today';
+  const key=todayKey()+'|'+view+'|'+(paper?'paper':'dark');
+  if(key===wearFrame)return;
+  wearFrame=key;
+  const sk=todayKey()+'|'+view;
+  let seed=7;for(let i=0;i<sk.length;i++)seed=(seed*31+sk.charCodeAt(i))>>>0;
+  const rnd=function(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+  const span=function(lo,hi){return lo+rnd()*(hi-lo)};
+  const f=function(n){return n.toFixed(1)};
+  const o=function(lo,hi){return span(lo,hi).toFixed(2)};
+  const W=host.clientWidth||innerWidth,H=innerHeight;
+  /* an irregular closed shape: points on a wobbling radius, joined by curves */
+  const blob=function(cx,cy,r,jit,n){
+    const p=[];
+    for(let i=0;i<n;i++){const a=i/n*6.2832,rr=r*(1+(rnd()*2-1)*jit);p.push([cx+Math.cos(a)*rr,cy+Math.sin(a)*rr])}
+    let d='M'+f((p[0][0]+p[n-1][0])/2)+' '+f((p[0][1]+p[n-1][1])/2);
+    for(let i=0;i<n;i++){const q=p[(i+1)%n];d+='Q'+f(p[i][0])+' '+f(p[i][1])+' '+f((p[i][0]+q[0])/2)+' '+f((p[i][1]+q[1])/2)}
+    return d+'Z';
+  };
+  const svg=function(x,y,c,body){
+    return '<svg width="'+c*2+'" height="'+c*2+'" viewBox="0 0 '+c*2+' '+c*2+'" style="left:'+f(x-c)+'px;top:'+f(y-c)+'px">'+body+'</svg>';
+  };
+  const edgeX=function(){return rnd()<.5?span(-.02,.12)*W:span(.88,1.02)*W};
+  const out=[];
+  for(let s=0;s<12;s++){
+    const top=s*H;
+    /* fine grit across the screen: dust and rust on the dark sheet, foxing and ink on paper */
+    let grit='';
+    const specks=Math.floor(span(12,20));
+    for(let i=0;i<specks;i++)grit+='<circle class="'+(rnd()<(paper?.35:.55)?'fa':'fb')+'" cx="'+f(span(0,W))+'" cy="'+f(span(0,H))+
+      '" r="'+f(span(.35,paper?.8:.95))+'" opacity="'+o(paper?.2:.3,paper?.45:.6)+'"/>';
+    out.push('<svg width="'+Math.round(W)+'" height="'+Math.round(H)+'" style="left:0;top:'+Math.round(top)+'px">'+grit+'</svg>');
+    if(paper){
+      /* a tea spot: a pale pool with a darker dried edge */
+      let r=span(4,11);
+      out.push(svg(span(.06,.94)*W,top+span(0,H),22,
+        '<path class="fb" opacity="'+o(.14,.24)+'" d="'+blob(22,22,r,.28,11)+'"/>'+
+        '<path class="sc" stroke-width=".9" opacity="'+o(.32,.48)+'" d="'+blob(22,22,r,.28,11)+'"/>'));
+      /* an ink splatter: a body, thrown droplets, sometimes a streak */
+      r=span(2.5,6.5);
+      let ink='<path class="fa" d="'+blob(30,30,r,.35,10)+'"/>';
+      const drops=Math.floor(span(3,9));
+      for(let i=0;i<drops;i++){
+        const a=span(0,6.2832),dist=r*span(1.4,3.4),dr=Math.max(.45,span(.4,1.9)*(1.6-dist/(r*3.4)));
+        ink+='<path class="fa" d="'+blob(30+Math.cos(a)*dist,30+Math.sin(a)*dist,dr,.25,6)+'"/>';
+      }
+      if(rnd()<.6)ink+='<ellipse class="fa" cx="30" cy="30" rx="'+f(span(2,4.5))+'" ry="'+f(span(.4,.8))+
+        '" transform="rotate('+f(span(0,360))+' 30 30) translate('+f(r*span(1.6,2.6))+' 0)"/>';
+      out.push(svg(edgeX(),top+span(0,H),30,'<g opacity="'+o(.45,.7)+'">'+ink+'</g>'));
+      /* a tea ring left by a cup, its edge doubled where it dried */
+      if(rnd()<.65){
+        r=span(14,36);const c=Math.ceil(r+8);
+        out.push(svg(rnd()<.5?span(-.04,.22)*W:span(.78,1.04)*W,top+span(0,H),c,
+          '<path class="fb" opacity="'+o(.03,.07)+'" d="'+blob(c,c,r,.05,16)+'"/>'+
+          '<path class="sc" stroke-width="'+f(span(.9,2))+'" opacity="'+o(.22,.36)+'" d="'+blob(c,c,r,.05,16)+'"/>'+
+          '<path class="sc" stroke-width=".5" opacity="'+o(.08,.14)+'" d="'+blob(c,c,r*.93,.06,14)+'"/>'));
+      }
+    }else{
+      /* rust flecks in a loose cluster */
+      let fl='';
+      const n=Math.floor(span(3,8));
+      for(let i=0;i<n;i++)fl+='<path class="'+(rnd()<.6?'fa':'fb')+'" opacity="'+o(.5,.9)+'" d="'+blob(18+span(-11,11),18+span(-11,11),span(.6,2.4),.45,7)+'"/>';
+      out.push(svg(span(.05,.95)*W,top+span(0,H),18,fl));
+      /* a patch where the rust has taken hold, pitted at the centre */
+      const r=span(6,14);
+      let rs='<path class="fb" opacity="'+o(.3,.45)+'" d="'+blob(26,26,r,.3,15)+'"/>'+
+        '<path class="fa" opacity="'+o(.4,.6)+'" d="'+blob(26+span(-2,2),26+span(-2,2),r*.62,.3,13)+'"/>';
+      const pits=Math.floor(span(3,7));
+      for(let i=0;i<pits;i++)rs+='<path class="fb" opacity="'+o(.45,.7)+'" d="'+blob(26+span(-r*.6,r*.6),26+span(-r*.6,r*.6),span(.4,1.2),.3,6)+'"/>';
+      out.push(svg(edgeX(),top+span(0,H),26,rs));
+      /* a scuff that catches the light */
+      if(rnd()<.5){
+        const len=span(18,60),a=span(-.5,.5),bend=span(-6,6),c=Math.ceil(len/2+6);
+        const x0=c-Math.cos(a)*len/2,y0=c-Math.sin(a)*len/2,x1=c+Math.cos(a)*len/2,y1=c+Math.sin(a)*len/2;
+        let sc='<path class="sc" stroke-linecap="round" stroke-width="'+f(span(.5,1))+'" opacity="'+o(.18,.34)+
+          '" d="M'+f(x0)+' '+f(y0)+'Q'+f(c+bend)+' '+f(c-bend)+' '+f(x1)+' '+f(y1)+'"/>';
+        if(rnd()<.5)sc+='<path class="sc" stroke-linecap="round" stroke-width=".5" opacity="'+o(.08,.16)+
+          '" d="M'+f(x0+3)+' '+f(y0+2.5)+'Q'+f(c+bend+3)+' '+f(c-bend+2.5)+' '+f(x1-len*.3)+' '+f(y1+2.5)+'"/>';
+        out.push(svg(span(.08,.92)*W,top+span(0,H),c,sc));
+      }
+    }
   }
+  host.innerHTML=out.join('');
 }
 (function(){
   document.body.dataset.view='today';
-  paintLeak();
+  paintLeak();paintWear();
   setTimeout(function(){measureReach();leakSettled=true},0);
   setInterval(paintLeak,60000);
 })();
