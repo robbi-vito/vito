@@ -4016,19 +4016,20 @@ function paintWear(){
           '<path class="sc" stroke-width="'+f(span(.9,2))+'" opacity="'+o(.22,.36)+'" d="'+blob(c,c,r,.05,16)+'"/>'+
           '<path class="sc" stroke-width=".5" opacity="'+o(.08,.14)+'" d="'+blob(c,c,r*.93,.06,14)+'"/>'));
       }
-      /* now and then the base of a mug: a wide ring, heavier where it sat, sometimes set down twice */
+      /* now and then the base of a mug, drawn to the size a real one leaves on a sheet: a wide
+         ring, heavier where it sat, sometimes set down twice, often running off the edge */
       if(rnd()<.2){
-        const r=span(44,68),c=Math.ceil(r+22);
+        const r=span(62,92),c=Math.ceil(r+26);
         const arc=span(.3,.6)*6.2832*r,gap=6.2832*r;
-        let mug='<path class="fb" opacity="'+o(.03,.05)+'" d="'+blob(c,c,r,.03,22)+'"/>'+
-          '<path class="sc" stroke-width="'+f(span(2,3.4))+'" opacity="'+o(.16,.26)+'" d="'+blob(c,c,r,.03,22)+'"/>'+
-          '<path class="sc" stroke-width="'+f(span(1,1.6))+'" stroke-dasharray="'+f(arc)+' '+f(gap)+'" stroke-dashoffset="'+f(span(0,gap))+
-          '" opacity="'+o(.3,.45)+'" d="'+blob(c,c,r*1.01,.02,22)+'"/>';
+        let mug='<path class="fb" opacity="'+o(.03,.05)+'" d="'+blob(c,c,r,.025,26)+'"/>'+
+          '<path class="sc" stroke-width="'+f(span(2.4,4))+'" opacity="'+o(.16,.26)+'" d="'+blob(c,c,r,.025,26)+'"/>'+
+          '<path class="sc" stroke-width="'+f(span(1.2,2))+'" stroke-dasharray="'+f(arc)+' '+f(gap)+'" stroke-dashoffset="'+f(span(0,gap))+
+          '" opacity="'+o(.3,.45)+'" d="'+blob(c,c,r*1.01,.02,26)+'"/>';
         if(rnd()<.4){
-          const dx=span(-14,14),dy=span(-14,14);
-          mug+='<path class="sc" stroke-width="'+f(span(1,2))+'" opacity="'+o(.1,.18)+'" d="'+blob(c+dx,c+dy,r*span(.97,1.02),.03,22)+'"/>';
+          const dx=span(-18,18),dy=span(-18,18);
+          mug+='<path class="sc" stroke-width="'+f(span(1.2,2.2))+'" opacity="'+o(.1,.18)+'" d="'+blob(c+dx,c+dy,r*span(.97,1.02),.025,26)+'"/>';
         }
-        out.push(big(span(-.08,1.08)*W,top+span(0,H),c,mug));
+        out.push(big(span(-.15,1.15)*W,top+span(0,H),c,mug));
       }
     }else{
       /* rust flecks in loose clusters */
@@ -4083,23 +4084,26 @@ function paintWear(){
           '<path class="fb" opacity="'+o(.08,.15)+'" d="'+blob(c,c,rr,.08,14)+'"/>'+
           '<path class="sa" stroke-width="'+f(span(.8,1.6))+'" stroke-dasharray="'+f(span(6,18))+' '+f(span(2,8))+'" opacity="'+o(.25,.45)+'" d="'+blob(c,c,rr,.08,14)+'"/>'));
       }
-      /* now and then a long scrape across the metal: a bright gouge with its shadow and the
-         lesser lines dragged beside it, fading in and out at the ends */
+      /* now and then a scrape like a car leaves on a wall: a band of scratches dragged together,
+         each starting and stopping at its own point, most cut bright, some dark where paint was
+         dragged rather than cut, over a faint smear */
       if(rnd()<.2){
-        const len=span(90,200),c=Math.ceil(len/2+16),a=span(-35,35),bend=span(-10,10),gid='wg'+(++wearId);
-        const x0=c-len/2,x1=c+len/2;
+        const len=span(120,230),band=span(22,48),a=span(-30,30),bend=span(-8,8),gid='wg'+(++wearId);
+        const c=Math.ceil(len/2+band+12),x0=c-len/2,x1=c+len/2;
         let sp='<defs><linearGradient id="'+gid+'" gradientUnits="userSpaceOnUse" x1="'+f(x0)+'" y1="0" x2="'+f(x1)+'" y2="0">'+
-          '<stop offset="0" stop-opacity="0" style="stop-color:var(--wear-c)"/><stop offset=".25" stop-opacity="1" style="stop-color:var(--wear-c)"/>'+
-          '<stop offset=".7" stop-opacity="1" style="stop-color:var(--wear-c)"/><stop offset="1" stop-opacity="0" style="stop-color:var(--wear-c)"/></linearGradient></defs>'+
-          '<g transform="rotate('+f(a)+' '+c+' '+c+')" fill="none" stroke-linecap="round">';
-        const line=function(dy,w,op,cls){
-          return '<path '+(cls?'class="'+cls+'"':'stroke="url(#'+gid+')"')+' stroke-width="'+f(w)+'" opacity="'+op+
-            '" d="M'+f(x0+span(0,20))+' '+f(c+dy)+'Q'+f(c)+' '+f(c+dy+bend)+' '+f(x1-span(0,20))+' '+f(c+dy)+'"/>';
-        };
-        sp+=line(0,span(1.1,1.7),o(.6,.8))+line(1.2,span(.8,1.2),o(.55,.75),'sb');
-        const lesser=Math.floor(span(3,7));
-        for(let i=0;i<lesser;i++)sp+=line(span(-7,8),span(.4,.8),o(.22,.42));
-        out.push(big(span(.1,.9)*W,top+span(0,H),c,sp+'</g>'));
+          '<stop offset="0" stop-opacity="0" style="stop-color:var(--wear-c)"/><stop offset=".12" stop-opacity="1" style="stop-color:var(--wear-c)"/>'+
+          '<stop offset=".88" stop-opacity="1" style="stop-color:var(--wear-c)"/><stop offset="1" stop-opacity="0" style="stop-color:var(--wear-c)"/></linearGradient></defs>'+
+          '<g transform="rotate('+f(a)+' '+c+' '+c+')" fill="none" stroke-linecap="round">'+
+          '<rect class="fc" x="'+f(x0+len*.08)+'" y="'+f(c-band*.45)+'" width="'+f(len*.84)+'" height="'+f(band*.9)+'" rx="'+f(band*.45)+'" opacity="'+o(.03,.06)+'"/>';
+        const n=Math.floor(span(8,15));
+        for(let i=0;i<n;i++){
+          const dy=-band/2+band*(i+.5+span(-.3,.3))/n,s0=x0+span(0,.35)*len,s1=x1-span(0,.35)*len,mid=(s0+s1)/2;
+          const dark=rnd()<.25,broken=rnd()<.3;
+          sp+='<path '+(dark?'class="sb"':'stroke="url(#'+gid+')"')+' stroke-width="'+f(span(.35,dark?1.4:1))+'" opacity="'+o(dark?.35:.2,dark?.6:.55)+'"'+
+            (broken?' stroke-dasharray="'+f(span(20,60))+' '+f(span(3,10))+'"':'')+
+            ' d="M'+f(s0)+' '+f(c+dy)+'Q'+f((s0+mid)/2)+' '+f(c+dy+bend/2+span(-1.2,1.2))+' '+f(mid)+' '+f(c+dy+bend*.8)+'T'+f(s1)+' '+f(c+dy+span(-1.2,1.2))+'"/>';
+        }
+        out.push(big(span(.05,.95)*W,top+span(0,H),c,sp+'</g>'));
       }
     }
   }
