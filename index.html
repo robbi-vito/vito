@@ -190,7 +190,7 @@ body:not([data-view="train"]) #soundBtn{display:none}
 
 details{border-top:1px solid var(--edge)}
 .det-group details:last-of-type,details.solo{border-bottom:1px solid var(--edge)}
-summary{list-style:none;cursor:pointer;padding:20px 0;display:flex;align-items:baseline;gap:12px}
+summary{list-style:none;cursor:pointer;padding:17px 0;display:flex;align-items:baseline;gap:12px}
 summary::-webkit-details-marker{display:none}
 summary h2{font-family:var(--face-display);font-weight:700;font-size:25px;line-height:1.15}
 summary .meta{font-family:var(--face-mono);font-size:11px;font-weight:700;letter-spacing:.14em;
@@ -199,13 +199,13 @@ summary::after{content:'+';font-family:var(--face-mono);color:var(--rust);font-s
 details[open]>summary::after{content:'–'}
 details>.det-body.flowing{overflow:hidden;will-change:height;contain:layout paint}
 details[open]>summary h2{color:var(--rust)}
-.det-body{padding:6px 0 30px}
+.det-body{padding:0 0 26px}
 details.nest{border-top:1px dashed var(--rule)}
 .det-group details.nest:last-of-type{border-bottom:1px dashed var(--rule)}
-details.nest>summary{padding:16px 0}
+details.nest>summary{padding:14px 0}
 details.nest>summary h3{font-family:var(--face-display);font-weight:700;font-size:21px;line-height:1.15;margin:0;flex:1}
 details.nest[open]>summary h3{color:var(--rust)}
-details.nest>.det-body{padding:6px 0 22px}
+details.nest>.det-body{padding:2px 0 20px}
 .shop-tools{display:flex;align-items:center;gap:10px;margin:2px 0 26px;position:relative}
 .shop-tools .watch{margin:0}
 /* centred on the gap: half of the tools row's own bottom margin */
