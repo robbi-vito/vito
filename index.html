@@ -3175,7 +3175,7 @@ function renderBody(){
   document.getElementById('cBf').dataset.unit=(!last||last.f==null)?'':'%';
   document.getElementById('bodyHistory').innerHTML='<tr><th>Date</th><th>Weight</th><th>Body fat</th><th>Waist</th></tr>'+
     S.body.slice(-8).reverse().map(function(r){
-      return '<tr><td>'+r.d+'</td><td class="hl">'+r.w+' lb</td><td'+(bfGrade(r.f)?' class="g-'+bfGrade(r.f)+'"':'')+'>'+(r.f?r.f+'%':'—')+'</td><td>'+(r.waist?r.waist+' in':'—')+'</td></tr>'}).join('');
+      return '<tr><td>'+r.d+'</td><td>'+r.w+' lb</td><td'+(bfGrade(r.f)?' class="g-'+bfGrade(r.f)+'"':'')+'>'+(r.f?r.f+'%':'—')+'</td><td>'+(r.waist?r.waist+' in':'—')+'</td></tr>'}).join('');
 }
 document.getElementById('saveBody').onclick=function(){
   const w=parseFloat(document.getElementById('inWeight').value);if(!w)return;
