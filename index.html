@@ -97,7 +97,7 @@ body::after{content:'';position:fixed;inset:-1px;pointer-events:none;z-index:5;o
 .wear .sa{fill:none;stroke:var(--wear-a)}
 .wear .sb{fill:none;stroke:var(--wear-b)}
 
-.masthead{padding:calc(20px + env(safe-area-inset-top)) 0 14px;display:flex;align-items:center;justify-content:space-between}
+.masthead{padding:calc(20px + env(safe-area-inset-top)) 0 22px;display:flex;align-items:center;justify-content:space-between}
 .mark{font-family:var(--face-mono);font-size:11px;letter-spacing:.3em;color:var(--text-dim)}
 .head-btns{display:flex;gap:8px}
 /* the toggle governs the rest timer, and the timer only runs on Train */
@@ -115,7 +115,7 @@ body:not([data-view="train"]) #soundBtn{display:none}
 .icon-btn.off::after{content:'';position:absolute;left:50%;top:50%;width:19px;height:1px;
   background:currentColor;transform:translate(-50%,-50%) rotate(-45deg)}
 
-.hero{padding:16px 0 32px;position:relative}
+.hero{padding:24px 0 44px;position:relative}
 /* the hero keeps the full emulsion; body text reads through a thinner layer */
 .hero::after{content:'';position:absolute;inset:-14px -20px;pointer-events:none;z-index:0;
   opacity:var(--grain-hero);
@@ -125,13 +125,13 @@ body:not([data-view="train"]) #soundBtn{display:none}
   mask-image:linear-gradient(to bottom,transparent 0,#000 18%,#000 54%,transparent 100%)}
 .hero>*{position:relative;z-index:1}
 .hero .date{font-family:var(--face-mono);font-size:12px;letter-spacing:.22em;color:var(--text-dim);
-  margin-bottom:6px;text-wrap:balance;line-height:1.5}
+  margin-bottom:16px;text-wrap:balance;line-height:1.5}
 .hero h1{font-family:var(--face-display);font-weight:600;font-size:clamp(52px,17vw,88px);
-  line-height:.92;letter-spacing:-.01em;margin-bottom:8px;text-shadow:0 0 38px var(--glow)}
+  line-height:.92;letter-spacing:-.01em;margin-bottom:20px;text-shadow:0 0 38px var(--glow)}
 .hero .sub{font-style:italic;color:var(--text-soft);font-size:18px}
-.hero .insight{font-family:var(--face-mono);font-size:13px;color:var(--text-soft);margin-top:8px}
+.hero .insight{font-family:var(--face-mono);font-size:13px;color:var(--text-soft);margin-top:16px}
 /* one panel per weekday, swiped sideways; the week strip shows which is in view */
-.brief{display:flex;align-items:stretch;overflow-x:auto;gap:14px;margin-top:17px;
+.brief{display:flex;align-items:stretch;overflow-x:auto;gap:14px;margin-top:32px;
   scroll-snap-type:x mandatory;transition:height .2s ease;
   /* the fade starts where a panel ends and is gone before the next one's text begins,
      so the neighbour shows only as its rule */
@@ -154,7 +154,7 @@ body:not([data-view="train"]) #soundBtn{display:none}
   background:none;border:none;padding:0;font:inherit;cursor:pointer}
 .hero.small h1{font-size:clamp(42px,13vw,64px)}
 
-.week{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:0 0 8px}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:0 0 14px}
 .wd{border:1px solid var(--edge);border-radius:var(--round);padding:9px 2px 7px;text-align:center;
   background:var(--bg-raise);cursor:pointer;position:relative;
   transition:background .25s ease,border-color .1s ease,transform .12s ease}
@@ -174,16 +174,16 @@ body:not([data-view="train"]) #soundBtn{display:none}
 .wd.viewing::after{content:'';position:absolute;left:18%;right:18%;bottom:-5px;height:2px;background:var(--ember)}
 .wd:not(.rest):active{transform:scale(.93)}
 .wd.rest{opacity:.4;cursor:default}
-.strip-note{font-family:var(--face-mono);font-size:11px;color:var(--text-soft);text-align:center;margin-bottom:26px}
+.strip-note{font-family:var(--face-mono);font-size:11px;color:var(--text-soft);text-align:center;margin-bottom:34px}
 
-.cta{display:block;width:100%;padding:17px;margin:4px 0 26px;background:var(--rust-fill);color:var(--on-rust);
+.cta{display:block;width:100%;padding:17px;margin:12px 0 40px;background:var(--rust-fill);color:var(--on-rust);
   border:none;border-radius:var(--round);font-family:var(--face-display);font-weight:700;font-size:21px;
   letter-spacing:.02em;cursor:pointer;transition:filter .2s,transform .1s}
 .cta:active{transform:scale(.985)}
 @media (hover:hover){.cta:hover{filter:brightness(1.12)}}
 .cta.ghost{background:none;border:1px solid var(--edge);color:var(--text-soft);font-size:17px}
 @media (hover:hover){.cta.ghost:hover{border-color:var(--rust);color:var(--rust);filter:none}}
-.owed{display:block;margin:-18px auto 18px;background:none;border:none;cursor:pointer;
+.owed{display:block;margin:-28px auto 28px;background:none;border:none;cursor:pointer;
   font-family:var(--face-mono);font-size:11px;letter-spacing:.14em;color:var(--ember);
   text-decoration:underline;text-underline-offset:4px;padding:6px 4px}
 .owed[hidden]{display:none}
