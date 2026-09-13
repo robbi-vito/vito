@@ -309,6 +309,8 @@ a.watch{text-decoration:none;display:inline-block}
 .cell .v[data-unit]::after{content:attr(data-unit);font-family:var(--face-mono);font-size:11px;
   font-weight:400;letter-spacing:.04em;color:var(--text-dim);margin-left:2px}
 .cell.key .v{color:var(--rust)}
+/* a figure that can be graded but has no grade yet reads plain, so rust is never mistaken for one */
+.cell.key .v.plain,.cell .v.plain{color:var(--text)}
 .cell.key .v.g-good,.cell .v.g-good{color:var(--rag-good)}
 .cell.key .v.g-fair,.cell .v.g-fair{color:var(--rag-fair)}
 .cell.key .v.g-poor,.cell .v.g-poor{color:var(--rag-poor)}
@@ -3231,9 +3233,9 @@ function renderBody(){
   document.getElementById('cWeight').textContent=last?last.w:'—';
   document.getElementById('cBf').textContent=!last||last.f==null?'—':last.f;
   const bg=last?bfGrade(last.f):'';
-  document.getElementById('cBf').className='v'+(bg?' g-'+bg:'');
+  document.getElementById('cBf').className='v '+(bg?'g-'+bg:'plain');
   const wt=weightTrend();
-  document.getElementById('cWeight').className='v'+(wt?' g-'+wt.g:'');
+  document.getElementById('cWeight').className='v '+(wt?'g-'+wt.g:'plain');
   let note='';
   if(wt){
     const pc='<span class="g-'+wt.g+'">'+Math.abs(wt.rate).toFixed(1)+'% a week</span>';
