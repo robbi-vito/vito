@@ -303,6 +303,9 @@ a.watch{text-decoration:none;display:inline-block}
 .cell .v[data-unit]::after{content:attr(data-unit);font-family:var(--face-mono);font-size:11px;
   font-weight:400;letter-spacing:.04em;color:var(--text-dim);margin-left:2px}
 .cell.key .v{color:var(--rust)}
+.cell.key .v.g-good,.cell .v.g-good{color:var(--rag-good)}
+.cell.key .v.g-fair,.cell .v.g-fair{color:var(--rag-fair)}
+.cell.key .v.g-poor,.cell .v.g-poor{color:var(--rag-poor)}
 table.data{width:100%;border-collapse:collapse;font-family:var(--face-mono);font-size:13px}
 table.data th{font-size:10px;letter-spacing:.16em;font-weight:700;text-align:left;
   text-transform:uppercase;color:var(--ember);
@@ -343,9 +346,9 @@ details.pl-fold>summary .pl-type{flex:1}
 table.data .g-good,table.data td.hl.g-good,.strip-note .g-good{color:var(--rag-good)}
 table.data .g-fair,table.data td.hl.g-fair,.strip-note .g-fair{color:var(--rag-fair)}
 table.data .g-poor,table.data td.hl.g-poor,.strip-note .g-poor{color:var(--rag-poor);font-weight:700}
-table.data td.g-poor::after{content:' · short';font-family:var(--face-mono);font-size:9.5px;
+#sleepLog td.g-poor::after{content:' · short';font-family:var(--face-mono);font-size:9.5px;
   letter-spacing:.1em;font-weight:400;color:var(--rag-poor);opacity:.75}
-table.data td.g-poor.long::after{content:' · long'}
+#sleepLog td.g-poor.long::after{content:' · long'}
 .pl-type{font-family:var(--face-mono);font-size:10px;font-weight:700;letter-spacing:.2em;
   color:var(--flame);margin:18px 0 4px;padding:1px 0 1px 11px;border-left:2px solid var(--rust-lo)}
 .pl-k a,.pl-sub a{color:var(--ember);text-decoration:underline;text-underline-offset:3px}
@@ -3153,15 +3156,25 @@ document.getElementById('reviewEdit').onclick=function(){
 paintReview();
 
 /* ── body ── */
+/* body fat against the plan's own marks: 12% to hold, a 10% floor, 15% where it began.
+   The target band is on the mark, the way down from the start is close, past the start
+   or well under the floor is off it */
+function bfGrade(f){
+  f=Number(f);
+  if(!(f>0))return '';
+  return f<9?'poor':f<10?'fair':f<=12?'good':f<=15?'fair':'poor';
+}
 function renderBody(){
   const last=S.body[S.body.length-1];
   document.getElementById('cWeight').textContent=last?last.w:'—';
   document.getElementById('cBf').textContent=!last||last.f==null?'—':last.f;
+  const bg=last?bfGrade(last.f):'';
+  document.getElementById('cBf').className='v'+(bg?' g-'+bg:'');
   document.getElementById('cWeight').dataset.unit=last?'lb':'';
   document.getElementById('cBf').dataset.unit=(!last||last.f==null)?'':'%';
   document.getElementById('bodyHistory').innerHTML='<tr><th>Date</th><th>Weight</th><th>Body fat</th><th>Waist</th></tr>'+
     S.body.slice(-8).reverse().map(function(r){
-      return '<tr><td>'+r.d+'</td><td class="hl">'+r.w+' lb</td><td>'+(r.f?r.f+'%':'—')+'</td><td>'+(r.waist?r.waist+' in':'—')+'</td></tr>'}).join('');
+      return '<tr><td>'+r.d+'</td><td class="hl">'+r.w+' lb</td><td'+(bfGrade(r.f)?' class="g-'+bfGrade(r.f)+'"':'')+'>'+(r.f?r.f+'%':'—')+'</td><td>'+(r.waist?r.waist+' in':'—')+'</td></tr>'}).join('');
 }
 document.getElementById('saveBody').onclick=function(){
   const w=parseFloat(document.getElementById('inWeight').value);if(!w)return;
