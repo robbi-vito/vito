@@ -1337,6 +1337,12 @@ function mondayOf(d){const x=new Date(d);const g=(x.getDay()+6)%7;x.setDate(x.ge
 function appNow(){const d=new Date();if(d.getHours()<DAY_START)d.setDate(d.getDate()-1);return d}
 function todayKey(){return dkey(appNow())}
 function calKey(){return dkey(new Date())}   /* the calendar date, for the morning itself */
+/* the day the screen looks ahead to. From midnight that is the calendar day, since nothing is
+   trained after midnight, while anything logged stays on the day being finished until 05:00.
+   Sunday night keeps Sunday: the new week does not exist until the reset. */
+function planNow(){const d=new Date();return d.getHours()<DAY_START&&d.getDay()===1?appNow():d}
+function planIdx(){return (planNow().getDay()+6)%7}
+function planKey(){return dkey(planNow())}
 const dayIdx=()=>(appNow().getDay()+6)%7;
 const fmt=s=>new Date(s+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
 /* settling an entry changes the page height; the reader should not be moved */
@@ -1466,7 +1472,7 @@ if(S.shopDay!==todayKey()){
 document.documentElement.dataset.theme=S.theme;
 
 /* ── today ── */
-const di=dayIdx(),slot=WEEK[di],sess=(slot.s&&PROG[slot.s])?PROG[slot.s]:null;
+const di=planIdx(),slot=WEEK[di],sess=(slot.s&&PROG[slot.s])?PROG[slot.s]:null;
 let viewDay=di;                                /* which day's brief panel is swiped into view */
 document.getElementById('todayName').textContent=slot.k==='Run'?'Run club':slot.k;
 document.getElementById('todaySub').textContent=sess?sess.sub:
@@ -1484,6 +1490,8 @@ const SKY={0:'clear',1:'mostly clear',2:'partly cloudy',3:'overcast',45:'fog',48
 /* morning, afternoon, evening — the same day reads differently depending on
    whether the session is ahead of you, still owed, or done */
 function partOfDay(h){return h<DAY_START?2:h<12?0:h<17?1:2}
+/* after midnight the day ahead is still morning, except on Sunday night */
+function planPart(){const d=new Date(),h=d.getHours();return h<DAY_START?(d.getDay()===1?2:0):h<12?0:h<17?1:2}
 const MOMENTUM=[
  ['The week starts heavy. Nothing else counts yet.',
   'Push still stands. It does not get lighter later.',
@@ -1514,7 +1522,7 @@ function wxRead(){try{return JSON.parse(localStorage.getItem('vito.wx')||'null')
 function wxWrite(v){try{localStorage.setItem('vito.wx',JSON.stringify(v))}catch(e){}}
 /* forecast rows carry real dates, so map them onto this Mon–Sun week and drop the rest */
 function byWeekday(w){
-  const out=[null,null,null,null,null,null,null],here=mondayOf(new Date());
+  const out=[null,null,null,null,null,null,null],here=mondayOf(planNow());
   if(!w||!w.times)return out;
   for(let k=0;k<w.times.length;k++){
     const dt=new Date(w.times[k]+'T12:00:00');
@@ -1524,7 +1532,7 @@ function byWeekday(w){
   return out;
 }
 function plantLine(){
-  const m=new Date().getMonth(),d=dayIdx(),summer=m>=4&&m<=8;
+  const m=new Date().getMonth(),d=planIdx(),summer=m>=4&&m<=8;
   if(summer&&d===2)return 'Plants today — the midweek water.';
   if(!summer&&(d===5||d===6))return 'Plants need doing this weekend.';
   return null;
@@ -1541,7 +1549,7 @@ function rainFrom(key){
 }
 /* what the week's weather has to say about one outdoor session, or nothing */
 function dayAdvice(i,bd){
-  const t=dayIdx(),w=WEEK[i],f=bd[i];
+  const t=planIdx(),w=WEEK[i],f=bd[i];
   if(i<t||!w.s||!OUTDOOR[w.s]||!f)return null;
   const wet=f.precip>=40,hot=f.tmax>=95;     /* running is outdoors only, so rain counts earlier */
   if(!wet&&!hot)return null;
@@ -1574,7 +1582,7 @@ function dayAdvice(i,bd){
 /* today's panel looks down the whole week, not just at today; the day it lands on
    is returned so a line about a later day can be marked as one */
 function advice(bd){
-  for(let i=dayIdx();i<7;i++){const a=dayAdvice(i,bd);if(a)return {i:i,text:a}}
+  for(let i=planIdx();i<7;i++){const a=dayAdvice(i,bd);if(a)return {i:i,text:a}}
   return null;
 }
 const DAYNAME=['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'];
@@ -1599,7 +1607,7 @@ function heaviestOn(key){
   return top&&top.n?top:null;
 }
 function panelHead(i,bd){
-  const t=dayIdx();
+  const t=planIdx();
   let h=i===t?'TODAY':DAYNAME[i],f=bd[i];
   if(f&&i>=t){h+=' · '+temp(f.tmax);if(f.precip>=20)h+=' · '+f.precip+'% RAIN'}
   return h;
@@ -1619,7 +1627,7 @@ function askMeet(){
   S.meet=t;save();renderBrief();
 }
 function panelLines(i,bd){
-  const t=dayIdx(),w=WEEK[i],lines=[];
+  const t=planIdx(),w=WEEK[i],lines=[];
   if(i<t){                                       /* already happened, read it back */
     if(!w.s)lines.push('Rest.');
     else lines.push(w.k+'. '+(S.week.done[w.s]?'Done.':'Not ticked.'));
@@ -1628,7 +1636,7 @@ function panelLines(i,bd){
     return lines;
   }
   if(i===t){                                     /* today, and the week ahead of it */
-    lines.push(MOMENTUM[t][partOfDay(new Date().getHours())]);
+    lines.push(MOMENTUM[t][planPart()]);
     dateLines(i).forEach(function(x){lines.push(x)});
     if(i===5)lines.push(meetLine());
     {const sl=standingLine(i);if(sl)lines.push(sl)}
@@ -1646,12 +1654,12 @@ function panelLines(i,bd){
   return lines;
 }
 function renderBrief(){
-  const now=appNow();
+  const now=planNow();
   let head=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
   /* the temperature and the condition each stay whole, so no single word orphans */
   if(WX&&WX.now&&Date.now()-WX.at<3*60*60*1000)head+=' · '+nb(temp(WX.now.t))+' '+nb(SKY[WX.now.code]||'');
   document.getElementById('todayDate').textContent=head;
-  const bd=WX?byWeekday(WX):EMPTY7,t=dayIdx();
+  const bd=WX?byWeekday(WX):EMPTY7,t=planIdx();
   /* Sunday is cloned before Monday and Monday after Sunday, so swiping off either
      end lands on a real-looking panel and the jump back to it is invisible */
   document.getElementById('brief').innerHTML=SLOTS.map(function(i){
@@ -1660,7 +1668,7 @@ function renderBrief(){
   }).join('');
   const sm=document.getElementById('setMeet');
   if(sm)sm.onclick=askMeet;                      /* the track is rebuilt, so rebind each time */
-  builtFor=todayKey();
+  builtFor=planKey();
   gotoDay(viewDay);
 }
 /* the track carries an explicit height so a short day does not inherit a tall one's
@@ -1714,7 +1722,7 @@ function slotLeft(s){
 function gotoDay(i){
   const track=document.getElementById('brief');
   if(!track.children.length)return;
-  if(i<0||i>6)i=dayIdx();
+  if(i<0||i>6)i=planIdx();
   viewDay=i;
   track.scrollLeft=slotLeft(i+1);                /* real days live in slots 1..7 */
   fitTrack(true);
@@ -1797,7 +1805,7 @@ document.addEventListener('visibilitychange',function(){
   if(document.visibilityState!=='visible'){hiddenAt=Date.now();return}
   /* a quick switch mid-session keeps your place; a long gap or a new day goes back to today */
   const away=hiddenAt?Date.now()-hiddenAt:0;
-  if(away>72e5||builtFor!==todayKey())viewDay=dayIdx();
+  if(away>72e5||builtFor!==planKey())viewDay=planIdx();
   if(away>18e5&&!S.timer.run)shutAfterAway();
   if(away>18e5){wearSeed=(Math.random()*4294967296)>>>0;wearFrame='';paintWear()}
   if(away>=6e4)autoSplash();                     /* back after a minute counts as opening it */
@@ -3201,7 +3209,7 @@ document.getElementById('addLoop').onclick=function(){
 function renderCommit(){
   const host=document.getElementById('commitments');
   const rows=dateItems().filter(function(x){return x.kind==='date'&&x.days>=-7}).sort(function(a,b){return a.days-b.days});
-  const key=function(days){const d=new Date(todayKey()+'T12:00:00');d.setDate(d.getDate()+days);return dkey(d)};
+  const key=function(days){const d=new Date(calKey()+'T12:00:00');d.setDate(d.getDate()+days);return dkey(d)};
   host.innerHTML=rows.length
     ?'<tr><th>What</th><th>When</th><th></th></tr>'+rows.map(function(x,i){
       const od=x.days<0;
@@ -3607,8 +3615,8 @@ document.getElementById('addPlace').onclick=function(){
 };
 renderOut();
 /* ── birthdays: a week out to order something, the day itself to send a message ── */
-function daysTo(md){                              /* days from today to the next MM-DD */
-  const now=new Date(todayKey()+'T12:00:00');
+function daysTo(md){                              /* days from today to the next MM-DD, by the calendar */
+  const now=new Date(calKey()+'T12:00:00');
   let d=new Date(now.getFullYear()+'-'+md+'T12:00:00');
   if(isNaN(d))return 999;
   if(d<now)d=new Date((now.getFullYear()+1)+'-'+md+'T12:00:00');
@@ -3616,7 +3624,7 @@ function daysTo(md){                              /* days from today to the next
 }
 /* birthdays from Out and dates that matter from Build, read as one list of what is coming */
 function dateItems(){
-  const out=[],now=new Date(todayKey()+'T12:00:00');
+  const out=[],now=new Date(calKey()+'T12:00:00');
   (S.bdays||[]).forEach(function(b,i){out.push({key:'b'+i+'|'+b.n,kind:'bday',name:b.n,days:daysTo(b.d)})});
   (S.commit||[]).forEach(function(c,i){
     if(!c||!c.t||!/^\d{4}-\d{2}-\d{2}$/.test(c.d))return;
@@ -3625,14 +3633,23 @@ function dateItems(){
   });
   return out;
 }
-function dayName(days){const d=new Date(todayKey()+'T12:00:00');d.setDate(d.getDate()+days);return d.toLocaleDateString('en-GB',{weekday:'long'})}
-/* the date the insight line names, if any, in this order: a birthday today, a date today or
-   tomorrow, a birthday near enough to order something, a date later in the week */
+function dayName(days){const d=new Date(calKey()+'T12:00:00');d.setDate(d.getDate()+days);return d.toLocaleDateString('en-GB',{weekday:'long'})}
+/* the date the insight line names, if any, in this order: a birthday today, a birthday that was
+   yesterday while it is still morning, a date today or tomorrow, a birthday near enough to order
+   something, a date later in the week. Dates follow the calendar, not the 05:00 roll. */
 function dateNote(){
   const xs=dateItems().filter(function(x){return x.days>=0&&x.days<=7}).sort(function(a,b){return a.days-b.days});
   const pick=function(f){return xs.filter(f)[0]};
   let x=pick(function(x){return x.kind==='bday'&&x.days===0});
   if(x)return {key:x.key,k:'BIRTHDAY',act:true,t:'Message '+x.name+' today.'};
+  const now=new Date();
+  if(now.getHours()<12){
+    const y=new Date(calKey()+'T12:00:00');y.setDate(y.getDate()-1);
+    const md=String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');
+    const i=(S.bdays||[]).findIndex(function(b){return b&&b.d===md});
+    if(i>-1)return {key:'b'+i+'|'+S.bdays[i].n,k:'BIRTHDAY',act:true,
+      t:S.bdays[i].n+'\u2019s birthday was yesterday. Send the message '+(now.getHours()<DAY_START?'when you are up.':'this morning.')};
+  }
   x=pick(function(x){return x.kind==='date'&&x.days<=1});
   if(x)return {key:x.key,k:'DUE',act:true,t:x.name+(x.days===0?' is today.':' is tomorrow.')};
   x=pick(function(x){return x.kind==='bday'&&x.days>=4});
@@ -3643,7 +3660,8 @@ function dateNote(){
 }
 /* the dates on a day of the brief, leaving out whichever one the insight line already names */
 function dateLines(i){
-  const off=i-dayIdx();
+  /* panels run on the day ahead and dates on the calendar; on Sunday night the two differ by one */
+  const off=i-planIdx()-Math.round((new Date(calKey()+'T12:00:00')-new Date(planKey()+'T12:00:00'))/864e5);
   if(off<0)return [];
   const skip=(dateNote()||{}).key;
   return dateItems().filter(function(x){return x.days===off&&x.key!==skip}).map(function(x){
@@ -3878,7 +3896,7 @@ function openMorningSheet(){
   const list=evening?tonightShown():(S.mornList||[]);
   const openItems=list.filter(function(it){return !store[it.id]});
   document.getElementById('vTitle').textContent=greeting();
-  document.getElementById('vSub').textContent=fmt(todayKey()).toUpperCase()+' · '+(slot.k||'REST');
+  document.getElementById('vSub').textContent=fmt(planKey()).toUpperCase()+' · '+(slot.k||'REST');
   const owed=owedToday().filter(function(o){return o.k!=='morning'&&o.k!=='evening'});
   const loops=(S.loops||[]).filter(function(l){return l&&l.id&&!S.loopsDone[l.id]});
   const note=evening?sleepNote():'';
@@ -4294,9 +4312,9 @@ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){cle
   setInterval(paintLeak,60000);
 })();
 /* the page is built for one date; coming back to it on a later date rebuilds it */
-const LOADED_ON=todayKey();
+const LOADED_ON=todayKey(),LOADED_PLAN=planKey();
 document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible'&&todayKey()!==LOADED_ON)location.reload();
+  if(document.visibilityState==='visible'&&(todayKey()!==LOADED_ON||planKey()!==LOADED_PLAN))location.reload();
 });
 </script>
 </body>
