@@ -1778,6 +1778,7 @@ document.addEventListener('visibilitychange',function(){
   const away=hiddenAt?Date.now()-hiddenAt:0;
   if(away>72e5||builtFor!==todayKey())viewDay=dayIdx();
   if(away>18e5&&!S.timer.run)shutAfterAway();
+  if(away>18e5){wearSeed=(Math.random()*4294967296)>>>0;wearFrame='';paintWear()}
   if(away>=6e4)autoSplash();                     /* back after a minute counts as opening it */
   renderBrief();
   loadWeather();                                 /* it decides for itself whether a refetch is due */
@@ -3931,10 +3932,10 @@ function paintLeak(){
   }else{set('--leak4-w','0%');set('--leak4-h','0%')}
 }
 /* wear on the sheet. The marks sit in the page, so they scroll with it instead of being
-   moved after it, and they sit under the text. A fresh set is dealt each time a view is
-   opened: rust and scuffs on the dark register, ink and tea on paper, with the odd large
-   scrape or cup ring. */
-var wearFrame='',wearId=0;
+   moved after it, and they sit under the text. A fresh hand is dealt when the app opens,
+   or is returned to after half an hour, and each view keeps its own until then: rust and
+   scuffs on the dark register, ink and tea on paper, with the odd large scrape or cup ring. */
+var wearFrame='',wearId=0,wearSeed=(Math.random()*4294967296)>>>0;
 function paintWear(){
   const host=document.querySelector('.wear');
   if(!host)return;
@@ -3942,7 +3943,7 @@ function paintWear(){
   const key=(document.body.dataset.view||'today')+'|'+(paper?'paper':'dark');
   if(key===wearFrame)return;
   wearFrame=key;
-  let seed=(Math.random()*4294967296)>>>0;
+  let seed=wearSeed;for(let i=0;i<key.length;i++)seed=(seed*31+key.charCodeAt(i))>>>0;
   const rnd=function(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
   const span=function(lo,hi){return lo+rnd()*(hi-lo)};
   const f=function(n){return n.toFixed(1)};
