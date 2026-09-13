@@ -621,7 +621,13 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
             <div class="cell"><span class="l">FFMI</span><span class="v">21.0</span></div>
           </div>
           <div class="strip-note" id="trendNote" style="margin-bottom:6px" hidden></div>
-          <div class="strip-note" style="margin-bottom:20px">Target 12% sustained, 10% floor · retest early November</div>
+          <div class="strip-note" style="margin-bottom:20px">Target 12% sustained, 10% floor · retest early November <button class="info" data-bub="grades" aria-label="How weight and body fat are graded">i</button></div>
+          <div class="bubble" id="bub-grades" style="margin:-8px 0 20px">
+            <p><strong>Weight is graded on its trend, not the number.</strong> Muscle weighs too, so a heavier week is not a failure on its own. This week's average is set against the week a fortnight earlier.</p>
+            <p>Cutting, losing <strong>0.5 to 1% a week</strong> is green<span id="wRange"></span>. Slower, or up to 1.5%, is amber. Level, rising or faster than 1.5% is red.</p>
+            <p>Once a scan reads 12% or under, the aim is to hold: within 0.25% a week is green, within 0.5% amber.</p>
+            <p>No colour until there are three weigh-ins in each of those two weeks. Body fat is graded against the target, 10 to 12% green and up to 15% amber, and moves only at a scan.</p>
+          </div>
 
           <details class="nest">
             <summary><h3>Weigh-in</h3></summary>
@@ -3254,6 +3260,8 @@ function renderBody(){
   }
   const tn=document.getElementById('trendNote');
   tn.innerHTML=note;tn.hidden=!note;
+  const wr=document.getElementById('wRange'),lw=last?Number(last.w):0;
+  if(wr)wr.textContent=lw>0?', about '+(lw*.005).toFixed(1)+' to '+(lw*.01).toFixed(1)+' lb at your weight':'';
   document.getElementById('cWeight').dataset.unit=last?'lb':'';
   document.getElementById('cBf').dataset.unit=(!last||last.f==null)?'':'%';
   document.getElementById('bodyHistory').innerHTML='<tr><th>Date</th><th>Weight</th><th>Body fat</th><th>Waist</th></tr>'+
