@@ -351,8 +351,8 @@ details.pl-fold>summary .pl-type{flex:1}
 /* a night reads at a glance: on the mark, close to it, or off it */
 table.data .g-good,table.data td.hl.g-good,.strip-note .g-good{color:var(--rag-good)}
 table.data .g-fair,table.data td.hl.g-fair,.strip-note .g-fair{color:var(--rag-fair)}
-/* yellow reads as colour only with some weight behind it, and the registers match */
-.g-fair{font-weight:700}
+/* every grade is set bold, so green, amber and red carry the same weight wherever they appear */
+.g-good,.g-fair,.g-poor{font-weight:700}
 table.data .g-poor,table.data td.hl.g-poor,.strip-note .g-poor{color:var(--rag-poor);font-weight:700}
 #sleepLog td.g-poor::after{content:' · short';font-family:var(--face-mono);font-size:9.5px;
   letter-spacing:.1em;font-weight:400;color:var(--rag-poor);opacity:.75}
