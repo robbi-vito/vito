@@ -460,6 +460,18 @@ textarea.three:focus{outline:none;border-color:var(--rust)}
 :root[data-case="lower-all"] details.nest>summary h3,:root[data-case="lower-all"] .prose h3,
 :root[data-case="lower-all"] .stretch h3,:root[data-case="lower-all"] .pl-group,
 :root[data-case="lower-all"] .journal-h{font-style:italic;font-weight:500;font-size:20px}
+:root[data-case="upper"] .cta,:root[data-case="upper"] .log-row button,
+:root[data-case="upper-all"] .cta,:root[data-case="upper-all"] .log-row button{text-transform:uppercase}
+:root[data-case="upper-all"] summary h2,:root[data-case="upper-all"] details.nest>summary h3,
+:root[data-case="upper-all"] .prose h3,:root[data-case="upper-all"] .stretch h3,
+:root[data-case="upper-all"] .pl-group,:root[data-case="upper-all"] .sheet h3,
+:root[data-case="upper-all"] .journal-h{text-transform:uppercase}
+/* capitals flatten the step as well, so tracking and size carry it: the section set wide,
+   the heading inside it smaller and wider still */
+:root[data-case="upper-all"] summary h2{font-size:22px;letter-spacing:.06em}
+:root[data-case="upper-all"] details.nest>summary h3,:root[data-case="upper-all"] .prose h3,
+:root[data-case="upper-all"] .stretch h3,:root[data-case="upper-all"] .pl-group,
+:root[data-case="upper-all"] .journal-h{font-weight:600;font-size:16px;letter-spacing:.12em}
 .set-note{font-style:italic;font-size:14px;line-height:1.5;color:var(--text-soft);margin:10px 0 18px}
 
 .float-btn{position:fixed;z-index:50;width:44px;height:44px;border-radius:50%;
@@ -3294,16 +3306,15 @@ function openSettings(){
     }).join('')+
     '<p class="set-note">Headings and large numbers take the first face, prose the second, labels and timings the third. The Protocol is how it was built, and is always here to come back to.</p>'+
     '<div class="set-hd">CASE</div>'+
-    '<div class="sheet-foot">'+
-      ['sentence','As built','lower','lower buttons','lower-all','lower headings too']
-        .reduce(function(acc,v,i,arr){
-          if(i%2)return acc;
-          const id=arr[i],lab=arr[i+1],on=S.caseStyle===id;
-          return acc+'<button type="button" data-cs="'+id+'"'+(on?' class="on"':'')+
-            ' style="text-transform:none">'+lab+'</button>';
-        },'')+
-    '</div>'+
-    '<p class="set-note">The first is how it was written. The others lower the buttons, and then the section headings as well. The small caps labels are a different job and are left as they are.</p>'+
+    [[['sentence','As built']],[['lower','lower buttons'],['lower-all','lower headings too']],
+     [['upper','UPPER BUTTONS'],['upper-all','UPPER HEADINGS TOO']]]
+      .map(function(row){
+        return '<div class="sheet-foot">'+row.map(function(c){
+          return '<button type="button" data-cs="'+c[0]+'"'+(S.caseStyle===c[0]?' class="on"':'')+
+            ' style="text-transform:none">'+c[1]+'</button>';
+        }).join('')+'</div>';
+      }).join('')+
+    '<p class="set-note">The first is how it was written. The others lower or raise the buttons, and then the section headings as well. The small caps labels are a different job and are left as they are.</p>'+
     '<div class="set-hd">VIDEOS</div>'+
     '<div class="sheet-foot">'+VID_GROUPS.map(function(g){
       return '<button type="button" data-vg="'+g[0]+'"'+(S.hideVid[g[0]]?'':' class="on"')+'>'+g[1]+'</button>'}).join('')+'</div>'+
