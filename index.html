@@ -158,6 +158,7 @@ body:not([data-view="train"]) #soundBtn{display:none}
 .brief p:last-child{margin-bottom:0}
 .brief .day.past p{color:var(--text-dim)}
 .brief .cue{color:var(--ember)}
+.brief .dt{color:var(--text)}
 .brief .meet{color:var(--ember);text-decoration:underline;text-underline-offset:2px;
   background:none;border:none;padding:0;font:inherit;cursor:pointer}
 .hero.small h1{font-size:clamp(42px,13vw,64px)}
@@ -1051,6 +1052,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:20%;right:20%;heig
       <input type="date" id="cDate" style="flex:1">
       <button id="addCommit">Add</button>
     </div>
+    <button class="watch" id="cYearly" type="button" aria-pressed="false" style="margin:10px 0 0">EVERY YEAR</button>
 
     <div class="det-group" style="margin-top:28px">
       <details>
@@ -1627,6 +1629,7 @@ function panelLines(i,bd){
   }
   if(i===t){                                     /* today, and the week ahead of it */
     lines.push(MOMENTUM[t][partOfDay(new Date().getHours())]);
+    dateLines(i).forEach(function(x){lines.push(x)});
     if(i===5)lines.push(meetLine());
     {const sl=standingLine(i);if(sl)lines.push(sl)}
     const p=plantLine();if(p)lines.push(p);
@@ -1635,6 +1638,7 @@ function panelLines(i,bd){
     return lines;
   }
   lines.push(w.k+'. '+subFor(w));                /* still ahead */
+  dateLines(i).forEach(function(x){lines.push(x)});
   if(i===5)lines.push(meetLine());
   {const sl=standingLine(i);if(sl)lines.push(sl)}
   const s=dayAdvice(i,bd);
@@ -1873,7 +1877,9 @@ function iPhase(){
 function insight(){
   try{
     /* each line names its kind, and says whether it asks for something today */
-    const order=[[iBday,'BIRTHDAY',true],[iStalled,'LIFT',true],[iTrend,'WEIGHT',null],[iPhase,'PHASE',false],[iNew,'OUT',false]];
+    const dn=dateNote();
+    if(dn)return dn;
+    const order=[[iStalled,'LIFT',true],[iTrend,'WEIGHT',null],[iPhase,'PHASE',false],[iNew,'OUT',false]];
     for(let i=0;i<order.length;i++){
       const t=order[i][0]();
       if(t)return {t:t,k:order[i][1],act:order[i][2]===null?!/On schedule/.test(t):order[i][2]};
@@ -3191,28 +3197,35 @@ document.getElementById('addLoop').onclick=function(){
   S.loops.push({id:'l'+Date.now(),t:v,s:''});save();
   document.getElementById('lTitle').value='';renderBuild();
 };
+/* a one-off date stays a week after it passes, then leaves the list; a yearly one rolls on */
 function renderCommit(){
-  const t=todayKey(),host=document.getElementById('commitments');
-  const rows=S.commit.slice().sort(function(a,b){return a.d<b.d?-1:1});
+  const host=document.getElementById('commitments');
+  const rows=dateItems().filter(function(x){return x.kind==='date'&&x.days>=-7}).sort(function(a,b){return a.days-b.days});
+  const key=function(days){const d=new Date(todayKey()+'T12:00:00');d.setDate(d.getDate()+days);return dkey(d)};
   host.innerHTML=rows.length
-    ?'<tr><th>What</th><th>When</th><th></th></tr>'+rows.map(function(c,i){const od=c.d<t;
-      return '<tr><td>'+esc(c.t)+'</td><td class="'+(od?'hl':'')+'">'+fmt(c.d)+
-        (od?'<br><span style="font-size:10px">PASSED</span>':'')+'</td>'+
+    ?'<tr><th>What</th><th>When</th><th></th></tr>'+rows.map(function(x,i){
+      const od=x.days<0;
+      return '<tr><td>'+esc(x.name)+(x.yearly?'<br><span style="font-family:var(--face-mono);font-size:10px;letter-spacing:.12em;color:var(--text-dim)">EVERY YEAR</span>':'')+'</td>'+
+        '<td class="'+(od?'hl':'')+'">'+fmt(x.yearly?key(x.days):x.ref.d)+(od?'<br><span style="font-size:10px">PASSED</span>':'')+'</td>'+
         '<td style="text-align:right"><button class="del rm" data-i="'+i+'" aria-label="Remove">×</button></td></tr>'}).join('')
-    :'<tr><td class="soft" style="border:none;padding-left:0">Nothing yet. Anything you add stays on this device and is never published.</td></tr>';
+    :'<tr><td class="soft" style="border:none;padding-left:0">'+(S.commit.length?'Nothing coming up. A passed date leaves this list a week after it goes by.':'Nothing yet. Anything you add stays on this device and is never published.')+'</td></tr>';
   host.querySelectorAll('.rm').forEach(function(b){
     b.onclick=function(){
-      const sorted=S.commit.slice().sort(function(a,b){return a.d<b.d?-1:1});
-      const target=sorted[+b.dataset.i];
-      S.commit=S.commit.filter(function(c){return c!==target});save();renderCommit();
+      const target=rows[+b.dataset.i].ref;
+      S.commit=S.commit.filter(function(c){return c!==target});save();renderCommit();renderInsight();renderBrief();
     };
   });
 }
+document.getElementById('cYearly').onclick=function(){
+  const on=this.getAttribute('aria-pressed')!=='true';
+  this.setAttribute('aria-pressed',on?'true':'false');this.classList.toggle('set',on);
+};
 document.getElementById('addCommit').onclick=function(){
-  const t=document.getElementById('cTitle').value.trim(),d=document.getElementById('cDate').value;
+  const t=document.getElementById('cTitle').value.trim(),d=document.getElementById('cDate').value,y=document.getElementById('cYearly');
   if(!t||!d)return;
-  S.commit.push({t:t,d:d});save();renderCommit();
+  S.commit.push(y.getAttribute('aria-pressed')==='true'?{t:t,d:d,y:true}:{t:t,d:d});save();renderCommit();renderInsight();renderBrief();
   document.getElementById('cTitle').value='';document.getElementById('cDate').value='';
+  y.setAttribute('aria-pressed','false');y.classList.remove('set');
 };
 renderBuild();
 /* ── shot log: one row per shoot, newest first ── */
@@ -3601,18 +3614,41 @@ function daysTo(md){                              /* days from today to the next
   if(d<now)d=new Date((now.getFullYear()+1)+'-'+md+'T12:00:00');
   return isNaN(d)?999:Math.round((d-now)/864e5);
 }
-function iBday(){
-  let hit='';
-  S.bdays.slice().sort(function(a,b){return daysTo(a.d)-daysTo(b.d)}).forEach(function(b){
-    if(hit)return;
-    const n=daysTo(b.d);
-    if(n===0)hit='Message '+b.n+' today.';
-    else if(n>=4&&n<=7){
-      const by=new Date(todayKey()+'T12:00:00');by.setDate(by.getDate()+n-3);
-      hit='Order something for '+b.n+' by '+by.toLocaleDateString('en-GB',{weekday:'long'})+'.';
-    }
+/* birthdays from Out and dates that matter from Build, read as one list of what is coming */
+function dateItems(){
+  const out=[],now=new Date(todayKey()+'T12:00:00');
+  (S.bdays||[]).forEach(function(b,i){out.push({key:'b'+i+'|'+b.n,kind:'bday',name:b.n,days:daysTo(b.d)})});
+  (S.commit||[]).forEach(function(c,i){
+    if(!c||!c.t||!/^\d{4}-\d{2}-\d{2}$/.test(c.d))return;
+    const days=c.y?daysTo(c.d.slice(5)):Math.round((new Date(c.d+'T12:00:00')-now)/864e5);
+    out.push({key:'c'+i+'|'+c.t,kind:'date',name:c.t,days:days,yearly:!!c.y,ref:c});
   });
-  return hit;
+  return out;
+}
+function dayName(days){const d=new Date(todayKey()+'T12:00:00');d.setDate(d.getDate()+days);return d.toLocaleDateString('en-GB',{weekday:'long'})}
+/* the date the insight line names, if any, in this order: a birthday today, a date today or
+   tomorrow, a birthday near enough to order something, a date later in the week */
+function dateNote(){
+  const xs=dateItems().filter(function(x){return x.days>=0&&x.days<=7}).sort(function(a,b){return a.days-b.days});
+  const pick=function(f){return xs.filter(f)[0]};
+  let x=pick(function(x){return x.kind==='bday'&&x.days===0});
+  if(x)return {key:x.key,k:'BIRTHDAY',act:true,t:'Message '+x.name+' today.'};
+  x=pick(function(x){return x.kind==='date'&&x.days<=1});
+  if(x)return {key:x.key,k:'DUE',act:true,t:x.name+(x.days===0?' is today.':' is tomorrow.')};
+  x=pick(function(x){return x.kind==='bday'&&x.days>=4});
+  if(x)return {key:x.key,k:'BIRTHDAY',act:true,t:'Order something for '+x.name+' by '+dayName(x.days-3)+'.'};
+  x=pick(function(x){return x.kind==='date'&&x.days>=2&&x.days<=6});
+  if(x)return {key:x.key,k:'SOON',act:false,t:x.name+' on '+dayName(x.days)+'.'};
+  return null;
+}
+/* the dates on a day of the brief, leaving out whichever one the insight line already names */
+function dateLines(i){
+  const off=i-dayIdx();
+  if(off<0)return [];
+  const skip=(dateNote()||{}).key;
+  return dateItems().filter(function(x){return x.days===off&&x.key!==skip}).map(function(x){
+    return '<span class="dt">'+esc(x.kind==='bday'?x.name+'\u2019s birthday.':(/[.!?]$/.test(x.name)?x.name:x.name+'.'))+'</span>';
+  });
 }
 function renderBdays(){
   const host=document.getElementById('bdays');
@@ -3623,12 +3659,12 @@ function renderBdays(){
         '<td class="'+(x.n<=7?'hl':'')+'">'+(x.n===0?'today':x.n+' d')+'</td>'+
         '<td style="text-align:right"><button class="del rm" data-i="'+x.i+'" aria-label="Remove">×</button></td></tr>'}).join('')
     :'<tr><td class="soft" style="border:none;padding-left:0">No birthdays yet. They stay on this device.</td></tr>';
-  host.querySelectorAll('.rm').forEach(function(b){b.onclick=function(){S.bdays.splice(+b.dataset.i,1);save();renderBdays();renderInsight()}});
+  host.querySelectorAll('.rm').forEach(function(b){b.onclick=function(){S.bdays.splice(+b.dataset.i,1);save();renderBdays();renderInsight();renderBrief()}});
 }
 document.getElementById('addBday').onclick=function(){
   const n=document.getElementById('bdName').value.trim(),v=document.getElementById('bdDate').value;
   if(!n||!v)return;
-  S.bdays.push({n:n,d:v.slice(5)});save();renderBdays();renderInsight();
+  S.bdays.push({n:n,d:v.slice(5)});save();renderBdays();renderInsight();renderBrief();
   document.getElementById('bdName').value='';document.getElementById('bdDate').value='';
 };
 renderBdays();
