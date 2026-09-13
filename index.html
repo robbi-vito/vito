@@ -1740,6 +1740,7 @@ document.addEventListener('visibilitychange',function(){
   const away=hiddenAt?Date.now()-hiddenAt:0;
   if(away>72e5||builtFor!==todayKey())viewDay=dayIdx();
   if(away>18e5&&!S.timer.run)shutAfterAway();
+  if(away>=6e4)autoSplash();                     /* back after a minute counts as opening it */
   renderBrief();
   loadWeather();                                 /* it decides for itself whether a refetch is due */
 });
@@ -3629,7 +3630,7 @@ const HELLO={
 let lastHello='';
 function greeting(){
   const h=new Date().getHours();
-  const set=HELLO[h<12?'morning':h<18?'afternoon':'evening'];
+  const set=HELLO[h<5?'evening':h<12?'morning':h<18?'afternoon':'evening'];
   let pick=set[Math.floor(Math.random()*set.length)];
   if(set.length>1&&pick===lastHello)pick=set[(set.indexOf(pick)+1)%set.length];
   lastHello=pick;
@@ -3637,7 +3638,7 @@ function greeting(){
 }
 function splashSlot(){
   const h=hourNow();
-  return h<11?'morning':h>=18.5?'evening':'day';
+  return h<5?'evening':h<11?'morning':h>=18.5?'evening':'day';   /* before 05:00 is still the night */
 }
 /* the sleep line the greeting leans on, graded by the same thresholds as the table */
 function sleepNote(){
@@ -3716,15 +3717,26 @@ function openMorningSheet(){
   document.getElementById('spDone').onclick=closeVideo;
   scrim.classList.add('up');
 }
-/* the date alone could not say which part of the day had been seen */
-(function(){
-  const when=splashSlot();
-  if(when==='day')return;
-  const stamp=calKey()+'|'+when;
-  if(S.splash===stamp)return;
-  S.splash=stamp;save();
+/* the morning sheet opens itself from 05:00 to 09:00 and the night sheet from 20:30 to
+   03:30, every time the app is opened, until what it holds is done: the time up and the
+   morning list, or the Tonight list. Outside those hours it waits for the button. */
+function splashDue(){
+  const h=hourNow();
+  if(h>=5&&h<9){
+    const k=calKey(),m=S.morning[k]||{};
+    return typeof S.woke[k]!=='number'||(S.mornList||[]).some(function(it){return !m[it.id]});
+  }
+  if(h>=20.5||h<3.5){
+    const e=S.evening[todayKey()]||{};
+    return tonightShown().some(function(it){return !e[it.id]});
+  }
+  return false;
+}
+function autoSplash(){
+  if(scrim.classList.contains('up')||!splashDue())return;
   openMorningSheet();
-})();
+}
+autoSplash();
 
 /* a way back out of a long page: it appears only once something is open and the
    masthead has scrolled away, and it shuts everything on the view you are on */
