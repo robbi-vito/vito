@@ -375,6 +375,8 @@ a.pl-n{text-decoration:underline;text-decoration-color:var(--rust-lo);text-under
 .log-row input{flex:1;min-width:0;background:var(--bg-raise);border:1px solid var(--edge);border-radius:var(--round);
   padding:11px 10px;color:var(--text);font-family:var(--face-mono);font-size:14px}
 .log-row input:focus{outline:none;border-color:var(--rust)}
+/* a button alone on its row has no input to take its height from */
+.log-row button{min-height:40px}
 .log-row .watch{background:none;border:1px solid var(--edge);color:var(--text-soft);padding:6px 12px}
 .log-row .watch:focus-visible{background:none;border-color:var(--rust);color:var(--rust)}
 @media (hover:hover){.log-row .watch:hover{background:none;border-color:var(--rust);color:var(--rust)}}
